@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inspetor de Etiquetas — Documentação</title>
+  <meta name="description" content="Documentação do Inspetor de Etiquetas de código de barras — visão computacional, CNN (PyTorch) e pipeline multiagente (Gemini + ADK). Disciplina Visão Computacional (cód. 2587), UNIFESP.">
+
+  <!-- VISUAL via CDN externo (funciona ao abrir por file://) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+  <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" disabled>
+
+  <style>
+    :root {
+      --pico-font-size: 100%;
+      --sidebar-width: 288px;
+    }
+    html { scroll-behavior: smooth; }
+
+    /* ---------- Layout de duas colunas ---------- */
+    .layout {
+      display: grid;
+      grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    /* ---------- Barra lateral fixa ---------- */
+    .sidebar {
+      position: sticky;
+      top: 0;
+      align-self: start;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 1.25rem 1rem 2rem 1.25rem;
+      border-right: 1px solid var(--pico-muted-border-color);
+      background: var(--pico-card-background-color);
+    }
+    .sidebar-header { margin-bottom: 1rem; }
+    .sidebar-header .brand {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin: 0;
+      line-height: 1.2;
+    }
+    .sidebar-header .brand-sub {
+      display: block;
+      font-size: .78rem;
+      font-weight: 400;
+      color: var(--pico-muted-color);
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      margin-top: .2rem;
+    }
+    #theme-toggle {
+      width: 100%;
+      margin: .75rem 0 .5rem;
+      padding: .4rem .6rem;
+      font-size: .82rem;
+      --pico-border-radius: 8px;
+    }
+
+    .sidebar nav ul { list-style: none; margin: 0; padding: 0; }
+    .sidebar nav > ul > li { margin: .1rem 0; }
+    .sidebar nav a {
+      display: block;
+      padding: .34rem .6rem;
+      border-radius: 6px;
+      font-size: .9rem;
+      text-decoration: none;
+      color: var(--pico-color);
+      line-height: 1.3;
+    }
+    .sidebar nav a:hover { background: var(--pico-secondary-background); color: var(--pico-primary-inverse); }
+    .sidebar nav a.top { font-weight: 600; }
+    .sidebar nav a.active {
+      background: var(--pico-primary-background);
+      color: var(--pico-primary-inverse);
+    }
+    .sidebar nav .sub { margin-left: .3rem; padding-left: .55rem; border-left: 1px solid var(--pico-muted-border-color); }
+    .sidebar nav .sub a { font-size: .82rem; padding: .24rem .6rem; color: var(--pico-muted-color); }
+    .sidebar nav .sub a:hover, .sidebar nav .sub a.active { color: var(--pico-primary-inverse); }
+
+    /* ---------- Conteúdo ---------- */
+    .content {
+      max-width: 860px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2.25rem 2rem 4rem;
+    }
+    .content section { scroll-margin-top: 4.5rem; }
+    .content section + section {
+      margin-top: 2.5rem;
+      padding-top: 2.25rem;
+      border-top: 1px solid var(--pico-muted-border-color);
+    }
+    .content h1 { scroll-margin-top: 4.5rem; }
+    .content h2, .content h3 { scroll-margin-top: 4.5rem; }
+    .content h1 { font-size: 2rem; margin-bottom: .4rem; }
+    .content .lead { font-size: 1.05rem; color: var(--pico-muted-color); margin-top: 0; }
+    .content h2 { font-size: 1.45rem; margin-top: 2rem; }
+    .content h3 { font-size: 1.15rem; margin-top: 1.6rem; }
+    .content p, .content li { line-height: 1.65; }
+
+    /* Código */
+    .content pre {
+      border: 1px solid var(--pico-muted-border-color);
+      border-radius: 10px;
+      overflow-x: auto;
+      font-size: .85rem;
+      line-height: 1.5;
+    }
+    .content pre code { padding: 1rem 1.1rem; display: block; }
+    .content :not(pre) > code {
+      font-size: .84em;
+      padding: .12em .4em;
+      border-radius: 5px;
+      background: var(--pico-code-background-color);
+    }
+
+    /* Figuras / capturas de tela */
+    .content figure { margin: 1.6rem 0; }
+    .content figure img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      border: 1px solid var(--pico-muted-border-color);
+      border-radius: 10px;
+    }
+    .content figure figcaption {
+      margin-top: .5rem;
+      font-size: .85rem;
+      color: var(--pico-muted-color);
+      text-align: center;
+    }
+
+    /* Tabelas */
+    .table-wrap { overflow-x: auto; }
+    .content table { font-size: .9rem; }
+    .content th { white-space: nowrap; }
+
+    /* Callouts (admonitions) */
+    .callout {
+      border-left: 4px solid var(--pico-primary);
+      border-radius: 8px;
+      padding: .8rem 1rem;
+      margin: 1.4rem 0;
+      background: var(--pico-card-sectioning-background-color);
+    }
+    .callout > :last-child { margin-bottom: 0; }
+    .callout .callout-title {
+      font-weight: 700;
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin: 0 0 .35rem;
+      display: block;
+    }
+    .callout.note    { border-left-color: #3b82f6; }
+    .callout.note    .callout-title { color: #3b82f6; }
+    .callout.tip     { border-left-color: #10b981; }
+    .callout.tip     .callout-title { color: #10b981; }
+    .callout.caution { border-left-color: #f59e0b; }
+    .callout.caution .callout-title { color: #d97706; }
+
+    /* Rodapé */
+    .site-footer {
+      grid-column: 1 / -1;
+      border-top: 1px solid var(--pico-muted-border-color);
+      padding: 1.5rem 2rem;
+      font-size: .85rem;
+      color: var(--pico-muted-color);
+      text-align: center;
+    }
+
+    /* Barra superior mobile */
+    .topbar { display: none; }
+
+    /* ---------- Responsivo ---------- */
+    @media (max-width: 960px) {
+      .layout { grid-template-columns: 1fr; }
+      .topbar {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        padding: .6rem 1rem;
+        background: var(--pico-card-background-color);
+        border-bottom: 1px solid var(--pico-muted-border-color);
+      }
+      .topbar .topbar-title { font-weight: 700; font-size: .95rem; margin: 0; }
+      #menu-toggle { margin: 0; padding: .35rem .7rem; width: auto; font-size: 1rem; }
+      .sidebar {
+        position: fixed;
+        top: 0; left: 0; bottom: 0;
+        width: 84vw; max-width: 320px;
+        height: 100vh;
+        z-index: 40;
+        transform: translateX(-100%);
+        transition: transform .22s ease;
+        box-shadow: 0 0 40px rgba(0,0,0,.25);
+      }
+      .sidebar.open { transform: translateX(0); }
+      .scrim {
+        display: none;
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,.45);
+        z-index: 35;
+      }
+      .scrim.show { display: block; }
+      .content { padding: 1.5rem 1.1rem 3rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Barra superior (apenas mobile) -->
+  <header class="topbar">
+    <button id="menu-toggle" class="outline" aria-label="Abrir menu">☰</button>
+    <p class="topbar-title">Inspetor de Etiquetas</p>
+  </header>
+
+  <div class="scrim" id="scrim"></div>
+
+  <div class="layout">
+
+    <!-- ================= NAVEGAÇÃO ================= -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <p class="brand">Inspetor de Etiquetas<span class="brand-sub">Documentação</span></p>
+        <button id="theme-toggle" class="outline">☾ Tema escuro</button>
+      </div>
+      <nav>
+        <ul>
+          <li>
+            <a class="top" href="#visao-geral">Visão geral</a>
+            <ul class="sub">
+              <li><a href="#o-que-faz">O que o sistema faz</a></li>
+              <li><a href="#arquitetura">Arquitetura</a></li>
+              <li><a href="#degradacao">Degradação graciosa</a></li>
+              <li><a href="#classes-defeito">Classes de defeito</a></li>
+              <li><a href="#estrutura">Estrutura do projeto</a></li>
+              <li><a href="#base-conhecimento">Base de conhecimento</a></li>
+            </ul>
+          </li>
+          <li><a class="top" href="#instalacao">Instalação</a></li>
+          <li><a class="top" href="#uso">Uso</a></li>
+          <li><a class="top" href="#treinamento">Treinamento da CNN</a></li>
+          <li><a class="top" href="#datasets">Datasets</a></li>
+          <li>
+            <a class="top" href="#api">API HTTP</a>
+            <ul class="sub">
+              <li><a href="#endpoints">Endpoints</a></li>
+              <li><a href="#formato-do-laudo">Formato do laudo</a></li>
+            </ul>
+          </li>
+          <li><a class="top" href="#configurar-gemini">Configurar o Gemini</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- ================= CONTEÚDO ================= -->
+    <main class="content">
+
+      <!-- ===== Visão geral (index) ===== -->
+      <section id="visao-geral">
+        <h1>Inspetor de Etiquetas</h1>
+        <p class="lead">Visão geral do inspetor de etiquetas de código de barras — visão computacional, CNN (PyTorch) e pipeline multiagente (Gemini + ADK).</p>
+
+        <p>Dada a <strong>foto de uma etiqueta</strong> com código de barras, o sistema detecta defeitos típicos de impressão térmica e sugere a <strong>causa provável</strong> e a <strong>correção</strong>, combinando <strong>OpenCV</strong>, <strong>pyzbar</strong>, <strong>Tesseract</strong>, uma <strong>CNN (PyTorch)</strong> e o <strong>Gemini</strong>, orquestrados pelo <strong>Agent Development Kit (ADK)</strong>. A entrega é um <strong>chat</strong>: envie a imagem, receba o laudo.</p>
+
+        <blockquote>Projeto da disciplina <strong>Visão Computacional (cód. 2587)</strong> — PPG em Ciência da Computação, ICT/UNIFESP.</blockquote>
+
+        <h2 id="o-que-faz">O que o sistema faz</h2>
+        <p>Dada a imagem de uma etiqueta com código de barras, o sistema:</p>
+        <ol>
+          <li><strong>decodifica</strong> o código (simbologia + conteúdo) e diz se é legível — OpenCV + pyzbar;</li>
+          <li>faz <strong>OCR</strong> do texto humano-legível — Tesseract;</li>
+          <li>estima <strong>indicadores de qualidade</strong> (contraste, uniformidade, nitidez) — OpenCV;</li>
+          <li><strong>classifica o defeito</strong> de impressão entre 7 classes — CNN MobileNetV3-Small (PyTorch);</li>
+          <li><strong>diagnostica a causa provável e a correção</strong> — Gemini (ADK) com <em>fallback</em> por regras sobre a base de conhecimento Zebra;</li>
+          <li>consolida tudo em um <strong>laudo</strong> JSON, servido por uma <strong>API/chat</strong>.</li>
+        </ol>
+
+        <h2 id="arquitetura">Arquitetura (pipeline multiagente)</h2>
+        <p>A orquestração usa o <strong>ADK</strong>: as análises 1–4 rodam <strong>em paralelo</strong>, seguidas do diagnóstico e da montagem do laudo.</p>
+        <pre><code class="nohighlight">                         imagem da etiqueta
+                                &#9474;
+                 &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+                 &#9474;        ParallelAgent          &#9474;   (an&#225;lises independentes)
+                 &#9474;  &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488; &#9474;
+                 &#9474;  &#9474; leitura &#9474;indicadores&#9474;defeito&#9474; &#9474;
+                 &#9474;  &#9474;pyzbar+  &#9474; OpenCV    &#9474; CNN   &#9474; &#9474;
+                 &#9474;  &#9474;Tesseract&#9474;(contraste)&#9474;PyTorch&#9474; &#9474;
+                 &#9474;  &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496; &#9474;
+                 &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;
+                                &#9660;
+                    agente de diagn&#243;stico (Gemini + KB Zebra)   &#8594; causa + corre&#231;&#227;o
+                                &#9660;
+                    agente de laudo (JSON) &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9658; resposta no chat</code></pre>
+
+        <h3 id="modos-execucao">Dois modos de execução</h3>
+        <ul>
+          <li><strong>Pipeline direto</strong> (<code>inspetor.ferramentas.analisar_imagem</code>): encadeia as funções sem o ADK. Funciona <strong>mesmo sem chave do Gemini</strong> (diagnóstico por regras da base Zebra). É o <em>baseline</em> monolítico da avaliação e o núcleo usado por CLI e API.</li>
+          <li><strong>Pipeline orquestrado</strong> (<code>inspetor.agentes</code>): o grafo ADK acima (<code>ParallelAgent</code> → diagnóstico → laudo), acionado com <code>--adk</code> na CLI ou <code>adk=true</code> na API.</li>
+        </ul>
+
+        <h2 id="degradacao">Degradação graciosa</h2>
+        <p>O sistema nunca "quebra" por falta de biblioteca: se <code>pyzbar</code>/Tesseract/<code>torch</code>/Gemini não estiverem disponíveis, a etapa correspondente retorna um aviso no campo <code>erros</code> do laudo e as demais continuam. Sem <code>GOOGLE_API_KEY</code>, o diagnóstico usa as <strong>regras da base Zebra</strong> (<code>inspetor/kb.py</code> + <code>dados/kb_zebra.json</code>) em vez do Gemini.</p>
+
+        <h2 id="classes-defeito">Classes de defeito (CNN)</h2>
+        <p>A CNN classifica a etiqueta entre <strong>7 classes</strong> (a ordem define o índice usado pela rede — ver <code>inspetor/config.py</code>):</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Classe (<code>CLASSES</code>)</th><th>Rótulo (<code>CLASSE_PT</code>)</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>sem_defeito</code></td><td>Sem defeito</td></tr>
+              <tr><td><code>cabeca_queimada</code></td><td>Elemento da cabeça danificado</td></tr>
+              <tr><td><code>ribbon_enrugado</code></td><td>Ribbon enrugado</td></tr>
+              <tr><td><code>ponto_queimado</code></td><td>Ponto queimado (darkness alto)</td></tr>
+              <tr><td><code>impressao_clara</code></td><td>Impressão clara (darkness baixo)</td></tr>
+              <tr><td><code>pressao_desigual</code></td><td>Pressão desigual da cabeça</td></tr>
+              <tr><td><code>cabeca_suja</code></td><td>Cabeça de impressão suja (voids)</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2 id="estrutura">Estrutura do projeto</h2>
+        <pre><code class="nohighlight">src/
+&#9500;&#9472;&#9472; inspetor/               # pacote principal
+&#9474;   &#9500;&#9472;&#9472; config.py           # classes, caminhos, constantes
+&#9474;   &#9500;&#9472;&#9472; visao.py            # OpenCV (segmenta&#231;&#227;o), pyzbar (decode), Tesseract (OCR), indicadores
+&#9474;   &#9500;&#9472;&#9472; rede.py             # CNN MobileNetV3-Small (construir/carregar/prever)
+&#9474;   &#9500;&#9472;&#9472; dataset.py          # Dataset PyTorch (l&#234; dataset_sintetico/labels.csv)
+&#9474;   &#9500;&#9472;&#9472; treino.py           # treino por transfer&#234;ncia de aprendizado
+&#9474;   &#9500;&#9472;&#9472; kb.py               # base de conhecimento Zebra (defeito&#8594;causa&#8594;a&#231;&#227;o)
+&#9474;   &#9500;&#9472;&#9472; diagnostico.py      # Gemini com fallback por regras
+&#9474;   &#9500;&#9472;&#9472; ferramentas.py      # ferramentas do ADK + analisar_imagem (pipeline direto)
+&#9474;   &#9500;&#9472;&#9472; agentes.py          # grafo ADK (paralelo &#8594; diagn&#243;stico &#8594; laudo)
+&#9474;   &#9492;&#9472;&#9472; laudo.py            # esquema do laudo
+&#9500;&#9472;&#9472; app/
+&#9474;   &#9500;&#9472;&#9472; cli.py              # linha de comando
+&#9474;   &#9500;&#9472;&#9472; api.py              # FastAPI (/analisar) + serve o chat
+&#9474;   &#9492;&#9472;&#9472; chat.html           # chat web (envio de imagem)
+&#9500;&#9472;&#9472; dados/kb_zebra.json     # KB extra&#237;da da documenta&#231;&#227;o Zebra
+&#9500;&#9472;&#9472; gerar_dataset.py        # gerador do dataset sint&#233;tico
+&#9500;&#9472;&#9472; pyproject.toml          # depend&#234;ncias (gerenciadas por uv)
+&#9492;&#9472;&#9472; ESPECIFICACAO.md        # contrato de interfaces</code></pre>
+
+        <h2 id="base-conhecimento">Base de conhecimento</h2>
+        <p><code>dados/kb_zebra.json</code> consolida o mapeamento <strong>defeito → causa → ação</strong> da documentação oficial da Zebra (ZT411/ZT421 e a base <em>Resolving Print Quality Issues</em>), usado pelo agente de diagnóstico. O campo <code>fonte</code> referencia "Zebra Technologies (2024)".</p>
+
+        <h2 id="proximos-passos">Próximos passos</h2>
+        <ul>
+          <li><a href="#instalacao">Instalação</a> — pré-requisitos, <code>uv sync</code> e dependências de sistema.</li>
+          <li><a href="#uso">Uso</a> — CLI, chat web e chat nativo do ADK.</li>
+          <li><a href="#treinamento">Treinamento da CNN</a> — treinar o classificador de defeitos.</li>
+          <li><a href="#datasets">Datasets</a> — dataset sintético e datasets externos do Roboflow.</li>
+          <li><a href="#api">API HTTP</a> — endpoints e formato do laudo.</li>
+          <li><a href="#configurar-gemini">Configurar o Gemini</a> — chave de API e o modo por regras.</li>
+        </ul>
+      </section>
+
+      <!-- ===== Instalação ===== -->
+      <section id="instalacao">
+        <h1>Instalação</h1>
+        <p class="lead">Pré-requisitos e instalação do inspetor de etiquetas — Python 3.12 via uv e dependências de sistema (libzbar0, Tesseract).</p>
+
+        <p>Esta página cobre a preparação do ambiente para rodar o <strong>inspetor de etiquetas</strong> (o pacote Python em <code>src/</code>). A documentação (este site) tem instalação própria, descrita ao final.</p>
+
+        <h2 id="pre-requisitos">Pré-requisitos</h2>
+        <ul>
+          <li><strong>Python 3.12</strong> — o projeto exige <code>&gt;=3.10,&lt;3.13</code> (em 3.13/3.14 alguns wheels de <code>torch</code>/<code>opencv</code> ainda podem faltar). Recomenda-se gerenciar via <a href="https://docs.astral.sh/uv/"><code>uv</code></a>.</li>
+          <li><strong><a href="https://docs.astral.sh/uv/">uv</a></strong> — gerenciador de pacotes e ambientes Python usado pelo projeto (<code>pyproject.toml</code> + <code>uv.lock</code>).</li>
+          <li><strong>Dependências de sistema</strong>: ZBar e Tesseract (ver abaixo).</li>
+        </ul>
+
+        <h2 id="deps-sistema">1. Dependências de sistema (ZBar e Tesseract)</h2>
+        <p>O <code>pyzbar</code> precisa da biblioteca <strong>ZBar</strong> e o OCR precisa do <strong>Tesseract</strong> (com o pacote de idioma português):</p>
+        <pre><code class="language-bash"># Debian/Ubuntu
+sudo apt install libzbar0 tesseract-ocr tesseract-ocr-por
+
+# Fedora
+sudo dnf install zbar tesseract tesseract-langpack-por</code></pre>
+        <div class="callout note">
+          <span class="callout-title">Nota</span>
+          <p>Sem essas bibliotecas o sistema <strong>não quebra</strong>: as etapas de leitura/OCR apenas retornam um aviso no campo <code>erros</code> do laudo (degradação graciosa).</p>
+        </div>
+
+        <h2 id="ambiente-uv">2. Ambiente Python com uv</h2>
+        <p>A partir da pasta <code>src/</code> (onde estão <code>pyproject.toml</code> e <code>uv.lock</code>):</p>
+        <pre><code class="language-bash">cd src
+uv sync</code></pre>
+        <p>O <code>uv sync</code> cria o ambiente virtual (<code>.venv/</code>) e instala as dependências fixadas no <code>uv.lock</code>. O projeto já configura o índice <strong>CPU</strong> do PyTorch (torch/torchvision sem CUDA), então a instalação é leve.</p>
+        <p>Para instalar também o grupo opcional de <strong>download de datasets</strong> (Roboflow):</p>
+        <pre><code class="language-bash">uv sync --extra datasets</code></pre>
+        <p>Para rodar comandos dentro do ambiente, use <code>uv run</code>:</p>
+        <pre><code class="language-bash">uv run python -m app.cli --help</code></pre>
+        <div class="callout tip">
+          <span class="callout-title">Dica</span>
+          <p>Onde a documentação usar <code>python -m ...</code>, você pode prefixar com <code>uv run</code> (ex.: <code>uv run python -m app.cli foto.jpg</code>) para garantir o ambiente correto.</p>
+        </div>
+
+        <h2 id="chave-gemini-instalacao">3. Chave do Gemini (opcional)</h2>
+        <p>Copie o arquivo de exemplo e preencha a chave, se quiser usar o Gemini:</p>
+        <pre><code class="language-bash">cp .env.example .env      # opcional: preencha GOOGLE_API_KEY</code></pre>
+        <p>Sem a chave, o diagnóstico usa o <strong>fallback por regras</strong> sobre a base de conhecimento Zebra. Veja <a href="#configurar-gemini">Configurar o Gemini</a>.</p>
+
+        <h2 id="instalar-docs">Abrir a documentação (este site)</h2>
+        <p>A documentação é uma <strong>página única</strong> (<code>src/docs/index.html</code>) com estilo via CDN — não precisa de build. Abra o arquivo <code>src/docs/index.html</code> no navegador (duplo-clique).</p>
+      </section>
+
+      <!-- ===== Uso ===== -->
+      <section id="uso">
+        <h1>Uso</h1>
+        <p class="lead">Como usar o inspetor de etiquetas — CLI, chat web (FastAPI/uvicorn) e o chat nativo do ADK.</p>
+
+        <p>Há três formas de usar o inspetor: pela <strong>linha de comando (CLI)</strong>, pelo <strong>chat web</strong> (FastAPI) e pelo <strong>chat nativo do ADK</strong>. Todas partem da pasta <code>src/</code>.</p>
+        <div class="callout tip">
+          <span class="callout-title">Dica</span>
+          <p>Prefixe os comandos <code>python -m ...</code> com <code>uv run</code> para garantir o ambiente do uv (ex.: <code>uv run python -m app.cli foto.jpg</code>).</p>
+        </div>
+
+        <h2 id="uso-cli">1. CLI</h2>
+        <p>Analisa a imagem de uma etiqueta e imprime um resumo do laudo:</p>
+        <pre><code class="language-bash">python -m app.cli foto.jpg</code></pre>
+        <p>Exemplos com uma imagem do dataset e as opções disponíveis:</p>
+        <pre><code class="language-bash">python -m app.cli datasets/dataset_sintetico/images/test/ribbon_enrugado/ean13_075.png
+python -m app.cli minha_etiqueta.jpg --json      # laudo completo em JSON (indentado)
+python -m app.cli minha_etiqueta.jpg --adk       # via grafo ADK (requer Gemini)</code></pre>
+        <p>Interface: <code>python -m app.cli CAMINHO [--adk] [--json]</code>.</p>
+        <ul>
+          <li>Sem <code>--adk</code>: roda o <strong>pipeline direto</strong> (<code>inspetor.ferramentas.analisar_imagem</code>).</li>
+          <li>Com <code>--adk</code>: tenta o <strong>grafo multiagente</strong> (<code>inspetor.agentes.analisar_via_adk</code>) e, se ele falhar por qualquer motivo (lib ausente, erro de execução, sem chave), <strong>cai de volta</strong> para o pipeline direto — a análise nunca deixa de acontecer.</li>
+          <li>Com <code>--json</code>: imprime o laudo completo em JSON além do resumo.</li>
+        </ul>
+
+        <h2 id="uso-chat-web">2. Chat web (FastAPI + uvicorn)</h2>
+        <p>Sobe o servidor HTTP que serve a interface de chat e o endpoint de análise:</p>
+        <pre><code class="language-bash">uvicorn app.api:app --reload</code></pre>
+        <p>Depois abra <strong>http://localhost:8000</strong> e envie a foto da etiqueta — o laudo aparece como mensagens de chat (legível/simbologia, defeito + confiança, causa, correção).</p>
+        <figure>
+          <img src="img/chat_inspetor.png" alt="Chat do Inspetor de Etiquetas exibindo um laudo completo">
+          <figcaption>O chat web: a imagem enviada e o cartão de laudo com leitura, indicadores, defeito, causa e correção.</figcaption>
+        </figure>
+        <p>A página (<code>app/chat.html</code>) é autossuficiente (HTML + CSS + JS <em>vanilla</em>, sem CDN) e envia a imagem via <strong>htmx</strong> para <code>POST /analisar-htmx</code>, inserindo o cartão do laudo na conversa. Detalhes dos endpoints em <a href="#api">API HTTP</a>.</p>
+
+        <h3 id="menu-configuracoes">Menu de configurações (⋮)</h3>
+        <p>O botão de três pontinhos (⋮) no topo abre um menu com quatro seções; as preferências ficam salvas no <code>localStorage</code> do navegador:</p>
+        <ul>
+          <li><strong>Idioma</strong> — <em>Português Brasileiro</em> ou <em>English</em>. A troca é instantânea (i18n real PT/EN, via atributos <code>data-i18n</code>) e o idioma escolhido acompanha cada análise, de modo que <strong>o laudo também sai no idioma selecionado</strong>.</li>
+          <li><strong>Tema</strong> — <em>Claro</em>, <em>Escuro</em> ou <em>Auto</em> (Auto segue o tema do sistema operacional).</li>
+          <li><strong>Inspetor</strong> (motor de diagnóstico) — <strong>LLM</strong> (mostra o modelo ativo, ex. <code>gemini-flash-latest</code>), <strong>KB Zebra Technologies</strong> (regras) ou <strong>Auto</strong> (prefere o LLM e usa a KB como <em>fallback</em>). A opção <strong>Auto só aparece quando há um LLM configurado</strong> no <code>.env</code>.</li>
+          <li><strong>Ações</strong> — <strong>Exportar em PDF</strong> (via <code>window.print</code> + <code>@media print</code>) e <strong>Limpar</strong> (em vermelho; apaga a conversa).</li>
+        </ul>
+        <figure>
+          <img src="img/chat_menu.png" alt="Menu de configurações do chat aberto">
+          <figcaption>O menu (⋮) com as seções Idioma, Tema, Inspetor e Ações.</figcaption>
+        </figure>
+        <p>O idioma e o motor de inspeção escolhidos são enviados a cada envio (via <code>htmx:configRequest</code>), como os campos <code>idioma</code> e <code>inspetor</code> do <a href="#post-analisar-htmx"><code>POST /analisar-htmx</code></a>.</p>
+
+        <h3 id="curto-circuito-sem-codigo">Imagem sem código de barras (curto-circuito)</h3>
+        <p>Se a imagem enviada <strong>não contém um código de barras</strong>, o inspetor faz um <strong>curto-circuito</strong>: a presença do código é verificada <strong>antes</strong> da inspeção pesada e, quando não há código, o laudo traz apenas o aviso <em>"Nenhum código de barras detectado na imagem."</em> — <strong>sem rodar a CNN nem chamar o LLM</strong>. Isso economiza processamento e chamadas de API e evita diagnósticos espúrios.</p>
+
+        <h2 id="uso-adk">3. Chat nativo do ADK (opcional)</h2>
+        <p>Interface de chat do próprio ADK sobre o grafo de agentes (<code>inspetor/agentes.py</code>):</p>
+        <pre><code class="language-bash">adk web</code></pre>
+        <p>Requer o <strong>Gemini</strong> configurado (chave de API) e o pacote <code>google-adk</code> instalado. Veja <a href="#configurar-gemini">Configurar o Gemini</a>.</p>
+
+        <h2 id="fluxo-tipico">Fluxo típico</h2>
+        <ol>
+          <li>(Opcional) Gerar/atualizar o <a href="#datasets">dataset sintético</a>.</li>
+          <li><a href="#treinamento">Treinar a CNN</a> para produzir <code>inspetor/modelos/classificador_defeitos.pt</code>.</li>
+          <li>Analisar imagens pela <strong>CLI</strong> ou pelo <strong>chat web</strong>.</li>
+        </ol>
+      </section>
+
+      <!-- ===== Treinamento ===== -->
+      <section id="treinamento">
+        <h1>Treinamento da CNN</h1>
+        <p class="lead">Como treinar o classificador de defeitos (MobileNetV3-Small, PyTorch) por transferência de aprendizado sobre o dataset sintético.</p>
+
+        <p>O classificador de defeitos é uma <strong>CNN MobileNetV3-Small</strong> (PyTorch/torchvision), treinada por <strong>transferência de aprendizado</strong> sobre o <a href="#datasets">dataset sintético</a>.</p>
+
+        <h2 id="treinamento-pre-requisitos">Pré-requisitos</h2>
+        <ul>
+          <li>Ambiente Python instalado (ver <a href="#instalacao">Instalação</a>).</li>
+          <li>Um dataset rotulado em <code>datasets/dataset_sintetico/</code> com o <code>labels.csv</code> (splits <code>train</code>/<code>val</code>/<code>test</code>). Gere-o conforme <a href="#datasets">Datasets</a> se ainda não existir.</li>
+        </ul>
+
+        <h2 id="treinar">Treinar</h2>
+        <pre><code class="language-bash">python -m inspetor.treino --epocas 10
+# salva o melhor modelo (por val_acc) em inspetor/modelos/classificador_defeitos.pt</code></pre>
+        <p>Argumentos do script (<code>inspetor/treino.py</code>):</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Flag</th><th>Padrão</th><th>Descrição</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>--epocas</code></td><td><code>10</code></td><td>Número de épocas de treino.</td></tr>
+              <tr><td><code>--lr</code></td><td><code>1e-3</code></td><td>Taxa de aprendizado (otimizador Adam).</td></tr>
+              <tr><td><code>--batch</code></td><td><code>32</code></td><td>Tamanho do <em>batch</em>.</td></tr>
+              <tr><td><code>--saida</code></td><td><code>inspetor/modelos/classificador_defeitos.pt</code></td><td>Caminho do modelo salvo.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2 id="como-funciona">Como funciona</h2>
+        <ul>
+          <li><strong>Backbone</strong>: <code>mobilenet_v3_small</code> pré-treinado (ImageNet); a última camada <code>Linear</code> é trocada para as <strong>7 classes</strong> do projeto.</li>
+          <li><strong>Transferência de aprendizado</strong>: por padrão o <em>backbone</em> é congelado e apenas a cabeça é treinada (<code>congelar_backbone=True</code>).</li>
+          <li><strong>Pré-processamento</strong>: <code>Resize(224)</code>, <code>Grayscale(3)</code>, <code>ToTensor</code> e <code>Normalize</code> com média/desvio do ImageNet (<code>MEAN</code>/<code>STD</code> em <code>inspetor/config.py</code>); no treino há <em>augmentation</em> leve.</li>
+          <li><strong>Otimização</strong>: perda <code>CrossEntropy</code>, otimizador <code>Adam</code>; salva o <strong>melhor</strong> modelo pela acurácia de validação.</li>
+          <li><strong>Retorno</strong>: a função <code>treinar(...)</code> devolve métricas finais <code>{"val_acc": ..., "test_acc": ..., "por_classe": {...}}</code>.</li>
+        </ul>
+        <div class="callout caution">
+          <span class="callout-title">Atenção</span>
+          <p>A <strong>ordem</strong> das classes em <code>CLASSES</code> (em <code>inspetor/config.py</code>) define o índice usado pela rede. Não reordene as classes sem <strong>retreinar</strong> o modelo.</p>
+        </div>
+
+        <h2 id="treinamento-dataset">Dataset</h2>
+        <p>O modelo aprende sobre o <strong>dataset sintético</strong> (padrão) em <code>datasets/dataset_sintetico/</code>, cujas 7 classes reproduzem assinaturas visuais de defeitos de impressão térmica descritas na documentação Zebra. Para gerar ou substituir o dataset (inclusive por dados reais do Roboflow), veja <a href="#datasets">Datasets</a>.</p>
+
+        <h2 id="depois-de-treinar">Depois de treinar</h2>
+        <p>Com o modelo salvo em <code>inspetor/modelos/classificador_defeitos.pt</code>, a etapa de classificação passa a funcionar na <a href="#uso">CLI</a> e na <a href="#api">API</a>. Se o arquivo do modelo não existir, a etapa de classificação retorna um aviso no campo <code>erros</code> do laudo (degradação graciosa) — as demais análises continuam.</p>
+      </section>
+
+      <!-- ===== Datasets ===== -->
+      <section id="datasets">
+        <h1>Datasets</h1>
+        <p class="lead">Dataset sintético (gerar_dataset.py) e datasets externos de códigos de barras danificados (Roboflow) com o downloader baixar_roboflow.py.</p>
+
+        <p>O treinamento do classificador usa, por padrão, um <strong>dataset sintético</strong> gerado localmente. Também é possível complementar/substituir por <strong>datasets externos</strong> (Roboflow) de códigos de barras danificados.</p>
+
+        <h2 id="dataset-sintetico">Dataset sintético (<code>gerar_dataset.py</code>)</h2>
+        <p>O script <code>gerar_dataset.py</code> produz um dataset <strong>sintético, balanceado e rotulado</strong> de defeitos de impressão de códigos de barras (1D e 2D). Cada defeito reproduz a assinatura visual descrita na documentação Zebra ZT411/ZT421 (<em>troubleshooting</em> de qualidade de impressão) — é o dataset que treina o "agente de defeitos físicos".</p>
+        <pre><code class="language-bash">python gerar_dataset.py --out datasets/dataset_sintetico --per-class 90 --seed 42</code></pre>
+        <p>Argumentos:</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Flag</th><th>Padrão</th><th>Descrição</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>--out</code></td><td><code>dataset</code></td><td>Pasta de saída do dataset.</td></tr>
+              <tr><td><code>--per-class</code></td><td><code>90</code></td><td>Imagens por classe.</td></tr>
+              <tr><td><code>--seed</code></td><td><code>42</code></td><td>Semente aleatória (reprodutibilidade).</td></tr>
+              <tr><td><code>--only-1d</code></td><td><em>(desligado)</em></td><td>Ignora QR/DataMatrix (só simbologias 1D).</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>Saída</strong> gerada:</p>
+        <pre><code class="nohighlight">&lt;out&gt;/
+&#9500;&#9472;&#9472; images/&lt;split&gt;/&lt;classe&gt;/&lt;simbologia&gt;_&lt;idx&gt;.png
+&#9500;&#9472;&#9472; labels.csv           # filename, split, classe, simbologia, payload, params
+&#9492;&#9472;&#9472; previews/&lt;classe&gt;.png # montagem para o artigo</code></pre>
+        <ul>
+          <li><strong>Classes</strong> (7): <code>sem_defeito</code>, <code>cabeca_queimada</code>, <code>ribbon_enrugado</code>, <code>ponto_queimado</code>, <code>impressao_clara</code>, <code>pressao_desigual</code>, <code>cabeca_suja</code>.</li>
+          <li><strong>Simbologias</strong>: 1D (<code>code128</code>, <code>code39</code>, <code>ean13</code>, <code>ean8</code>, <code>itf</code>) e 2D (<code>qr</code>, <code>datamatrix</code>).</li>
+        </ul>
+        <p>O caminho padrão esperado pelo treino é <code>datasets/dataset_sintetico/</code> (configurável pela variável de ambiente <code>DATASET_DIR</code>).</p>
+
+        <h2 id="datasets-externos">Datasets externos (Roboflow)</h2>
+        <p>Para treinar/avaliar com <strong>imagens reais</strong> de códigos de barras danificados, o Roboflow Universe reúne vários datasets públicos. Busque por códigos de barras com dano/qualidade de impressão:</p>
+        <ul>
+          <li><strong><a href="https://universe.roboflow.com/search?q=barcode+damage">https://universe.roboflow.com/search?q=barcode+damage</a></strong></li>
+        </ul>
+
+        <h3 id="downloader-roboflow">Downloader <code>baixar_roboflow.py</code></h3>
+        <p>O download é automatizado pelo script <code>baixar_roboflow.py</code>, que usa o SDK do Roboflow (dependência opcional do projeto). Instale o extra e forneça sua chave gratuita de API:</p>
+        <pre><code class="language-bash">uv sync --extra datasets          # instala o pacote `roboflow`
+export ROBOFLOW_API_KEY="sua_chave_aqui"
+python baixar_roboflow.py</code></pre>
+        <div class="callout note">
+          <span class="callout-title">Nota</span>
+          <p>O acesso ao Roboflow requer uma <strong>chave de API gratuita</strong> (crie uma conta em roboflow.com). O extra <code>datasets</code> (que traz o pacote <code>roboflow</code>) está declarado no <code>pyproject.toml</code> e <strong>não</strong> é instalado pelo <code>uv sync</code> padrão.</p>
+        </div>
+        <p>Após baixar, ajuste o layout para o formato esperado (<code>images/&lt;split&gt;/&lt;classe&gt;/...</code> + <code>labels.csv</code>) ou aponte <code>DATASET_DIR</code> para a pasta do dataset externo antes de <a href="#treinamento">treinar a CNN</a>.</p>
+      </section>
+
+      <!-- ===== API ===== -->
+      <section id="api">
+        <h1>API HTTP</h1>
+        <p class="lead">Endpoints da API FastAPI do inspetor de etiquetas e o formato do laudo (tabela de campos).</p>
+
+        <p>A API é servida por <strong>FastAPI</strong> (<code>app/api.py</code>) e sobe com <code>uvicorn</code>:</p>
+        <pre><code class="language-bash">uvicorn app.api:app --reload
+# http://localhost:8000</code></pre>
+        <p>Ela serve a interface de chat e expõe o pipeline de análise. A documentação interativa (Swagger) fica em <strong>http://localhost:8000/docs</strong>.</p>
+
+        <h2 id="endpoints">Endpoints</h2>
+
+        <h3 id="get-raiz"><code>GET /</code></h3>
+        <p>Serve a interface de <strong>chat</strong> (<code>app/chat.html</code>, HTML autossuficiente). Resposta: <code>text/html</code>.</p>
+
+        <h3 id="post-analisar"><code>POST /analisar</code></h3>
+        <p>Recebe uma imagem, roda a análise e devolve o <strong>laudo em JSON</strong>.</p>
+        <ul>
+          <li><strong>Corpo</strong>: <code>multipart/form-data</code> com o campo <strong><code>imagem</code></strong> (arquivo).</li>
+          <li><strong>Query opcional</strong>: <code>adk</code> (bool, padrão <code>false</code>) — usa o <strong>grafo multiagente (ADK)</strong> em vez do pipeline direto; se o ADK falhar, cai automaticamente no pipeline direto e registra o aviso em <code>erros</code>.</li>
+          <li><strong>Resposta</strong>: <code>application/json</code> com o <a href="#formato-do-laudo">laudo</a>. Em erro interno, retorna <code>{"erro": "..."}</code> com status <code>500</code>.</li>
+        </ul>
+        <pre><code class="language-bash"># pipeline direto
+curl -F "imagem=@minha_etiqueta.jpg" http://localhost:8000/analisar
+
+# via grafo ADK (requer Gemini)
+curl -F "imagem=@minha_etiqueta.jpg" "http://localhost:8000/analisar?adk=true"</code></pre>
+        <p>A imagem é gravada em um arquivo temporário (o pipeline trabalha com caminhos de arquivo) e removida ao final, independentemente do resultado.</p>
+
+        <h3 id="post-analisar-htmx"><code>POST /analisar-htmx</code></h3>
+        <p>Igual ao <code>POST /analisar</code>, mas devolve um <strong>fragmento HTML</strong> (o cartão do laudo, no estilo shadcn) em vez de JSON. É o endpoint usado pela página de chat via <strong>htmx</strong> (<code>hx-post="/analisar-htmx"</code>), para atualizar a conversa sem recarregar a página.</p>
+        <p>Além da imagem, o corpo (<code>multipart/form-data</code>) aceita dois campos de formulário, enviados pelo chat via <code>htmx:configRequest</code>:</p>
+        <ul>
+          <li><strong><code>imagem</code></strong> (arquivo) — a etiqueta a analisar.</li>
+          <li><strong><code>idioma</code></strong> (<code>pt-BR</code> | <code>en-US</code>, padrão <code>pt-BR</code>) — idioma dos rótulos do cartão e do próprio laudo.</li>
+          <li><strong><code>inspetor</code></strong> (<code>llm</code> | <code>kb</code> | <code>auto</code>, padrão <code>llm</code>) — motor de diagnóstico: <code>llm</code> e <code>auto</code> usam o Gemini (com <em>fallback</em> por regras); <code>kb</code> força as regras da base Zebra.</li>
+        </ul>
+
+        <h3 id="get-static"><code>GET /static/*</code></h3>
+        <p>Arquivos estáticos servidos localmente (ex.: <code>htmx.min.js</code>), sem depender de CDN.</p>
+        <div class="callout note">
+          <span class="callout-title">Nota</span>
+          <p>A página de chat (<code>GET /</code>) envia a imagem via <strong>htmx</strong> para <code>POST /analisar-htmx</code> e insere na conversa o cartão do laudo retornado. O <code>POST /analisar</code> (JSON) continua disponível para integrações programáticas.</p>
+        </div>
+
+        <h3 id="get-saude"><code>GET /saude</code></h3>
+        <p>Verificação de saúde do serviço. Resposta: <code>{"status": "ok"}</code>.</p>
+
+        <h2 id="formato-do-laudo">Formato do laudo</h2>
+        <p>O <code>POST /analisar</code> devolve o laudo consolidado (dataclass <code>Laudo</code>, <code>inspetor/laudo.py</code>). Campos:</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Campo</th><th>Tipo</th><th>Descrição</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>legivel</code></td><td><code>bool | null</code></td><td>O código pôde ser decodificado? <code>null</code> se a leitura ficou indisponível.</td></tr>
+              <tr><td><code>simbologia</code></td><td><code>str | null</code></td><td>Ex.: <code>"CODE128"</code>, <code>"EAN13"</code>, <code>"QRCODE"</code>.</td></tr>
+              <tr><td><code>conteudo</code></td><td><code>str | null</code></td><td><em>Payload</em> decodificado do código.</td></tr>
+              <tr><td><code>texto_ocr</code></td><td><code>str</code></td><td>Texto humano-legível (Tesseract); <code>""</code> se indisponível.</td></tr>
+              <tr><td><code>indicadores</code></td><td><code>object</code></td><td><code>{contraste, uniformidade, nitidez}</code> em <code>[0,1]</code>.</td></tr>
+              <tr><td><code>defeito</code></td><td><code>object</code></td><td><code>{classe, classe_pt, confianca, probs}</code> da CNN.</td></tr>
+              <tr><td><code>causa_provavel</code></td><td><code>str</code></td><td>Causa provável do defeito.</td></tr>
+              <tr><td><code>correcao_sugerida</code></td><td><code>str</code></td><td>Correção recomendada.</td></tr>
+              <tr><td><code>fundamentacao</code></td><td><code>str</code></td><td>Trecho/raciocínio que embasa o diagnóstico.</td></tr>
+              <tr><td><code>fonte</code></td><td><code>str</code></td><td>Referência (ex.: <code>"Zebra Technologies (2024)"</code>).</td></tr>
+              <tr><td><code>via_diagnostico</code></td><td><code>str</code></td><td><code>"gemini"</code> ou <code>"regras"</code>.</td></tr>
+              <tr><td><code>confianca_geral</code></td><td><code>float</code></td><td>Confiança global (0–1).</td></tr>
+              <tr><td><code>erros</code></td><td><code>array</code></td><td>Avisos/degradações (libs ausentes, ADK indisponível etc.).</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 id="laudo-exemplo">Exemplo</h3>
+        <pre><code class="language-json">{
+  "legivel": true,
+  "simbologia": "CODE128",
+  "conteudo": "CB123",
+  "texto_ocr": "CB123",
+  "indicadores": { "contraste": 0.82, "uniformidade": 0.74, "nitidez": 0.6 },
+  "defeito": {
+    "classe": "ribbon_enrugado",
+    "classe_pt": "Ribbon enrugado",
+    "confianca": 0.91,
+    "probs": {}
+  },
+  "causa_provavel": "Tensão/alinhamento do ribbon",
+  "correcao_sugerida": "Ajustar a tensão do ribbon; verificar o percurso",
+  "fundamentacao": "...",
+  "fonte": "Zebra Technologies (2024)",
+  "via_diagnostico": "regras",
+  "confianca_geral": 0.91,
+  "erros": []
+}</code></pre>
+      </section>
+
+      <!-- ===== Configurar Gemini ===== -->
+      <section id="configurar-gemini">
+        <h1>Configurar o Gemini</h1>
+        <p class="lead">Como configurar a GOOGLE_API_KEY para o diagnóstico via Gemini/ADK e como rodar sem chave (fallback por regras).</p>
+
+        <p>O passo de <strong>diagnóstico</strong> (causa provável + correção) pode usar o <strong>Gemini</strong>, mas é totalmente <strong>opcional</strong>: sem chave de API, o sistema usa o <em>fallback</em> por regras sobre a base de conhecimento Zebra.</p>
+        <div class="callout note">
+          <span class="callout-title">Nota</span>
+          <p>Um guia detalhado fica em <strong><code>src/CONFIGURAR_GEMINI.md</code></strong>. Esta página é um resumo.</p>
+        </div>
+
+        <h2 id="com-gemini">Com o Gemini (chave de API)</h2>
+        <ol>
+          <li><strong>Obtenha uma chave</strong> no Google AI Studio (<code>GOOGLE_API_KEY</code>).</li>
+          <li>
+            <strong>Configure a chave</strong> — copie o exemplo e preencha:
+            <pre><code class="language-bash">cp .env.example .env</code></pre>
+            No <code>.env</code>:
+            <pre><code class="language-ini">GOOGLE_API_KEY=sua_chave_aqui
+
+# Opcionais:
+# GEMINI_MODEL=gemini-flash-latest
+# DATASET_DIR=/caminho/para/dataset_sintetico
+# MODELO_PATH=/caminho/para/classificador_defeitos.pt</code></pre>
+            Alternativamente, exporte a variável no ambiente:
+            <pre><code class="language-bash">export GOOGLE_API_KEY="sua_chave_aqui"</code></pre>
+          </li>
+          <li><strong>Modelo</strong>: o padrão é <code>gemini-flash-latest</code> (constante <code>GEMINI_MODEL</code> em <code>inspetor/config.py</code>), sobreponível pela variável de ambiente <code>GEMINI_MODEL</code>.</li>
+        </ol>
+        <p>Com a chave presente, o diagnóstico (<code>inspetor/diagnostico.py</code>) monta um <em>prompt</em> com o contexto da base Zebra (<code>kb.contexto_para_llm</code>) e pede ao Gemini uma resposta <strong>estritamente em JSON</strong> (<code>causa_provavel</code>, <code>correcao_sugerida</code>, <code>fundamentacao</code>). O campo <code>via_diagnostico</code> do laudo fica <code>"gemini"</code>.</p>
+        <div class="callout note">
+          <span class="callout-title">Nota</span>
+          <p>Na interface de <a href="#uso">chat web</a>, a seção <strong>Inspetor</strong> do menu (⋮) mostra o <strong>modelo ativo</strong> (ex.: <code>gemini-flash-latest</code>) ao lado da opção <strong>LLM</strong>. A opção <strong>Auto</strong> (LLM com <em>fallback</em> para a KB Zebra) só aparece quando há um LLM configurado no <code>.env</code>; sem chave, o menu oferece apenas a <strong>KB Zebra Technologies</strong> (regras).</p>
+        </div>
+        <div class="callout tip">
+          <span class="callout-title">Dica</span>
+          <p>A função <code>config.tem_gemini()</code> considera configurada a chave se <strong><code>GOOGLE_API_KEY</code> ou <code>GEMINI_API_KEY</code></strong> estiver definida no ambiente.</p>
+        </div>
+
+        <h2 id="sem-chave">Sem chave (fallback por regras)</h2>
+        <p>Se <strong>não houver</strong> chave configurada — ou se a chamada ao Gemini falhar por qualquer motivo (lib ausente, rede, cota, JSON inválido) — o diagnóstico recorre <strong>graciosamente</strong> às <strong>regras</strong> da base de conhecimento Zebra (<code>inspetor/kb.py</code> + <code>dados/kb_zebra.json</code>): para a classe do defeito, retorna a causa provável e a ação corretiva mapeadas na documentação. Nesse caso o campo <code>via_diagnostico</code> fica <code>"regras"</code>.</p>
+        <p>Ou seja: <strong>o sistema funciona sem chave</strong> — apenas o texto do diagnóstico deixa de ser gerado pelo LLM e passa a vir das regras.</p>
+
+        <h2 id="adk-grafo">ADK (grafo multiagente)</h2>
+        <p>O modo <code>--adk</code> (CLI) / <code>adk=true</code> (API) e o <code>adk web</code> usam o <strong>Agent Development Kit</strong> com o Gemini como modelo dos agentes — portanto <strong>requerem</strong> a chave configurada e o pacote <code>google-adk</code> instalado. Sem isso, a CLI e a API caem automaticamente no <strong>pipeline direto</strong> (que, por sua vez, usa Gemini se houver chave ou as regras caso contrário).</p>
+      </section>
+
+    </main>
+
+    <!-- ================= RODAPÉ ================= -->
+    <footer class="site-footer">
+      <p><strong>Inspetor de Etiquetas</strong> — Documentação · Projeto da disciplina <strong>Visão Computacional (cód. 2587)</strong> · PPG em Ciência da Computação, ICT/UNIFESP.</p>
+    </footer>
+
+  </div>
+
+  <!-- ================= SCRIPTS (CDN) ================= -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>
+    (function () {
+      // ---------- Realce de sintaxe ----------
+      if (window.hljs) {
+        document.querySelectorAll('pre code:not(.nohighlight)').forEach(function (el) {
+          try { hljs.highlightElement(el); } catch (e) {}
+        });
+      }
+
+      // ---------- Tema claro/escuro ----------
+      var root = document.documentElement;
+      var toggle = document.getElementById('theme-toggle');
+      var linkLight = document.getElementById('hljs-light');
+      var linkDark = document.getElementById('hljs-dark');
+
+      function readStored() {
+        try { return localStorage.getItem('inspetor-tema'); } catch (e) { return null; }
+      }
+      function store(v) {
+        try { localStorage.setItem('inspetor-tema', v); } catch (e) {}
+      }
+      function applyTheme(t) {
+        root.setAttribute('data-theme', t);
+        var dark = (t === 'dark');
+        if (linkLight) linkLight.disabled = dark;
+        if (linkDark) linkDark.disabled = !dark;
+        if (toggle) toggle.textContent = dark ? '☀ Tema claro' : '☾ Tema escuro';
+      }
+
+      var initial = readStored();
+      if (!initial) {
+        initial = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+      }
+      applyTheme(initial);
+
+      if (toggle) {
+        toggle.addEventListener('click', function () {
+          var next = (root.getAttribute('data-theme') === 'dark') ? 'light' : 'dark';
+          applyTheme(next);
+          store(next);
+        });
+      }
+
+      // ---------- Menu mobile ----------
+      var sidebar = document.getElementById('sidebar');
+      var menuBtn = document.getElementById('menu-toggle');
+      var scrim = document.getElementById('scrim');
+      function openMenu() { sidebar.classList.add('open'); scrim.classList.add('show'); }
+      function closeMenu() { sidebar.classList.remove('open'); scrim.classList.remove('show'); }
+      if (menuBtn) menuBtn.addEventListener('click', openMenu);
+      if (scrim) scrim.addEventListener('click', closeMenu);
+      sidebar.querySelectorAll('a').forEach(function (a) {
+        a.addEventListener('click', function () {
+          if (window.matchMedia('(max-width: 960px)').matches) closeMenu();
+        });
+      });
+
+      // ---------- Scrollspy (destaca a seção atual) ----------
+      var navLinks = Array.prototype.slice.call(sidebar.querySelectorAll('nav a[href^="#"]'));
+      var byId = {};
+      navLinks.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+      var targets = Object.keys(byId).map(function (id) { return document.getElementById(id); }).filter(Boolean);
+
+      function setActive(id) {
+        navLinks.forEach(function (a) { a.classList.remove('active'); });
+        if (byId[id]) byId[id].classList.add('active');
+      }
+
+      if ('IntersectionObserver' in window && targets.length) {
+        var visible = new Set();
+        var observer = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) visible.add(entry.target.id);
+            else visible.delete(entry.target.id);
+          });
+          // escolhe o primeiro na ordem do documento que está visível
+          for (var i = 0; i < targets.length; i++) {
+            if (visible.has(targets[i].id)) { setActive(targets[i].id); break; }
+          }
+        }, { rootMargin: '-10% 0px -70% 0px', threshold: 0 });
+        targets.forEach(function (t) { observer.observe(t); });
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1771 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% A primeira versão (1.0) deste modelo foi desenvolvida por Mauro Moura Severino, com a ajuda de Rubens Vasconcellos Terra Neto, para o Mestrado Profissional em Poder Legislativo (MPPL) da Câmara dos Deputados a partir do Modelo Canônico de TCC com ABNTEX2, elaborado pelo "abnTeX2 group". Cada uma das demais versões (2.0, 2.1 e 3.0) foi implementada por Mauro Moura Severino a partir da versão anterior.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Template de DISSERTAÇÃO
+% Versão: v-3.0
+% Data: 31/12/2024
+
+% Esta versão viabiliza a produção de documentos com grau muito elevado de conformidade com as seguintes normas:
+    % ABNT NBR 6023:2018 – Informação e documentação – Referências – Elaboração
+    % ABNT NBR 6024:2012 – Informação e documentação – Numeração progressiva das seções de um documento – Apresentação
+    % ABNT NBR 6027:2012 – Informação e documentação – Sumário – Apresentação
+    % ABNT NBR 6028:2021 – Informação e documentação – Resumo, resenha e recensão – Apresentação
+    % ABNT NBR 6034:2004 – Informação e documentação – Índice – Apresentação
+    % ABNT NBR 10520:2023 – Informação e documentação – Citações em documentos – Apresentação
+    % ABNT NBR 14724:2024 – Informação e documentação – Trabalhos acadêmicos – Apresentação
+    % IBGE. Normas de apresentação tabular. 3. ed. Rio de Janeiro: IBGE, 1993.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% A EDIÇÃO DESTE ARQUIVO É DE RESPONSABILIDADE DO AUTOR, QUE DEVE EDITÁ-LO CONFORME INSTRUÇÕES A SEGUIR.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% 1 Nos dez blocos que se seguem, um para cada tipo de entrada de referência (article, inproceedings, book, inbook, monography, tcc, mastersthesis, phdthesis, manual e misc), procurar o que possui maior compatibilidade com a referência que se deseja inserir.
+% 2 No bloco escolhido, procurar o exemplo que possui a maior compatibilidade com a referência que se deseja inserir.
+% 3 No espaço sugerido para a inclusão de referências, localizado logo após estas instruções e antes do início dos exemplos, copiar o exemplo escolhido na instrução anterior.
+% 4 Entre a primeira abertura de chave do exemplo copiado e a primeira vírgula que aparece na sequência, inserir o nome da referência (apelido/label) que será utilizado para as citações no texto.
+% 5 Nos espaços entre as chaves, em cada campo, inserir o conteúdo desejado. Em todos os demais campos, deixar as chaves vazias. Não transformar os campos sem informações em comentários nem apagá-los. Via de regra, saber o que deve ser informado em cada campo é intuitivo: caso não seja, ver explicações a seguir.
+% 6 Repetir estas instruções para cada nova referência, inserindo-a após a última inserida. A ordem de registro das referências neste arquivo não é relevante para o resultado final.
+% 7 Apagar os exemplos apenas após o término do trabalho.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% EXPLICAÇÕES PARA USO DE ALGUNS CAMPOS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% A) Campos em que se deve indicar uma das opções de lista existente dentro das chaves: editortype{}, editionlanguage{} e proceedings-command{}
+--------------------------------------------------
+% Para indicar o tipo de atuação na preparação da obra: campo editortype = {}
+% editor(es): editortype = {ed} ou editortype = {}
+% coordenador(es): editortype = {coord}
+% organizador(es): editortype = {org}
+% compilador(es): editortype = {comp}
+--------------------------------------------------
+% Para indicar o idioma da referência: campo editionlanguage = {}
+% português: editionlanguage = {port} ou editionlanguage = {}
+% inglês: editionlanguage = {ing}
+% espanhol: editionlanguage = {esp}
+% francês: editionlanguage = {franc}
+% italiano: editionlanguage = {it}
+% alemão: editionlanguage = {al}
+--------------------------------------------------
+% Para indicar o tipo de publicação resultante de evento: campo proceedings-command = {}
+% Em português:
+% Anais: proceedings-command = {port-ana}
+% Resumos: proceedings-command = {port-res}
+% Atas: proceedings-command = {port-ata}
+% Sumários: proceedings-command = {port-sum}
+
+% Em inglês:
+% Proceedings: proceedings-command = {ing-pro}
+% Annals: proceedings-command = {ing-ann}
+% Abstracts: proceedings-command = {ing-abs}
+% Summaries: proceedings-command = {ing-sum}
+% Minutes: proceedings-command = {ing-min}
+
+% Em espanhol:
+% Anales: proceedings-command = {esp-ana}
+% Actas: proceedings-command = {esp-act}
+% Resúmenes: proceedings-command = {esp-res}
+% Índices: proceedings-command = {esp-ind}
+
+% Em francês:
+% Annales: proceedings-command = {franc-ann}
+% Actes: proceedings-command = {franc-act}
+% Résumés: proceedings-command = {franc-res}
+
+% Em alemão: 
+% Annalen: proceedings-command = {al-ann}
+% Zusammenfassungen: proceedings-command = {al-zus}
+% Sitzungsprotokolle: proceedings-command = {al-sit}
+
+% Em italiano:
+% Annali: proceedings-command = {it-ann}
+% Sommari: proceedings-command = {it-som}
+% Atti: proceedings-command = {it-att}
+% Indici: proceedings-command = {it-ind}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% B) Significado de alguns outros campos
+--------------------------------------------------
+% organization: deve ser usado quando a autoria for institucional, não de pessoa física.
+% org-short: pode ser usado para indicar a sigla (ou nome curto) a ser usado nas citações da referência no texto, se for o caso de autoria institucional.
+% dateissue: deve ser utilizado no bloco article quando as informações de dia/mês/ano não forem suficientes. Ver exemplos apresentados.
+% nameaddon: pode ser utilizado em complemento ao nome do autor, qualquer que seja o tipo. O texto é impresso após o nome do autor. Ver exemplos apresentados.
+% titleaddon: pode ser utilizado em complemento ao título completo. O texto é impresso após o título completo. Ver exemplos apresentados.
+% furtherresp: pode ser utilizado em complemento ao título completo. O texto é impresso após o título completo ou após o texto do titleaddon, se houver. Ver exemplo apresentado.
+% edition: deve ser usado para indicar qual é a edição da obra. Deve ser dada a informação conforme dada no idioma da obra. Por exemplo: em português, a segunda edição pede da informação “2.”; em inglês, a segunda edição pede a informação “2nd”.
+% editioncomplement: deve ser usado para complementar informações relativas à edition, como, por exemplo, "rev. e aum.".
+% shorttitle: usado quando não há indicação de autor nem de organização, ocasião em que a citação ocorre para o título. Neste caso, o campo shorttitle é usado para indicar o texto que será usado nas citações, conforme a ABNT NBR 10520:2023. Ver exemplos apresentados.
+% pages: a) nas entradas article, inproceedings e inbook, significa uma página ou um intervalo de páginas; b) nas entradas mono, tcc, mastersthesis e phdthesis, significa a quantidade total de folhas; e c) nas entradas book, manual e misc, significa a quantidade total de páginas.
+% year-presented: nas entradas mono, tcc, mastersthesis e phdthesis, deve ser usado para indicar o ano do depósito do trabalho. Se ele for igual ao ano da defesa/publicação, pode ficar em branco.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% FIM DAS INSTRUÇÕES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Espaço sugerido para a inclusão de referências.
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% EXEMPLOS APRESENTADOS EM BLOCOS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 1 – bloco: article
+
+% 1.1 Artigos publicados em periódicos: contempla artigo, seção e(ou) matéria de publicação periódica acadêmica e não acadêmica. Inclui comunicação, editorial, entrevista, reportagem, resenha e outros.
+
+% Para este bloco, os campos "organization" e "org-short" apenas devem ser utilizados se o campo "author" não for utilizado.
+
+% Para este bloco, o campo "shorttitle" apenas deve ser usado se os campos "author", "organization" e "org-short" não forem utilizados.
+
+@article{van86,
+  author = {{van}, Gigch, John P. and Leo L. Pipino},
+  organization = {},
+  org-short = {},
+  title = {In search for a paradigm for the discipline of information systems},
+  subtitle = {},
+  shorttitle = {},
+  journal = {Future Computing Systems},
+  address = {Brasília, DF},
+  editionlanguage = {ing},
+  volume = {1},
+  number = {1},
+  pages = {71-97},
+  dateissue = {},
+  day = {},
+  month = {10},
+  year = {1986},
+  doi-url = {},
+  issn = {},
+  doi-number = {},
+  note = {},
+  url = {},
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+@article{zampieri2013,
+  author = {Enio Zampieri},
+  organization = {},
+  org-short = {},
+  title = {Ação dos grupos de pressão no processo decisório das comissões permanentes do {C}ongresso {N}acional},
+  subtitle = {},
+  shorttitle = {},
+  journal = {E-Legis},
+  address = {Brasília, DF},
+  editionlanguage = {},
+  volume = {6},
+  number = {12},
+  pages = {122-136},
+  dateissue = {set./dez.},    
+  day = {},
+  month = {},
+  year = {2013},
+  doi-url = {https://doi.org/10.51206/e-legis.v12i12.149},
+  issn = {},
+  doi-number = {},
+  note = {},
+  url = {https://e-legis.camara.leg.br/cefor/index.php/e-legis/article/view/149},
+  urlaccessday = {23},
+  urlaccessmonth = {08},
+  urlaccessyear = {2022}
+}
+
+% 1.2 Artigo de jornal: artigo e(ou) matéria de jornal não acadêmico. Inclui comunicação, editorial, entrevista, reportagem, resenha e outros.
+
+% 1.2.1 Com autoria
+
+@article{verissimo2010,
+  author = {Luis Fernando Ver{\'\i}ssimo},
+  organization = {},
+  org-short = {},
+  title = {Um gosto pela ironia},
+  subtitle = {},
+  shorttitle = {},
+  journal = {Zero Hora},
+  address = {Porto Alegre},
+  editionlanguage = {},
+  volume = {ano 47},
+  number = {16.414},
+  pages = {2},
+  dateissue = {},
+  day = {12},
+  month = {08},
+  year = {2010},
+  doi-url = {},
+  issn = {},
+  doi-number = {},
+  note = {},
+  url = {http://www.clicrbs.com.br/zerohora/jsp/default.jspx?uf1&actionflip}, 
+  urlaccessday = {16},
+  urlaccessmonth = {8},
+  urlaccessyear = {2010}
+}
+
+% 1.2.2 Sem autoria (neste caso, os campos "author", "organization" e "org-short" ficam em branco, e a referência será feita pelo título da obra, havendo quatro possibilidades, exemplificadas abaixo, com o uso do campo "shorttitle")
+
+% 1.2.2.1 Título composto por palavra única (em "title", a palavra deve ser digitada normalmente; o campo "shorttitle" deve ficar em branco)
+
+@article{diariodovale1,
+  author = {},
+  organization = {},
+  org-short = {},
+  title = {Professores},  
+  subtitle = {},
+  shorttitle = {},
+  journal = {Diário do Vale},
+  address = {Volta Redonda},
+  editionlanguage = {},
+  volume = {18},
+  number = {5.877},
+  pages = {},
+  dateissue = {},
+  day = {27},
+  month = {5},
+  year = {2011},
+  doi-url = {},
+  issn = {},
+  doi-number = {},
+  note = {Referência adaptada da original para exemplo},
+  url = {http://www.bancadigital.com.br/diariodovale/
+reader2/Default.aspx?pID1&eID495&lP38&rP39&lTpage}, 
+  urlaccessday = {30},
+  urlaccessmonth = {10},
+  urlaccessyear = {2011}
+}
+
+% 1.2.2.2 Título composto por duas palavras e iniciando com um monossílabo (em "title", as duas palavras devem estar em maiúsculas; em "shorttitle", deve haver as duas palavras do título, mas apenas a primeira letra da primeira palavra deve ser maiúscula)
+
+@article{diariodovale2,
+  author = {},
+  organization = {},
+  org-short = {},
+  title = {OS PROFESSORES},  
+  subtitle = {},
+  shorttitle = {Os professores},  
+  journal = {Diário do Vale},
+  address = {Volta Redonda},
+  editionlanguage = {},
+  volume = {18},
+  number = {5.877},
+  pages = {},
+  dateissue = {},
+  day = {27},
+  month = {5},
+  year = {2012},
+  doi-url = {},
+  issn = {},
+  doi-number = {},
+  note = {Referência adaptada da original para exemplo},
+  url = {http://www.bancadigital.com.br/diariodovale/
+reader2/Default.aspx?pID1&eID495&lP38&rP39&lTpage}, 
+  urlaccessday = {30},
+  urlaccessmonth = {10},
+  urlaccessyear = {2012}
+}
+
+% 1.2.2.3 Título composto por mais de duas palavras e iniciando com um monossílabo (em "title", apenas as duas primeiras palavras devem estar em maiúsculas; em "shorttitle", deve haver as duas primeiras palavras do título, a primeira iniciando com letra maiúscula, e espaço seguido de [...])
+
+@article{diariodovale3,
+  author = {},
+  organization = {},
+  org-short = {},
+  title = {OS PROFESSORES vão à luta},
+  subtitle = {},
+  shorttitle = {Os professores [...]},
+  journal = {Diário do Vale},
+  address = {Volta Redonda},
+  editionlanguage = {},
+  volume = {18},
+  number = {5.877},
+  pages = {},
+  dateissue = {},
+  day = {27},
+  month = {5},
+  year = {2013},
+  doi-url = {},
+  issn = {},
+  doi-number = {},
+  note = {Referência adaptada da original para exemplo},
+  url = {http://www.bancadigital.com.br/diariodovale/
+reader2/Default.aspx?pID1&eID495&lP38&rP39&lTpage}, 
+  urlaccessday = {30},
+  urlaccessmonth = {10},
+  urlaccessyear = {2013}
+}
+
+% 1.2.2.4 Título composto por mais de duas palavras e não iniciando com um monossílabo (em "title", deve haver o título inteiro digitado normalmente; em "shorttitle", deve haver a primeira palavra do título com inicial maiúscula e espaço seguido de [...])
+
+@article{diariodovale4,
+  author = {},
+  organization = {},
+  org-short = {},
+  title = {Professores terão exame para ingressar na carreira},
+  subtitle = {},
+  shorttitle = {Professores [...]},
+  journal = {Diário do Vale},
+  address = {Volta Redonda},
+  editionlanguage = {},
+  volume = {18},
+  number = {5.877},
+  pages = {},
+  dateissue = {},
+  day = {27},
+  month = {5},
+  year = {2010},
+  doi-url = {},
+  issn = {},
+  doi-number = {},
+  note = {Caderno Educação, p. 41},
+  url = {http://www.bancadigital.com.br/diariodovale/
+reader2/Default.aspx?pID1&eID495&lP38&rP39&lTpage}, 
+  urlaccessday = {30},
+  urlaccessmonth = {10},
+  urlaccessyear = {2010}
+}
+
+% 1.2.3 Autor com sobrenome que designa parentesco
+
+@article{realejunior,
+  author = {Miguel Reale{ }J\'unior},
+  organization = {},
+  org-short = {},
+  title = {O desafio de 2020},
+  subtitle = {},
+  shorttitle = {},
+  journal = {O Estado de S. Paulo},
+  address = {São Paulo},
+  editionlanguage = {},    
+  volume = {ano 141},
+  number = {46.099},
+  pages = {},
+  dateissue = {},
+  day = {4},
+  month = {1},
+  year = {2010},
+  doi-url = {},
+  issn = {},
+  doi-number = {},
+  note = {Espaço aberto, p. A2},
+  url = {},
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+% 2 – bloco: inproceedings
+% Parte de evento (trabalho apresentado) em monografia: parte, com autor e(ou) título próprios, de evento em monografia.
+
+% Para este bloco, os campos "organization" e "org-short" apenas devem ser utilizados se o campo "author" não for utilizado.
+
+% Para este bloco, o campo "booktitle" não deve ser utilizado.
+
+% 2.1 Proceedings
+
+@inproceedings{masolo2010,
+  author = {Claudio Masolo},
+  organization = {},
+  org-short = {},
+  title = {Understanding Ontological Levels},
+  subtitle = {},
+  conference-name = {Proceedings of the Twelfth International Conference on the Principles of   Knowledge Representation and Reasoning (KR 2010)},
+  conference-number = {7},
+  conference-year = {2011},
+  conference-location = {Brasília, DF},
+  booktitle = {},
+  proceedings-command = {ing-pro},
+  address = {Brasília, DF},
+  publisher = {AAAI Press},   
+  day = {},
+  month = {},
+  year = {2010},
+  volume = {33},
+  pages = {258-268},
+  isbn = {},
+  issn = {},
+  note = {},
+  url = {http://wiki.loa-cnr.it/Papers/kr10v0.7.pdf},
+  urlaccessday = {2},
+  urlaccessmonth = {1},
+  urlaccessyear = {2012}
+}
+
+@inproceedings{tiedemann2012,
+  author = {Jörg Tiedemann},
+  organization = {},
+  org-short = {},
+  title = {Character-based pivot translation for under-resourced languages and domains},
+  subtitle = {},
+  conference-name = {Conference of the European Chapter of the Association for Computational Linguistics},
+  conference-number = {13},
+  conference-year = {2012},
+  conference-location = {Avignon},
+  booktitle = {},
+  proceedings-command = {ing-pro},
+  address = {Avignon},
+  publisher = {Association for Computational Linguistics},
+  day = {},
+  month = {},
+  year = {2012},
+  volume = {},
+  pages = {141-151},
+  isbn = {},
+  issn = {},
+  note = {},
+  url = {https://aclanthology.org/E12-1.pdf},
+  urlaccessday = {25},
+  urlaccessmonth = {8},
+  urlaccessyear = {2022}
+}
+
+@inproceedings{hoppner,
+  author = {Klaus H\"oppner},
+  organization = {},
+  org-short = {},
+  title = {Typesetting tables with {\LaTeX{}}},
+  subtitle = {},
+  conference-name = {TUGboat 2007 Annual Meeting},
+  conference-number = {},
+  conference-year = {2007},
+  conference-location = {San Diego},
+  booktitle = {},
+  proceedings-command = {al-sit},
+  address = {San Diego, California},
+  publisher = {\TeX{} Users Group},
+  day = {},
+  month = {},
+  year = {2007},
+  volume = {28:3},
+  pages = {350-353},
+  isbn = {},
+  issn = {},
+  note = {},
+  url = {https://tug.org/TUGboat/tb28-3/tb90hoeppner.pdf},
+  urlaccessday = {25},
+  urlaccessmonth = {8},
+  urlaccessyear = {2022}
+}
+
+% 2.2 Anais
+
+@inproceedings{hott:2005,
+  author = {Marcos Cicarini Hott and Marcelo Guimar{\~a}es and Evaristo Eduardo de Miranda},
+  organization = {},
+  org-short = {},
+  title = {Um método para a determinação automática de áreas de preservação permanente em topos de morros para o {E}stado de {S}ão {P}aulo},
+  subtitle = {},
+  conference-name = {Simp\'osio Brasileiro de Sensoriamento Remoto (SBSR)},
+  conference-number = {12},
+  conference-year = {2005},
+  conference-location = {Goiânia, Brasil},
+  booktitle = {},
+  proceedings-command = {port-ana},
+  address = {São José dos Campos},
+  publisher = {INPE},
+  day = {},
+  month = {},
+  year = {2005},
+  volume = {},
+  pages = {3.061-3.068},
+  isbn = {},
+  issn = {},
+  note = {},
+  url = {https://ainfo.cnptia.embrapa.br/digital/bitstream/item/106823/1/1786.pdf},
+  urlaccessday = {25},
+  urlaccessmonth = {8},
+  urlaccessyear = {2022}
+}
+
+% 3 – bloco: book
+% Monografia: inclui livro, folheto, catálogo, dicionário, enciclopédia, guia, manual e outros.
+
+% Para este bloco, os campos "editor" e "editortype" apenas devem ser utilizados se o campo "author" não for utilizado. Na sequência, os campos "organization" e "org-short" apenas devem ser utilizados se o campo "editor" não for utilizado.
+
+% 3.1 Indicação de responsabilidade de pessoa física – autores com sobrenomes simples
+
+@book{dewey1980,
+  author = {John Dewey},
+  editor = {},
+  editortype = {},
+  organization = {},
+  org-short = {},
+  title = {Art as experience},
+  subtitle = {},
+  furtherresp = {},
+  edition = {4th},
+  editioncomplement = {},
+  editionlanguage = {ing},
+  address = {New York},
+  publisher = {Perigee Books},
+  year = {1980},
+  volume = {},
+  pages = {},
+  note = {},
+  issn = {},
+  isbn = {},
+  url = {},	
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+@book{doxiadis1965,
+  author = {Constantinos A. Doxiadis},
+  editor = {},
+  editortype = {},
+  organization = {},
+  org-short = {},
+  title = {Arquitetura em transição},
+  subtitle = {},
+  furtherresp = {},
+  edition = {2.},
+  editioncomplement = {rev. e aum.},
+  editionlanguage = {},
+  address = {Coimbra},
+  publisher = {Ceira},
+  year = {1965},
+  volume = {},
+  pages = {},
+  note = {},
+  issn = {},
+  isbn = {},
+  url = {},	
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+@book{jesse2018,
+  author = {Jessé Sousa},
+  editor = {},
+  editortype = {},
+  organization = {},
+  org-short = {},
+  title = {Subcidadania brasileira},
+  subtitle = {para entender o país além do jeitinho brasileiro},
+  furtherresp = {},
+  edition = {},
+  editioncomplement = {},
+  editionlanguage = {},
+  address = {Rio de Janeiro},
+  publisher = {Leva},
+  year = {2018},
+  volume = {},
+  pages = {},
+  note = {},
+  issn = {},
+  isbn = {},
+  url = {},
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+@book{donaldknuth1984,
+  author = {Donald E. Knuth},
+  editor = {},
+  editortype = {},
+  organization = {},
+  org-short = {},
+  title = {The TeXbook},
+  subtitle = {},
+  furtherresp = {},
+  edition = {1st},
+  editioncomplement = {},
+  editionlanguage = {ing},
+  address = {},
+  publisher = {Addison-Wesley Professional},
+  year = {1984},
+  volume = {},
+  pages = {},
+  note = {},
+  issn = {},
+  isbn = {0201134489},
+  url = {},	
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+@book{leslielamport1994,
+  author = {Leslie Lamport},
+  editor = {},
+  editortype = {},
+  organization = {},
+  org-short = {},
+  title = {\LaTeX{}: A Document Preparation System},
+  subtitle = {},
+  furtherresp = {},
+  edition = {2nd},
+  editioncomplement = {},
+  editionlanguage = {ing},
+  address = {},
+  publisher = {Addison-Wesley Professional},
+  year = {1994},
+  volume = {},
+  pages = {},
+  note = {},
+  issn = {},
+  isbn = {0201529831},
+  url = {},	
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+@book{sicrano,
+  author = {Heriston F. Sicrano},
+  editor = {},
+  editortype = {},
+  organization = {},
+  org-short = {},
+  title = {Credibilidade das citações},
+  subtitle = {},
+  furtherresp = {Teste do furtherresp},
+  edition = {},
+  editioncomplement = {},
+  editionlanguage = {},
+  address = {Cambuci},
+  publisher = {Ventos Novos},
+  year = {2007},
+  volume = {},
+  pages = {},
+  note = {},
+  issn = {},
+  isbn = {},
+  url = {},	
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+@book{beltrano,
+  author = {Orivaldo Beltrano and João Fulano and José Sicrano and Pedro da Silva},
+  editor = {},
+  editortype = {},
+  organization = {},
+  org-short = {},
+  title = {Tabelas},
+  subtitle = {},
+  furtherresp = {},
+  edition = {},
+  editioncomplement = {},
+  editionlanguage = {},
+  address = {},
+  publisher = {},
+  year = {2009},
+  volume = {},
+  pages = {},
+  note = {},
+  issn = {},
+  isbn = {},
+  url = {},	
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+@book{bacon,
+  author = {Francis Bacon},
+  editor = {},
+  editortype = {},
+  organization = {},
+  org-short = {},
+  title = {Ensaios},
+  subtitle = {},
+  furtherresp = {},
+  edition = {},
+  editioncomplement = {},
+  editionlanguage = {},
+  address = {},
+  publisher = {},
+  year = {1597},
+  volume = {},
+  pages = {},
+  note = {},
+  issn = {},
+  isbn = {},
+  url = {},	
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+% 3.2 Indicação de responsabilidade de pessoa física – autores com sobrenomes compostos
+
+@book{espiritosanto1999,
+  author = {Miguel Frederico de Esp{\'\i}rito{ }Santo},
+  editor = {},
+  editortype = {},
+  organization = {},
+  org-short = {},
+  title = {{O Rio Grande de São Pedro entre a fé e a razão}},
+  subtitle = {introdução à história do {Rio Grande do Sul}},
+  furtherresp = {},
+  edition = {},
+  editioncomplement = {},
+  editionlanguage = {},
+  address = {Porto Alegre},
+  publisher = {Martins Livreiro},
+  year = {1999},
+  volume = {},
+  pages = {},
+  note = {},
+  issn = {},
+  isbn = {},
+  url = {},
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+@book{saint-arnaud,
+  author = {Yves Saint-Arnaud},
+  editor = {},
+  editortype = {},
+  organization = {},
+  org-short = {},
+  title = {A pessoa humana},
+  subtitle = {introdução ao estudo da pessoa e das relações interpessoais},
+  furtherresp = {},
+  edition = {},
+  editioncomplement = {},
+  editionlanguage = {},
+  address = {São Paulo},
+  publisher = {Loyola},
+  year = {1984},
+  volume = {},
+  pages = {},
+  note = {},
+  issn = {},
+  isbn = {},
+  url = {},	
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+% 3.3 Indicação de responsabilidade de pessoa física – autores com sobrenomes que designam parentesco
+
+@book{assafneto,
+  author = {Alexandre Assaf{ }Neto},
+  editor = {},
+  editortype = {},
+  organization = {},
+  org-short = {},
+  title = {Estrutura e análise de balanços},
+  subtitle = {um enfoque econômico-financeiro},
+  furtherresp = {},
+  edition = {8.},
+  editioncomplement = {},
+  editionlanguage = {},
+  address = {São Paulo},
+  publisher = {Atlas},
+  year = {2007},
+  volume = {},
+  pages = {},
+  note = {},
+  issn = {},
+  isbn = {},
+  url = {},	
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+% 3.4 Indicação de responsabilidade de pessoa física – mais de um autor
+
+@book{araujo2020,
+  author = {Alessandro Vivas and Leonardo Ara\'ujo and Luciana Assis},
+  editor = {},
+  editortype = {},
+  organization = {},
+  org-short = {},
+  title = {LaTeX},
+  subtitle = {elaboração de documentos digitais},
+  furtherresp = {},
+  edition = {},
+  editioncomplement = {},
+  editionlanguage = {},
+  address = {},
+  publisher = { },
+  year = {2020},
+  volume = {},
+  pages = {},
+  note = {},
+  issn = {},
+  isbn = {9786500076141},
+  url = {},	
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+% 3.5 Indicação de responsabilidade de pessoa jurídica
+
+@book{ibge1993,
+  author = {},
+  editor = {},
+  editortype = {},
+  organization = {Funda{\c c}\~ao Instituto Brasileiro de Geografia e Estat{\'\i}stica},
+  org-short = {IBGE},
+  title = {Normas de apresentação tabular},
+  subtitle = {},
+  furtherresp = {},
+  edition = {3.},
+  editioncomplement = {},
+  editionlanguage = {},
+  address = {Rio de Janeiro},
+  publisher = {IBGE},
+  year = {1993},
+  volume = {},
+  pages = {},
+  note = {},
+  issn = {},
+  isbn = {},
+  url = {http://biblioteca.ibge.gov.br/visualizacao/livros/liv23907.pdf},	
+  urlaccessday = {21},
+  urlaccessmonth = {8},
+  urlaccessyear = {2013}  
+}
+
+% 4 – bloco: inbook
+Capítulo ou parte de monografia: contempla seção, capítulo, volume, fragmento e outras partes de uma obra, com autor e(ou) título próprios.
+
+% Para este bloco, os campos "organization" e "org-short" apenas devem ser utilizados se o campo "author" não for utilizado. Os campos "editor" e "editortype" apenas devem ser utilizados se o campo "bookauthor" não for utilizado. Na sequência, o campo "bookorganization" apenas deve ser utilizado se o campo "editor" não for utilizado.
+
+% 4.1 Parte de livro
+
+@inbook{bates2010,
+  author = {Marcia J. Bates and Mary Niles Maack},
+  organization = {},
+  org-short = {},
+  title = {The most important information},
+  subtitle = {eu sei que é assim},
+  bookauthor = {},
+  editor = {},
+  editortype = {},
+  bookorganization = {},
+  booktitle = {Encyclopedia of Library and Information Sciences},	
+  booksubtitle = {},
+  furtherresp = {},
+  edition = {3rd},
+  editioncomplement = {},
+  editionlanguage = {ing},
+  address = {New York},
+  publisher = {CRC Press},
+  day = {25},
+  month = {8},
+  year = {2010},	
+  volume = {3},
+  pages = {2.347-2.360},
+  isbn = {},
+  note = {},
+  url = {http://pages.gseis.ucla.edu/faculty/bates/articles/information.html},
+  urlaccessday = {24},
+  urlaccessmonth = {10},
+  urlaccessyear = {2011}
+}
+
+@inbook{bates20102,
+  author = {},
+  organization = {},
+  org-short = {},
+  title = {THE MOST important information},
+  shorttitle = {The most [...]},
+  subtitle = {eu sei que é assim},
+  bookauthor = {},
+  editor = {Marcia J. Bates and Mary Niles Maack},
+  editortype = {},
+  bookorganization = {},
+  booktitle = {Encyclopedia of Library and Information Sciences},	
+  booksubtitle = {},
+  furtherresp = {},
+  edition = {3rd},
+  editioncomplement = {},
+  editionlanguage = {ing},
+  address = {New York},
+  publisher = {CRC Press},
+  day = {25},
+  month = {8},
+  year = {2010},	
+  volume = {3},
+  pages = {2.347-2.360},
+  isbn = {},
+  note = {},
+  url = {http://pages.gseis.ucla.edu/faculty/bates/articles/information.html},
+  urlaccessday = {24},
+  urlaccessmonth = {10},
+  urlaccessyear = {2011}
+}
+
+@inbook{guarino1995,
+  author = {Nicola Guarino},
+  organization = {},
+  org-short = {},
+  title = {The Ontological Level},
+  subtitle = {},
+  bookauthor = {},
+  editor = {R. Casati and B. Smith and G. White},
+  editortype = {org},
+  bookorganization = {},
+  booktitle = {Philosophy and the cognitive science},	
+  booksubtitle = {teste e mais teste},
+  furtherresp = {},
+  edition = {},
+  editioncomplement = {},
+  editionlanguage = {},
+  address = {Vienna},
+  publisher = {Holder-Pivhler-Tempsky},
+  day = {},
+  month = {},
+  year = {1995},	
+  volume = {},
+  pages = {443-456},
+  isbn = {},
+  note = {},
+  url = {http://wiki.loa-cnr.it/Papers/OntLev.pdf},
+  urlaccessday = {2},
+  urlaccessmonth = {1},
+  urlaccessyear = {2012}
+}
+
+@inbook{bourdieu1987,
+  author = {Pierre Bourdieu},
+  organization = {},
+  org-short = {},
+  title = {Campo do poder, campo intelectual e \emph{habitus} de classe},
+  subtitle = {},
+  bookauthor = {},
+  editor = {},
+  editortype = {},
+  bookorganization = {},
+  booktitle = {Economia das trocas simbólicas},	
+  booksubtitle = {},
+  furtherresp = {},
+  edition = {},
+  editioncomplement = {},
+  editionlanguage = {},
+  address = {São Paulo},
+  publisher = {Perspectiva},
+  day = {},
+  month = {},
+  year = {1987},	
+  volume = {},
+  pages = {183-201},
+  isbn = {},
+  note = {},
+  url = {},
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+% 4.2 Verbete de dicionário especializado
+
+@inbook{petrarca1998,
+  author = {Orazio Petrarca},
+  organization = {},
+  org-short = {},
+  title = {Liderança},
+  subtitle = {},
+  bookauthor = {},
+  editor = {Norberto Bobbio and Nicola Matteucci and Gianfranco Pasquino},
+  editortype = {ed},
+  bookorganization = {},
+  booktitle = {Dicionário de política},	
+  booksubtitle = {},
+  furtherresp = {},
+  edition = {1.},
+  editioncomplement = {},
+  editionlanguage = {},
+  address = {Brasília, DF},
+  publisher = {Editora Universidade de Brasília},
+  day = {},
+  month = {},
+  year = {1998},	
+  volume = {},
+  pages = {713-716},
+  isbn = {},
+  note = {},
+  url = {},
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+% 5 – bloco: monography
+% Monografias
+
+@monography{mono,
+author = {Daian Péricles Alves},
+title = {Implementação de conceitos de manufatura colaborativa},
+subtitle = {um projeto virtual},
+year-presented = {2006},
+year = {2008},
+pages = {},
+type = {Bacharelado em Engenharia Industrial Mecânica},
+school = {Universidade Tecnológica Federal do Paraná},
+address = {Curitiba},
+note = {Referência adaptada da original para exemplo},
+url = {},
+urlaccessday = {},
+urlaccessmonth = {},
+urlaccessyear = {}
+}
+
+% 6 – bloco: tcc
+% Trabalhos de conclusão de curso (TCCs)
+
+@tcc{tcc,
+author = {Daian Péricles Alves},
+title = {Implementação de conceitos de manufatura colaborativa},
+subtitle = {um projeto virtual},
+year-presented = {2007},
+year = {2008},
+pages = {},
+type = {Bacharelado em Engenharia Industrial Mecânica},
+school = {Universidade Tecnológica Federal do Paraná},
+address = {Curitiba},
+note = {},
+url = {},
+urlaccessday = {},
+urlaccessmonth = {},
+urlaccessyear = {}
+}
+
+@tcc{miranda2024,
+author = {Tiago Oliveira Machado Miranda},
+title = {Usos da Agência Câmara de Notícias},
+subtitle = {um estudo a partir da cobertura do arcabouço fiscal},
+year-presented = {2024},
+year = {2024},
+pages = {148},
+type = {Mestrado  Profissional em Poder Legislativo},	
+school = {Centro de Formação, Treinamento e Aperfeiçoamento, Câmara dos Deputados},
+address = {Brasília, DF},
+note = {},
+url = {},
+urlaccessday = {},
+urlaccessmonth = {},
+urlaccessyear = {}
+}
+
+% 7 – bloco: mastersthesis
+% Dissertações de mestrado
+
+@mastersthesis{araujo2012,
+author = {Lauro César Araujo},
+title = {Configuração},
+subtitle = {uma perspectiva de {A}rquitetura da {I}nformação da {E}scola de {B}rasília},
+year-presented = {},
+year = {2012},
+pages = {80},
+type = {Mestrado  em  Ciência  da Informação},	
+school = {Faculdade de Ciência da Informação, Universidade de Brasília},
+address = {Brasília, DF},
+note = {},
+url = {},
+urlaccessday = {},
+urlaccessmonth = {},
+urlaccessyear = {}
+}
+
+@mastersthesis{macedo2005,
+author = {Flávia L. Macedo},
+title = {Arquitetura da informação},
+subtitle = {aspectos espistemológicos, científicos e práticos},
+year-presented = {},
+year = {2005},
+pages = {80},
+type = {Mestrado  em  Ciência  da Informação},
+school = {Universidade de Brasília},
+address = {Brasília, DF},
+note = {},
+url = {},
+urlaccessday = {},
+urlaccessmonth = {},
+urlaccessyear = {}
+}
+
+% 8 – bloco: phdthesis
+% Teses de doutorado
+
+@phdthesis{guizzardi2005,
+author = {Giancarlo Guizzardi},
+title = {Ontological foundations for structural conceptual models},	
+subtitle = {},
+year = {2005},
+pages = {80},
+type = {Doutorado em Telemática e Tecnologia da Informação},
+school = {Centre for Telematics and Information Technology, University of Twente},
+address = {Enschede, The Netherlands},
+note = {},
+url = {http://www.loa.istc.cnr.it/Guizzardi/SELMAS-CR.pdf},
+urlaccessday = {3},
+urlaccessmonth = {7},
+urlaccessyear = {2011}
+}
+
+% 9 – bloco: manual
+% Manuais e outras obras que não se enquadram nos tipos anteriores
+
+% Para este bloco, os campos "editor" e "editortype" apenas devem ser utilizados se o campo "author" não for utilizado. Na sequência, os campos "organization" e "org-short" apenas devem ser utilizados se o campo "editor" não for utilizado.
+
+@manual{abntex2classe,
+  author = {Lauro César Araujo},
+  editor = {},
+  editortype = {},
+  organization = {},
+  org-short = {},
+  nameaddon = {},
+  title = {A classe abntex2},
+  subtitle = {modelo canônico de trabalhos acadêmicos brasileiros compatível com as normas {ABNT NBR} 14724:2011, {ABNT NBR} 6024:2012 e outras},
+  titleaddon = {},
+  furtherresp = {},
+  editionlanguage = {},
+  edition = {},
+  editioncomplement = {},
+  address = {},
+  publisher = {},
+  year = {2015},
+  pages = {},
+  note = {este documento é derivado do pacote abntex2},
+  url = {http://www.abntex.net.br/},
+  urlaccessday = {12},
+  urlaccessmonth = {1},
+  urlaccessyear = {2015}
+}
+
+@manual{abntex2cite,
+  author = {Lauro César Araujo},
+  editor = {},
+  editortype = {},
+  organization = {},
+  org-short = {},
+  nameaddon = {},
+  title = {O pacote abntex2cite},
+  subtitle = {estilos bibliográficos compatíveis com a {ABNT NBR} 6023},	
+  titleaddon = {},
+  furtherresp = {},
+  editionlanguage = {},
+  edition = {},
+  editioncomplement = {},
+  address = {},
+  publisher = {},
+  year = {2018},
+  pages = {},
+  note = {Este documento é derivado do pacote abntex2},	
+  url = {http://www.abntex.net.br/},
+  urlaccessday = {25},
+  urlaccessmonth = {7},
+  urlaccessyear = {2023}
+}
+
+@manual{abntex2cite-alf,
+  author = {Lauro César Araujo},
+  editor = {},
+  editortype = {},
+  organization = {},
+  org-short = {},
+  nameaddon = {},
+  title = {O pacote abntex2cite},
+  subtitle = {tópicos específicos da {ABNT NBR} 10520:2002 e o estilo bibliográfico alfabético (sistema autor-data)},
+  titleaddon = {},
+  furtherresp = {},
+  editionlanguage = {},
+  edition = {},
+  editioncomplement = {},
+  address = {},
+  publisher = {},
+  year = {2015},
+  pages = {},
+  note = {Este documento é derivado do pacote abntex2},
+  url = {http://www.abntex.net.br/},
+  urlaccessday = {12},
+  urlaccessmonth = {1},
+  urlaccessyear = {2015}
+}
+
+@manual{abntex2-wiki-como-customizar,
+  author = {Lauro César Araujo},
+  editor = {},
+  editortype = {},
+  organization = {},
+  org-short = {},
+  nameaddon = {},
+  title = {Como customizar o abnTeX2},
+  subtitle = {},
+  titleaddon = {},
+  furtherresp = {},
+  address = {},
+  publisher = {},
+  year = {2015},
+  pages = {},
+  note = {Wiki do abnTeX2},
+  url = {https://github.com/abntex/abntex2/wiki/ComoCustomizar},
+  urlaccessday = {27},
+  urlaccessmonth = {4},
+  urlaccessyear = {2015}
+}
+
+@manual{memoir,
+  author = {Peter Wilson and Lars Madsen},
+  editor = {},
+  editortype = {},
+  organization = {},
+  org-short = {},
+  nameaddon = {},
+  title = {The Memoir class for configurable typesetting},
+  subtitle = {user guide},
+  titleaddon = {},
+  furtherresp = {},
+  address = {Normandy Park, WA},
+  publisher = {The Herries Press},
+  year = {2010},
+  pages = {},
+  note = {},
+  url = {http://mirrors.ctan.org/macros/latex/contrib/memoir/memman.pdf},
+  urlaccessday = {19},
+  urlaccessmonth = {12},
+  urlaccessyear = {2012}
+}
+
+@manual{babel,
+  author = {Johannes Braams},
+  editor = {},
+  editortype = {},
+  organization = {},
+  org-short = {},
+  nameaddon = {},
+  title = {Babel, a multilingual package for use with LATEX's standard document classes},
+  subtitle = {},	
+  titleaddon = {},
+  furtherresp = {},
+  editionlanguage = {},
+  edition = {},
+  editioncomplement = {},
+  address = {},
+  publisher = {},
+  year = {2008},
+  pages = {},
+  note = {},
+  url = {http://mirrors.ctan.org/info/babel/babel.pdf},
+  urlaccessday = {17},
+  urlaccessmonth = {2},
+  urlaccessyear = {2013}
+}
+
+@manual{talbot2012,
+  author = {Nicola L. C. Talbot},
+  editor = {},
+  editortype = {},
+  organization = {},
+  org-short = {},
+  nameaddon = {},
+  title = {User manual for glossaries.sty},
+  subtitle = {},	
+  titleaddon = {},
+  furtherresp = {},
+  editionlanguage = {},
+  edition = {},
+  editioncomplement = {},
+  address = {},
+  publisher = {},
+  year = {2012},
+  pages = {},
+  note = {},
+  url = {http://mirrors.ctan.org/macros/latex/contrib/glossaries/glossaries-user.pdf},
+  urlaccessday = {11},
+  urlaccessmonth = {3},
+  urlaccessyear = {2013}
+}
+
+@manual{EIA649B,
+  author = {},
+  editor = {},
+  editortype = {},
+  organization = {TechAmerica},
+  org-short = {},
+  nameaddon = {},
+  title = {ANSI/EIA 649-B},
+  subtitle = {{Configuration Management Standard}},
+  titleaddon = {},
+  furtherresp = {},
+  editionlanguage = {},
+  edition = {},
+  editioncomplement = {},
+  address = {EUA},
+  publisher = {},
+  year = {2011},
+  pages = {},
+  note = {norma},
+  url = {},
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+% 10 – bloco: misc
+% Normas técnicas, obras jurídicas e administrativas e outras obras que não se enquadram nos tipos anteriores
+
+% Para este bloco, os campos "editor" e "editortype" apenas devem ser utilizados se o campo "author" não for utilizado. Na sequência, os campos "organization" e "org-short" apenas devem ser utilizados se o campo "editor" não for utilizado.
+
+% 10.1 Normas técnicas
+
+@misc{NBR6022:2018,
+  author = {},
+  editor = {},
+  editortype = {},
+  organization = {Associa{\c c}\~ao Brasileira de Normas T\'ecnicas},
+  org-short = {ABNT NBR 6022},
+  nameaddon = {},
+  title = {{ABNT NBR} 6022},
+  subtitle = {informação e documentação: artigo em publicação periódica técnica e/ou científica: apresentação},
+  titleaddon = {},
+  furtherresp = {},
+  address = {Rio de Janeiro},
+  publisher = {ABNT},
+  year = {2018},
+  pages = {},
+  note = {},
+  url = {},
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+@misc{NBR6023:2018,
+  author = {},
+  editor = {},
+  editortype = {},
+  organization = {Associa{\c c}\~ao Brasileira de Normas T\'ecnicas},
+  org-short = {ABNT NBR 6023},
+  nameaddon = {},
+  title = {{ABNT NBR} 6023},
+  subtitle = {informação e documentação: referências: elaboração},
+  titleaddon = {},
+  furtherresp = {},
+  address = {Rio de Janeiro},
+  publisher = {ABNT},
+  year = {2018},
+  pages = {},
+  note = {},
+  url = {},
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+@misc{NBR6024:2012,
+  author = {},
+  editor = {},
+  editortype = {},
+  organization = {Associa{\c c}\~ao Brasileira de Normas T\'ecnicas},
+  org-short = {ABNT NBR 6024},
+  nameaddon = {},
+  title = {{ABNT NBR} 6024},
+  subtitle = {informação e documentação: numeração progressiva das seções de um documento: apresentação},
+  titleaddon = {},
+  furtherresp = {},
+  address = {Rio de Janeiro},
+  publisher = {ABNT},
+  year = {2012},
+  pages = {},
+  note = {},
+  url = {},
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+@misc{NBR6028:2021,
+  author = {},
+  editor = {},
+  editortype = {},
+  organization = {Associa{\c c}\~ao Brasileira de Normas T\'ecnicas},
+  org-short = {ABNT NBR 6028},
+  nameaddon = {},
+  title = {{ABNT NBR} 6028},
+  subtitle = {informação e documentação: resumo, resenha e recensão: apresentação},
+  titleaddon = {},
+  furtherresp = {},
+  address = {Rio de Janeiro},
+  publisher = {ABNT},
+  year = {2021},
+  pages = {},
+  note = {},
+  url = {},
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+@misc{NBR10520:2023,
+  author = {},
+  editor = {},
+  editortype = {},
+  organization = {Associa{\c c}\~ao Brasileira de Normas T\'ecnicas},
+  org-short = {ABNT NBR 10520},
+  nameaddon = {},
+  title = {{ABNT NBR} 10520},
+  subtitle = {informação e documentação: citações em documentos: apresentação},
+  titleaddon = {},
+  furtherresp = {},
+  address = {Rio de Janeiro},
+  publisher = {ABNT},
+  year = {2023},
+  pages = {},
+  note = {},
+  url = {},
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+@misc{NBR14724:2024,
+  author = {},
+  editor = {},
+  editortype = {},
+  organization = {Associa{\c c}\~ao Brasileira de Normas T\'ecnicas},
+  org-short = {ABNT NBR 14724},
+  nameaddon = {},
+  title = {{ABNT NBR} 14724},
+  subtitle = {informação e documentação: trabalhos acadêmicos: apresentação},
+  titleaddon = {},
+  furtherresp = {},
+  address = {Rio de Janeiro},
+  publisher = {ABNT},
+  year = {2024},
+  pages = {},
+  note = {Substituiu a ABNT NBR 14724:2011},
+  url = {},
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+
+% 10.2 Legislação: constituições, decretos, emendas (constitucionais, a leis orgânicas), leis (complementares, delegadas, ordinárias, orgânicas), projetos de lei, medidas provisórias e outros.
+
+% 10.2.1 Constituição
+
+@misc{const1988,
+  author = {},
+  editor = {},
+  editortype = {},
+  organization = {Brasil},
+  org-short = {},
+  nameaddon = {[Constituição (1988)]},
+  title = {Constituição da República Federativa do Brasil de 1988},
+  subtitle = {},
+  titleaddon = {},
+  furtherresp = {},
+  address = {Brasília, DF},
+  publisher = {Presidência da República},
+  year = {2022},
+  pages = {},
+  note = {},    
+  url = {http://www.planalto.gov.br/ccivil_03/constituicao/constituicao.htm}, 
+  urlaccessday = {25},
+  urlaccessmonth = {8},
+  urlaccessyear = {2022}
+}    
+
+% 10.2.2 Lei federal
+
+@misc{lei11637,
+  author = {},
+  editor = {},
+  editortype = {},
+  organization = {Brasil},
+  org-short = {},
+  nameaddon = {},
+  title = {Lei n.\textsuperscript{o} 11.637, de 28 de dezembro de 2007},
+  subtitle = {},
+  titleaddon = {Altera e revoga dispositivos da Lei n.\textsuperscript{o} 6.404, de 15 de dezembro de 1976, e da Lei n.\textsuperscript{o} 6.385, de 7 de dezembro de 1976, e estende às sociedades de grande porte disposições relativas à elaboração e divulgação de demonstrações financeiras},
+  furtherresp = {},
+  address = {Brasília, DF},
+  publisher = {Presidência da República},
+  year = {2007},
+  pages = {},
+  note = {},
+  url = {http://www.planalto.gov.br/ccivil_03/_ato2007-2010/2007/lei/l11638.htm}, 
+  urlaccessday = {25},
+  urlaccessmonth = {8},
+  urlaccessyear = {2022}
+}
+
+@misc{lei9610,
+  author = {},
+  editor = {},
+  editortype = {},
+  organization = {Brasil},
+  org-short = {},
+  nameaddon = {},
+  title = {Lei n.\textsuperscript{o} 9.610, de 19 de fevereiro de 1998},
+  subtitle = {},
+  titleaddon = {Altera, atualiza e consolida a legislação sobre direitos autorais e dá outras providências},
+  furtherresp = {},
+  address = {Brasília, DF},
+  publisher = {Presidência da República},
+  year = {1998},
+  pages = {},
+  note = {},    
+  url = {http://www.planalto.gov.br/ccivil_03/leis/l9610.htm}, 
+  urlaccessday = {25},
+  urlaccessmonth = {8},
+  urlaccessyear = {2022}
+}
+
+% 10.2.3 Lei estadual
+
+@misc{lei15686,
+  author = {},
+  editor = {},
+  editortype = {},
+  organization = {Rio Grande do Sul},
+  org-short = {},
+  nameaddon = {},
+  title = {Lei n.\textsuperscript{o} 15.686, de 30 de agosto de 2021},
+  subtitle = {},
+  titleaddon = {Altera o art. 41 da Lei n.\textsuperscript{o} 7.356, de 1.\textsuperscript{o} de fevereiro de 1980, que dispõe sobre o Código de Organização Judiciária do Estado},
+  furtherresp = {},
+  address = {Porto Alegre},
+  publisher = {Assembleia Legislativa do Estado do Rio Grande do Sul},
+  year = {1995},
+  pages = {},
+  note = {},
+  url = {http://www.al.rs.gov.br/legis/M010/M0100099.ASP?Hid_Tipo=TEXTO&Hid_TodasNormas=71975&hTexto=&Hid_IDNorma=71975}, 
+  urlaccessday = {25},
+  urlaccessmonth = {8},
+  urlaccessyear = {2022}
+}
+ 
+% 10.2.4 Lei municipal
+
+@misc{lei12092,
+  author = {},
+  editor = {},
+  editortype = {},
+  organization = {Curitiba},
+  org-short = {},
+  nameaddon = {},
+  title = {Lei n.\textsuperscript{o} 12.092, de 21 de dezembro de 2006},
+  subtitle = {},
+  titleaddon = {Estima a receita e fixa a despesa do município de Curitiba para o exercício financeiro de 2007},
+  furtherresp = {},
+  address = {Curitiba},
+  publisher = {Câmara Municipal de Curitiba},
+  year = {2007},
+  pages = {},
+  note = {},
+  url = {https://leismunicipais.com.br/a1/pr/c/curitiba/lei-ordinaria/2006/1210/12092/lei-ordinaria-n-12092-2006-estima-a-receita-e-fixa-a-despesa-do-municipio-de-curitiba-para-o-exercicio-financeiro-de-2007-r-3058000000-00},
+  urlaccessday = {25},
+  urlaccessmonth = {8},
+  urlaccessyear = {2022}
+}
+
+% 10.3 Jurisprudência: acórdãos, agravos, decisões interlocutórias, despachos, enunciados, sentenças, súmulas e outros.
+
+% 10.3.1 ADI
+
+@misc{adi1351,
+  author = {},
+  editor = {},
+  editortype = {},
+  organization = {Brasil},
+  org-short = {},
+  nameaddon = {Supremo Tribunal Federal (Tribunal Pleno)},
+  title = {ADI 1351-3 DF},
+  subtitle = {},
+  titleaddon = {Partido político -- funcionamento parlamentar -- propaganda partidária -- fundo partidário [...]. Relator(a): Ministro Marco Aurélio, 7 de dezembro de 2006},
+  furtherresp = {},
+  address = {Brasília, DF},
+  publisher = {STF},
+  year = {2007},
+  pages = {},
+  note = {},
+  url = {https://stf.jusbrasil.com.br/jurisprudencia/14730359/acao-direta-de-inconstitucionalidade-adi-1351-df/inteiro-teor-103116517}, 
+  urlaccessday = {25},
+  urlaccessmonth = {8},
+  urlaccessyear = {2022}
+}
+
+ % 10.3.2 Recurso especial
+
+@misc{re1694261,
+  author = {},
+  editor = {},
+  editortype = {},
+  organization = {Brasil},
+  org-short = {},
+  nameaddon = {Superior Tribunal de Justiça (Primeira Seção)},
+  title = {Recurso Especial n.\textsuperscript{o} 1.694.261 - SP},
+  subtitle = {},
+  titleaddon = {Submissão à regra prevista no enunciado administrativo 03/STJ. Proposta de cancelamento de afetação. Vigência da lei 14.112/2020, que alterou a Lei 11.101/2005 [...]. Relator(a): Mauro Campbello Marques, 23 de junho de 2021},
+  address = {Brasília, DF},
+  publisher = {STJ},
+  year = {2021},
+  pages = {},
+  note = {},
+  url = {https://scon.stj.jus.br/SCON/GetInteiroTeorDoAcordao?num_registro=201702266942&dt_publicacao=28/06/2021}, 
+  urlaccessday = {25},
+  urlaccessmonth = {8},
+  urlaccessyear = {2022}
+}
+
+% 10.3.3 Súmula
+
+@misc{sumula333,
+  author = {},
+  editor = {},
+  editortype = {},
+  organization = {Brasil},
+  org-short = {},
+  nameaddon = {Superior Tribunal de Justiça},
+  title = {Súmula n.\textsuperscript{o} 333},
+  subtitle = {},
+  titleaddon = {Cabe mandado de segurança contra ato praticado em licitação promovida por sociedade de economia mista ou empresa pública},
+  furtherresp = {},
+  address = {Brasília, DF},
+  publisher = {STJ},
+  year = {2007},
+  pages = {},
+  note = {},
+  url = {https://www.stj.jus.br/docs_internet/revista/eletronica/stj-revista-sumulas-2012_28_capSumula333.pdf}, 
+  urlaccessday = {25},
+  urlaccessmonth = {8},
+  urlaccessyear = {2022}
+}
+
+% 10.4 Ato administrativo normativo: avisos, circulares, contratos, decretos, deliberações, despachos, editais, estatutos, instruções normativas, ofícios, ordens de serviço, pareceres (normativos ou técnicos), portarias, regimentos, regulamentos, resoluções e outros. 
+
+% 10.4.1 Ato da Mesa
+
+@misc{am76,
+  author = {},
+  editor = {},
+  editortype = {},
+  organization = {Brasil},
+  org-short = {},
+  nameaddon = {Câmara dos Deputados},
+  title = {Ato da Mesa n.\textsuperscript{o} 76, de 31 de janeiro de 2013},
+  subtitle = {},
+  titleaddon = {Institui a Política de Recursos Humanos da Câmara dos Deputados},
+  furtherresp = {},
+  address = {Brasília, DF},
+  publisher = {Câmara dos Deputados},
+  year = {2013},
+  pages = {},
+  note = {},
+  url = {https://www2.camara.leg.br/legin/int/atomes/2013/atodamesa-76-31-janeiro-2013-775254-publicacaooriginal-138920-cd-mesa.html}, 
+  urlaccessday = {25},
+  urlaccessmonth = {8},
+  urlaccessyear = {2022}
+}
+
+% 10.4.2 Circular
+
+@misc{cbcb3348,
+  author = {},
+  editor = {},
+  editortype = {},
+  organization = {Banco Central do Brasil},
+  org-short = {},
+  nameaddon = {},
+  title = {Circular n.\textsuperscript{o} 3.348, de 3 de maio de 2007},
+  subtitle = {},
+  titleaddon = {Altera o Regulamento do Mercado de Câmbio e Capitais Internacionais (RMCCI)},
+  furtherresp = {},
+  address = {Brasília, DF},
+  publisher = {BCB},
+  year = {2007},
+  pages = {},
+  note = {},
+  url = {https://www.bcb.gov.br/pre/normativos/circ/2007/pdf/circ_3348_v2_l.pdf}, 
+  urlaccessday = {25},
+  urlaccessmonth = {8},
+  urlaccessyear = {2022}
+}        
+
+% 10.4.3 Ofício
+
+@misc{ofmec017,
+  author = {},
+  editor = {},
+  editortype = {},
+  organization = {Brasil},
+  org-short = {},
+  nameaddon = {Ministério da Educação},
+  title = {Ofício circular 017/MEC},
+  subtitle = {},
+  titleaddon = {{FUNDEB}},
+  furtherresp = {},
+  address = {Brasília, DF},
+  publisher = {Ministério da Educação},
+  year = {2006},
+  pages = {},
+  note = {},
+  url = {}, 
+  urlaccessday = {},
+  urlaccessmonth = {},
+  urlaccessyear = {}
+}
+ 
+% 10.4.4 Parecer
+
+@misc{pt06370,
+  author = {},
+  editor = {},
+  editortype = {},
+  organization = {Brasil},
+  org-short = {},
+  nameaddon = {Ministério da Fazenda},
+  title = {Parecer técnico n.\textsuperscript{o} 06370/2006/RJ},
+  subtitle = {},
+  titleaddon = {},
+  furtherresp = {},
+  address = {Rio de Janeiro},
+  publisher = {Ministério da Fazenda},
+  year = {2006},
+  pages = {},
+  note = {},    
+  url = {http://www.cade.gov.br/Plenario/Sessao_386/Pareceres/ParecerSeae-AC-2006-08012.008423-International_BusInes_MachIne}, 
+  urlaccessday = {4},
+  urlaccessmonth = {10},
+  urlaccessyear = {2010}
+}
+
+% 10.4.5 Resolução
+
+@misc{res01-2007,
+  author = {},
+  editor = {},
+  editortype = {},
+  organization = {Universidade Federal de Uberl\^andia},
+  org-short = {},
+  nameaddon = {Conselho Universitário},
+  title = {Resolução n.\textsuperscript{o} 01/2007, de 29 de março de 2007},
+  subtitle = {},
+  titleaddon = {Dispõe sobre a criação da modalidade Bacharelado do Curso de Graduação em Educação Física},
+  furtherresp = {},
+  address = {Uberlândia},
+  publisher = {Conselho Universitário},
+  year = {2007},
+  pages = {},
+  note = {},
+  url = {http://www.reitoria.ufu.br/consultaAtaResolucao.php?tipoDocumento=resolucao&conselho=TODOS&anoInicioBusca=2007&anoFimBusca=2007&entrada=&pag=3}, 
+  urlaccessday = {25},
+  urlaccessmonth = {8},
+  urlaccessyear = {2022}
+}

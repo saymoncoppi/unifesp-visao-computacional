@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Inspetor de Etiquetas</title>
+  <!-- Config injetada pelo servidor (app/api.py). Ao abrir o arquivo direto,
+       sem o backend, os marcadores permanecem e o script abaixo cai no fallback. -->
+  <script>
+    (function () {
+      var raw = { modeloAtivo: "__MODELO_ATIVO__", temGemini: "__TEM_GEMINI__" };
+      // Se os marcadores não foram substituídos pelo servidor, normaliza p/ vazio.
+      var modelo = raw.modeloAtivo === "__MODELO_" + "ATIVO__" ? "" : raw.modeloAtivo;
+      var temGemini = raw.temGemini === "true";
+      window.INSPETOR_CONFIG = { modeloAtivo: modelo, temGemini: temGemini };
+    })();
+  </script>
+  <style>
+    /* ---------------------------------------------------------------------
+       Tema shadcn/ui (zinc / new-york) — variáveis CSS
+       Claro por padrão; escuro via prefers-color-scheme e via toggle
+       (data-theme no <html> tem prioridade sobre a preferência do sistema).
+    --------------------------------------------------------------------- */
+    :root {
+      --background: hsl(0 0% 100%);
+      --foreground: hsl(240 10% 3.9%);
+      --card: hsl(0 0% 100%);
+      --card-foreground: hsl(240 10% 3.9%);
+      --border: hsl(240 5.9% 90%);
+      --input: hsl(240 5.9% 90%);
+      --ring: hsl(240 5.9% 10%);
+      --primary: hsl(240 5.9% 10%);
+      --primary-foreground: hsl(0 0% 98%);
+      --muted: hsl(240 4.8% 95.9%);
+      --muted-foreground: hsl(240 3.8% 46.1%);
+      --accent: hsl(240 4.8% 95.9%);
+      --accent-foreground: hsl(240 5.9% 10%);
+      --success: hsl(142 71% 30%);
+      --success-bg: hsl(143 64% 96%);
+      --destructive: hsl(0 72% 45%);
+      --destructive-bg: hsl(0 86% 97%);
+      --radius: 0.65rem;
+      --shadow-sm: 0 1px 2px 0 hsl(240 10% 3.9% / 0.05);
+      --shadow-md: 0 1px 3px 0 hsl(240 10% 3.9% / 0.08), 0 1px 2px -1px hsl(240 10% 3.9% / 0.08);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: hsl(240 10% 3.9%);
+        --foreground: hsl(0 0% 98%);
+        --card: hsl(240 5.9% 10%);
+        --card-foreground: hsl(0 0% 98%);
+        --border: hsl(240 3.7% 15.9%);
+        --input: hsl(240 3.7% 15.9%);
+        --ring: hsl(240 4.9% 83.9%);
+        --primary: hsl(0 0% 98%);
+        --primary-foreground: hsl(240 5.9% 10%);
+        --muted: hsl(240 3.7% 15.9%);
+        --muted-foreground: hsl(240 5% 64.9%);
+        --accent: hsl(240 3.7% 15.9%);
+        --accent-foreground: hsl(0 0% 98%);
+        --success: hsl(142 69% 58%);
+        --success-bg: hsl(142 40% 14%);
+        --destructive: hsl(0 84% 68%);
+        --destructive-bg: hsl(0 40% 15%);
+        --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.30);
+        --shadow-md: 0 1px 3px 0 hsl(0 0% 0% / 0.40), 0 1px 2px -1px hsl(0 0% 0% / 0.40);
+      }
+    }
+
+    /* Toggle explícito tem prioridade sobre a preferência do sistema. */
+    :root[data-theme="light"] {
+      --background: hsl(0 0% 100%);
+      --foreground: hsl(240 10% 3.9%);
+      --card: hsl(0 0% 100%);
+      --card-foreground: hsl(240 10% 3.9%);
+      --border: hsl(240 5.9% 90%);
+      --input: hsl(240 5.9% 90%);
+      --ring: hsl(240 5.9% 10%);
+      --primary: hsl(240 5.9% 10%);
+      --primary-foreground: hsl(0 0% 98%);
+      --muted: hsl(240 4.8% 95.9%);
+      --muted-foreground: hsl(240 3.8% 46.1%);
+      --accent: hsl(240 4.8% 95.9%);
+      --accent-foreground: hsl(240 5.9% 10%);
+      --success: hsl(142 71% 30%);
+      --success-bg: hsl(143 64% 96%);
+      --destructive: hsl(0 72% 45%);
+      --destructive-bg: hsl(0 86% 97%);
+      --shadow-sm: 0 1px 2px 0 hsl(240 10% 3.9% / 0.05);
+      --shadow-md: 0 1px 3px 0 hsl(240 10% 3.9% / 0.08), 0 1px 2px -1px hsl(240 10% 3.9% / 0.08);
+    }
+
+    :root[data-theme="dark"] {
+      --background: hsl(240 10% 3.9%);
+      --foreground: hsl(0 0% 98%);
+      --card: hsl(240 5.9% 10%);
+      --card-foreground: hsl(0 0% 98%);
+      --border: hsl(240 3.7% 15.9%);
+      --input: hsl(240 3.7% 15.9%);
+      --ring: hsl(240 4.9% 83.9%);
+      --primary: hsl(0 0% 98%);
+      --primary-foreground: hsl(240 5.9% 10%);
+      --muted: hsl(240 3.7% 15.9%);
+      --muted-foreground: hsl(240 5% 64.9%);
+      --accent: hsl(240 3.7% 15.9%);
+      --accent-foreground: hsl(0 0% 98%);
+      --success: hsl(142 69% 58%);
+      --success-bg: hsl(142 40% 14%);
+      --destructive: hsl(0 84% 68%);
+      --destructive-bg: hsl(0 40% 15%);
+      --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.30);
+      --shadow-md: 0 1px 3px 0 hsl(0 0% 0% / 0.40), 0 1px 2px -1px hsl(0 0% 0% / 0.40);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { height: 100%; margin: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
+                   "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ---------------------------------------------------------- Cabeçalho */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: hsl(0 0% 100% / 0.75);
+      backdrop-filter: saturate(180%) blur(8px);
+      border-bottom: 1px solid var(--border);
+    }
+    @media (prefers-color-scheme: dark) {
+      header { background: hsl(240 10% 3.9% / 0.75); }
+    }
+    :root[data-theme="light"] header { background: hsl(0 0% 100% / 0.75); }
+    :root[data-theme="dark"] header  { background: hsl(240 10% 3.9% / 0.75); }
+
+    .header-inner {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand {
+      width: 36px;
+      height: 36px;
+      border-radius: calc(var(--radius) - 0.15rem);
+      background: var(--primary);
+      color: var(--primary-foreground);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: -0.02em;
+      flex: 0 0 auto;
+    }
+
+    .header-titles { flex: 1 1 auto; min-width: 0; }
+    .header-titles h1 {
+      font-size: 15px;
+      font-weight: 600;
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+    .header-titles p {
+      margin: 0;
+      font-size: 12px;
+      color: var(--muted-foreground);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Botões (estilo shadcn) */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1;
+      border-radius: calc(var(--radius) - 0.15rem);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: background-color .15s ease, color .15s ease, border-color .15s ease,
+                  box-shadow .15s ease, opacity .15s ease;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .btn:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: var(--primary-foreground);
+      padding: 10px 18px;
+      box-shadow: var(--shadow-sm);
+    }
+    .btn-primary:hover:not(:disabled) { opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-outline {
+      background: var(--background);
+      color: var(--foreground);
+      border-color: var(--border);
+      padding: 9px 14px;
+      box-shadow: var(--shadow-sm);
+    }
+    .btn-outline:hover { background: var(--accent); color: var(--accent-foreground); }
+
+    .btn-icon {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      flex: 0 0 auto;
+      background: transparent;
+      color: var(--foreground);
+      border-color: var(--border);
+    }
+    .btn-icon:hover { background: var(--accent); }
+    /* --------------------------------------- Menu de 3 pontinhos (kebab) */
+    .menu { position: relative; flex: 0 0 auto; }
+
+    /* Ícone: três pontos verticais desenhados em CSS. */
+    .menu-dots {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+    }
+    .menu-dots span {
+      display: block;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .menu-panel {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      min-width: 264px;
+      z-index: 40;
+      background: var(--card);
+      color: var(--card-foreground);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      padding: 6px;
+    }
+    .menu-panel[hidden] { display: none; }
+
+    .menu-section { padding: 6px 0; }
+    .menu-section + .menu-section { border-top: 1px solid var(--border); }
+    .menu-section-title {
+      margin: 0;
+      padding: 4px 10px 6px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted-foreground);
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 8px 10px;
+      border: 0;
+      background: transparent;
+      color: var(--foreground);
+      font: inherit;
+      font-size: 14px;
+      text-align: left;
+      cursor: pointer;
+      border-radius: calc(var(--radius) - 0.25rem);
+      transition: background-color .12s ease, color .12s ease;
+    }
+    .menu-item:hover { background: var(--accent); color: var(--accent-foreground); }
+    .menu-item:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+    }
+    .menu-item-label { flex: 1 1 auto; min-width: 0; }
+    .menu-item-sub {
+      font-size: 12px;
+      color: var(--muted-foreground);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 140px;
+    }
+    .menu-item .check {
+      flex: 0 0 auto;
+      color: var(--success);
+      font-weight: 700;
+      font-size: 15px;
+      line-height: 1;
+      visibility: hidden;
+    }
+    .menu-item.is-selected .check { visibility: visible; }
+
+    /* Ação destrutiva (ex.: Limpar) em vermelho. */
+    .menu-item-danger { color: var(--destructive); }
+    .menu-item-danger:hover {
+      background: var(--destructive-bg);
+      color: var(--destructive);
+    }
+
+    /* ------------------------------------------------ Impressão / Exportar PDF */
+    @media print {
+      header, footer { display: none !important; }
+      html, body {
+        height: auto !important;
+        min-height: 0 !important;
+        background: #fff !important;
+      }
+      main {
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
+        padding: 0 !important;
+      }
+      #chat { max-width: 100% !important; }
+      .msg, .card, .bubble { break-inside: avoid; }
+    }
+
+    /* ------------------------------------------------------ Área de chat */
+    main {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding: 24px 16px 8px;
+    }
+
+    #chat {
+      max-width: 760px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .msg { display: flex; gap: 10px; max-width: 100%; }
+    .msg-bot  { justify-content: flex-start; }
+    .msg-user { justify-content: flex-end; }
+
+    .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: var(--primary-foreground);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex: 0 0 auto;
+      margin-top: 2px;
+    }
+
+    .bubble {
+      max-width: 82%;
+      padding: 12px 14px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      line-height: 1.55;
+      word-wrap: break-word;
+      overflow-wrap: anywhere;
+      background: var(--card);
+      color: var(--card-foreground);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+    .msg-bot .bubble  { border-top-left-radius: calc(var(--radius) - 0.35rem); }
+
+    .bubble-user {
+      background: var(--primary);
+      color: var(--primary-foreground);
+      border-color: transparent;
+      border-top-right-radius: calc(var(--radius) - 0.35rem);
+      padding: 8px;
+    }
+    .bubble-user .sent-image {
+      max-width: 260px;
+      max-height: 260px;
+      width: 100%;
+      border-radius: calc(var(--radius) - 0.25rem);
+      display: block;
+    }
+
+    /* -------------------------------------------- Cartão do laudo (card) */
+    .card {
+      max-width: 88%;
+      background: var(--card);
+      color: var(--card-foreground);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      padding: 16px 18px;
+      border-top-left-radius: calc(var(--radius) - 0.35rem);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .badge-ok    { background: var(--success-bg); color: var(--success); }
+    .badge-bad   { background: var(--destructive-bg); color: var(--destructive); }
+    .badge-muted { background: var(--muted); color: var(--muted-foreground); }
+
+    .section {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+    .section-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted-foreground);
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .section-body { font-size: 14px; color: var(--card-foreground); }
+
+    .kv { font-size: 14px; }
+    .kv .k { font-weight: 600; }
+    .ocr {
+      margin-top: 6px;
+      font-size: 13px;
+      color: var(--muted-foreground);
+    }
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    }
+
+    /* Indicadores (barras) */
+    .meter { margin: 10px 0; }
+    .meter:first-child { margin-top: 0; }
+    .meter-head {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-bottom: 5px;
+      color: var(--muted-foreground);
+    }
+    .meter-head .val { font-variant-numeric: tabular-nums; color: var(--foreground); font-weight: 500; }
+    .track {
+      height: 8px;
+      background: var(--muted);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .fill {
+      display: block;
+      height: 100%;
+      background: var(--primary);
+      border-radius: 999px;
+    }
+
+    /* Defeito */
+    .defect-name { font-weight: 600; font-size: 15px; }
+    .defect-conf { color: var(--muted-foreground); font-size: 13px; margin-top: 2px; }
+
+    /* Rodapé do card / fonte */
+    .card-footer {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted-foreground);
+    }
+
+    /* Avisos */
+    .alert {
+      margin-top: 14px;
+      background: var(--destructive-bg);
+      border: 1px solid var(--destructive);
+      border-radius: calc(var(--radius) - 0.15rem);
+      padding: 10px 12px;
+      font-size: 12px;
+      color: var(--destructive);
+    }
+    .alert-title { font-weight: 600; margin-bottom: 4px; }
+    .alert ul { margin: 0; padding-left: 18px; }
+
+    .bubble.is-error {
+      background: var(--destructive-bg);
+      border-color: var(--destructive);
+      color: var(--destructive);
+    }
+
+    /* ---------------------------------------------------------- Composer */
+    footer {
+      position: sticky;
+      bottom: 0;
+      z-index: 20;
+      background: var(--background);
+      border-top: 1px solid var(--border);
+    }
+
+    .composer {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .file-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 14px;
+      border: 1px solid var(--border);
+      border-radius: calc(var(--radius) - 0.15rem);
+      background: var(--background);
+      color: var(--foreground);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: var(--shadow-sm);
+      transition: background-color .15s ease, border-color .15s ease;
+    }
+    .file-label:hover { background: var(--accent); }
+    .file-label input { display: none; }
+
+    .thumb {
+      width: 38px;
+      height: 38px;
+      border-radius: calc(var(--radius) - 0.25rem);
+      border: 1px solid var(--border);
+      object-fit: cover;
+      display: none;
+      flex: 0 0 auto;
+    }
+    .thumb.show { display: block; }
+
+    .file-name {
+      font-size: 13px;
+      color: var(--muted-foreground);
+      flex: 1 1 120px;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Indicador de carregamento (htmx) */
+    .htmx-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      color: var(--muted-foreground);
+      opacity: 0;
+      width: 0;
+      overflow: hidden;
+      transition: opacity .15s ease;
+    }
+    .htmx-request .htmx-indicator,
+    .htmx-request.htmx-indicator { opacity: 1; width: auto; }
+    .htmx-request .btn-primary { opacity: 0.6; pointer-events: none; }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--muted);
+      border-top-color: var(--muted-foreground);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex: 0 0 auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 480px) {
+      .header-titles p { display: none; }
+      .bubble-user .sent-image { max-width: 200px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="brand">IE</div>
+      <div class="header-titles">
+        <h1 data-i18n="app_title">Inspetor de Etiquetas</h1>
+        <p data-i18n="app_subtitle">Analise a impressão de etiquetas de código de barras.</p>
+      </div>
+      <div class="menu" id="menu">
+        <button type="button" class="btn btn-icon" id="menu-button"
+                aria-haspopup="true" aria-expanded="false"
+                data-i18n-aria="menu_aria" data-i18n-title="menu_aria"
+                aria-label="Menu" title="Menu">
+          <span class="menu-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+        </button>
+        <div class="menu-panel" id="menu-panel" role="menu" hidden>
+          <!-- Idioma ------------------------------------------------------ -->
+          <div class="menu-section">
+            <p class="menu-section-title" data-i18n="menu_idioma">Selecionar idioma</p>
+            <button type="button" class="menu-item" role="menuitemradio" data-idioma="pt-BR">
+              <span class="menu-item-label">Português Brasileiro</span>
+              <span class="check" aria-hidden="true">&#10003;</span>
+            </button>
+            <button type="button" class="menu-item" role="menuitemradio" data-idioma="en-US">
+              <span class="menu-item-label">English</span>
+              <span class="check" aria-hidden="true">&#10003;</span>
+            </button>
+          </div>
+          <!-- Tema -------------------------------------------------------- -->
+          <div class="menu-section">
+            <p class="menu-section-title" data-i18n="menu_tema">Tema</p>
+            <button type="button" class="menu-item" role="menuitemradio" data-tema="light">
+              <span class="menu-item-label" data-i18n="tema_claro">Claro</span>
+              <span class="check" aria-hidden="true">&#10003;</span>
+            </button>
+            <button type="button" class="menu-item" role="menuitemradio" data-tema="dark">
+              <span class="menu-item-label" data-i18n="tema_escuro">Escuro</span>
+              <span class="check" aria-hidden="true">&#10003;</span>
+            </button>
+            <button type="button" class="menu-item" role="menuitemradio" data-tema="auto">
+              <span class="menu-item-label" data-i18n="tema_auto">Auto</span>
+              <span class="check" aria-hidden="true">&#10003;</span>
+            </button>
+          </div>
+          <!-- Inspetor ---------------------------------------------------- -->
+          <div class="menu-section">
+            <p class="menu-section-title" data-i18n="menu_inspetor">Inspetor</p>
+            <button type="button" class="menu-item" role="menuitemradio" data-inspetor="llm">
+              <span class="menu-item-label">LLM</span>
+              <span class="menu-item-sub" id="llm-model-label">Gemini</span>
+              <span class="check" aria-hidden="true">&#10003;</span>
+            </button>
+            <button type="button" class="menu-item" role="menuitemradio" data-inspetor="kb">
+              <span class="menu-item-label">KB</span>
+              <span class="menu-item-sub">Zebra Technologies</span>
+              <span class="check" aria-hidden="true">&#10003;</span>
+            </button>
+            <button type="button" class="menu-item" role="menuitemradio" data-inspetor="auto"
+                    id="inspetor-auto" data-i18n-title="inspetor_auto_title"
+                    title="Prefere o LLM; usa a KB Zebra como fallback.">
+              <span class="menu-item-label">Auto</span>
+              <span class="menu-item-sub">LLM + KB</span>
+              <span class="check" aria-hidden="true">&#10003;</span>
+            </button>
+          </div>
+          <!-- Ações ------------------------------------------------------- -->
+          <div class="menu-section">
+            <p class="menu-section-title" data-i18n="menu_acoes">Ações</p>
+            <button type="button" class="menu-item" data-acao="export-pdf">
+              <span class="menu-item-label" data-i18n="acao_export_pdf">Exportar em PDF</span>
+            </button>
+            <button type="button" class="menu-item menu-item-danger" data-acao="limpar">
+              <span class="menu-item-label" data-i18n="acao_limpar">Limpar</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <div id="chat">
+      <div class="msg msg-bot">
+        <div class="avatar">IE</div>
+        <div class="bubble" data-i18n-html="greeting">
+          Olá! Selecione a imagem de uma etiqueta de código de barras e clique em
+          <strong>Analisar</strong>. Vou decodificar o código, avaliar a qualidade da
+          impressão e sugerir a causa e a correção de eventuais defeitos.
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <form class="composer" id="form"
+          hx-post="/analisar-htmx"
+          hx-target="#chat"
+          hx-swap="beforeend"
+          hx-encoding="multipart/form-data"
+          autocomplete="off">
+      <label class="file-label">
+        <span aria-hidden="true">📷</span> <span data-i18n="choose_image">Escolher imagem</span>
+        <input type="file" id="imagem" name="imagem" accept="image/*" required />
+      </label>
+      <img class="thumb" id="thumb" alt="Pré-visualização" data-i18n-alt="preview_alt" />
+      <span class="file-name" id="file-name" data-i18n="file_none">Nenhum arquivo selecionado</span>
+      <span class="htmx-indicator" id="indicator">
+        <span class="spinner" aria-hidden="true"></span> <span data-i18n="analyzing">analisando…</span>
+      </span>
+      <button type="submit" class="btn btn-primary" id="submit" data-i18n="analyze" disabled>Analisar</button>
+    </form>
+  </footer>
+
+  <script src="/static/htmx.min.js"></script>
+  <script>
+    (function () {
+      "use strict";
+
+      var root = document.documentElement;
+      var input = document.getElementById("imagem");
+      var thumb = document.getElementById("thumb");
+      var fileName = document.getElementById("file-name");
+      var submit = document.getElementById("submit");
+      var form = document.getElementById("form");
+      var chat = document.getElementById("chat");
+      var main = document.getElementById("main");
+      var menu = document.getElementById("menu");
+      var menuButton = document.getElementById("menu-button");
+      var menuPanel = document.getElementById("menu-panel");
+      var modelLabel = document.getElementById("llm-model-label");
+
+      // ===================================================== Traduções (i18n)
+      var I18N = {
+        "pt-BR": {
+          doc_title: "Inspetor de Etiquetas",
+          app_title: "Inspetor de Etiquetas",
+          app_subtitle: "Analise a impressão de etiquetas de código de barras.",
+          menu_aria: "Configurações",
+          menu_idioma: "Selecionar idioma",
+          menu_tema: "Tema",
+          menu_inspetor: "Inspetor",
+          inspetor_auto_title: "Prefere o LLM; usa a KB Zebra como fallback.",
+          menu_acoes: "Ações",
+          acao_export_pdf: "Exportar em PDF",
+          acao_limpar: "Limpar",
+          tema_claro: "Claro",
+          tema_escuro: "Escuro",
+          tema_auto: "Auto",
+          choose_image: "Escolher imagem",
+          file_none: "Nenhum arquivo selecionado",
+          analyzing: "analisando…",
+          analyze: "Analisar",
+          preview_alt: "Pré-visualização",
+          sent_image_alt: "Etiqueta enviada",
+          greeting: "Olá! Selecione a imagem de uma etiqueta de código de barras e " +
+            "clique em <strong>Analisar</strong>. Vou decodificar o código, avaliar " +
+            "a qualidade da impressão e sugerir a causa e a correção de eventuais defeitos."
+        },
+        "en-US": {
+          doc_title: "Label Inspector",
+          app_title: "Label Inspector",
+          app_subtitle: "Analyze the print quality of barcode labels.",
+          menu_aria: "Settings",
+          menu_idioma: "Select language",
+          menu_tema: "Theme",
+          menu_inspetor: "Inspector",
+          inspetor_auto_title: "Prefers the LLM; falls back to the Zebra KB.",
+          menu_acoes: "Actions",
+          acao_export_pdf: "Export to PDF",
+          acao_limpar: "Clear",
+          tema_claro: "Light",
+          tema_escuro: "Dark",
+          tema_auto: "Auto",
+          choose_image: "Choose image",
+          file_none: "No file selected",
+          analyzing: "analyzing…",
+          analyze: "Analyze",
+          preview_alt: "Preview",
+          sent_image_alt: "Sent label",
+          greeting: "Hello! Select an image of a barcode label and click " +
+            "<strong>Analyze</strong>. I'll decode the code, assess the print " +
+            "quality, and suggest the cause and correction of any defects."
+        }
+      };
+
+      var IDIOMAS = ["pt-BR", "en-US"];
+      var TEMAS = ["light", "dark", "auto"];
+
+      var estado = { idioma: "pt-BR", tema: "auto", inspetor: "llm" };
+
+      function ls(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+      function lsSet(key, val) { try { localStorage.setItem(key, val); } catch (e) {} }
+
+      function t(key) {
+        var dict = I18N[estado.idioma] || I18N["pt-BR"];
+        return dict[key] != null ? dict[key] : key;
+      }
+
+      // Aplica um atributo traduzido para todos os elementos com data-<attr>.
+      function applyAttr(dict, seletor, setter) {
+        var nodes = document.querySelectorAll(seletor);
+        for (var i = 0; i < nodes.length; i++) {
+          var k = nodes[i].getAttribute(seletor.slice(1, -1));
+          if (dict[k] != null) setter(nodes[i], dict[k]);
+        }
+      }
+
+      function applyI18n(lang) {
+        var dict = I18N[lang] || I18N["pt-BR"];
+        applyAttr(dict, "[data-i18n]", function (el, v) { el.textContent = v; });
+        applyAttr(dict, "[data-i18n-html]", function (el, v) { el.innerHTML = v; });
+        applyAttr(dict, "[data-i18n-aria]", function (el, v) { el.setAttribute("aria-label", v); });
+        applyAttr(dict, "[data-i18n-title]", function (el, v) { el.setAttribute("title", v); });
+        applyAttr(dict, "[data-i18n-alt]", function (el, v) { el.setAttribute("alt", v); });
+        document.title = dict.doc_title || document.title;
+        root.setAttribute("lang", lang);
+      }
+
+      // ===================================================== Seleção no menu
+      function markSelected(grupo, valor) {
+        var itens = menuPanel.querySelectorAll("[data-" + grupo + "]");
+        for (var i = 0; i < itens.length; i++) {
+          var sel = itens[i].getAttribute("data-" + grupo) === valor;
+          itens[i].classList.toggle("is-selected", sel);
+          itens[i].setAttribute("aria-checked", sel ? "true" : "false");
+        }
+      }
+
+      function applyTema(v) {
+        estado.tema = v;
+        if (v === "light" || v === "dark") root.setAttribute("data-theme", v);
+        else root.removeAttribute("data-theme");   // "auto" -> segue o sistema
+        lsSet("tema", v);
+        markSelected("tema", v);
+      }
+
+      function applyIdioma(v) {
+        estado.idioma = v;
+        lsSet("idioma", v);
+        applyI18n(v);
+        markSelected("idioma", v);
+        // Se nenhum arquivo estiver selecionado, o rótulo padrão é reaplicado por
+        // applyI18n; com arquivo escolhido, o data-i18n é removido (ver showFileName).
+      }
+
+      function applyInspetor(v) {
+        estado.inspetor = v;
+        lsSet("inspetor", v);
+        markSelected("inspetor", v);
+      }
+
+      function initModelLabel() {
+        var cfg = window.INSPETOR_CONFIG || {};
+        var nome = cfg.modeloAtivo && String(cfg.modeloAtivo).trim();
+        modelLabel.textContent = nome || "Gemini";
+      }
+
+      // ===================================================== Ações do menu
+      function exportarPDF() {
+        // Força tema claro (PDF legível) e imprime só a conversa (ver @media print).
+        var prev = root.getAttribute("data-theme");
+        root.setAttribute("data-theme", "light");
+        function restaura() {
+          if (prev === null) root.removeAttribute("data-theme");
+          else root.setAttribute("data-theme", prev);
+          window.removeEventListener("afterprint", restaura);
+        }
+        window.addEventListener("afterprint", restaura);
+        if (window.print) window.print(); else restaura();
+      }
+
+      function limparChat() {
+        // Remove todas as mensagens e recria a saudação inicial no idioma atual.
+        chat.innerHTML = "";
+        var row = document.createElement("div");
+        row.className = "msg msg-bot";
+        var av = document.createElement("div");
+        av.className = "avatar";
+        av.textContent = "IE";
+        var bub = document.createElement("div");
+        bub.className = "bubble";
+        bub.setAttribute("data-i18n-html", "greeting");
+        bub.innerHTML = t("greeting");
+        row.appendChild(av);
+        row.appendChild(bub);
+        chat.appendChild(row);
+        // Zera o composer.
+        form.reset();
+        thumb.classList.remove("show");
+        thumb.removeAttribute("src");
+        resetFileName();
+        submit.disabled = true;
+        scrollBottom();
+      }
+
+      function executarAcao(acao) {
+        if (acao === "export-pdf") exportarPDF();
+        else if (acao === "limpar") limparChat();
+      }
+
+      // ===================================================== Abrir/fechar menu
+      function openMenu() { menuPanel.hidden = false; menuButton.setAttribute("aria-expanded", "true"); }
+      function closeMenu() { menuPanel.hidden = true; menuButton.setAttribute("aria-expanded", "false"); }
+
+      menuButton.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (menuPanel.hidden) openMenu(); else closeMenu();
+      });
+      menuPanel.addEventListener("click", function (evt) {
+        var item = evt.target.closest("[data-idioma],[data-tema],[data-inspetor],[data-acao]");
+        if (!item) return;
+        if (item.hasAttribute("data-idioma")) applyIdioma(item.getAttribute("data-idioma"));
+        else if (item.hasAttribute("data-tema")) applyTema(item.getAttribute("data-tema"));
+        else if (item.hasAttribute("data-inspetor")) applyInspetor(item.getAttribute("data-inspetor"));
+        else if (item.hasAttribute("data-acao")) executarAcao(item.getAttribute("data-acao"));
+        closeMenu();
+      });
+      document.addEventListener("click", function (e) {
+        if (!menuPanel.hidden && !menu.contains(e.target)) closeMenu();
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && !menuPanel.hidden) { closeMenu(); menuButton.focus(); }
+      });
+
+      // ===================================================== Inicialização
+      (function initEstado() {
+        var si = ls("idioma");
+        estado.idioma = IDIOMAS.indexOf(si) >= 0 ? si : (root.getAttribute("lang") || "pt-BR");
+        if (IDIOMAS.indexOf(estado.idioma) < 0) estado.idioma = "pt-BR";
+
+        var st = ls("tema");
+        estado.tema = TEMAS.indexOf(st) >= 0 ? st : "auto";
+
+        // "Auto" só existe quando há um LLM configurado no servidor (.env).
+        var temGemini = !!(window.INSPETOR_CONFIG && window.INSPETOR_CONFIG.temGemini);
+        var autoItem = document.getElementById("inspetor-auto");
+        if (!temGemini && autoItem) autoItem.style.display = "none";
+        var inspetoresValidos = temGemini ? ["llm", "kb", "auto"] : ["llm", "kb"];
+
+        var sp = ls("inspetor");
+        estado.inspetor = inspetoresValidos.indexOf(sp) >= 0 ? sp : "llm";
+
+        applyTema(estado.tema);          // tema primeiro (evita flash de cor)
+        initModelLabel();
+        applyIdioma(estado.idioma);      // traduz a página e marca o idioma
+        applyInspetor(estado.inspetor);  // marca o inspetor escolhido
+      })();
+
+      // ===================================================== Rolagem / preview
+      function scrollBottom() {
+        main.scrollTop = main.scrollHeight;
+      }
+
+      function resetFileName() {
+        fileName.setAttribute("data-i18n", "file_none");
+        fileName.textContent = t("file_none");
+      }
+      function showFileName(nome) {
+        fileName.removeAttribute("data-i18n");   // evita que a tradução sobrescreva o nome
+        fileName.textContent = nome;
+      }
+
+      input.addEventListener("change", function () {
+        var f = input.files && input.files[0];
+        if (!f) {
+          thumb.classList.remove("show");
+          resetFileName();
+          submit.disabled = true;
+          return;
+        }
+        showFileName(f.name);
+        submit.disabled = false;
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          thumb.src = e.target.result;
+          thumb.classList.add("show");
+        };
+        reader.readAsDataURL(f);
+      });
+
+      // -------------------- Envia idioma + inspetor escolhidos com a análise
+      document.body.addEventListener("htmx:configRequest", function (evt) {
+        if (evt.target !== form) return;
+        evt.detail.parameters["idioma"] = estado.idioma;
+        evt.detail.parameters["inspetor"] = estado.inspetor;
+      });
+
+      // -------------------------------- Bolha da imagem enviada (usuário)
+      document.body.addEventListener("htmx:beforeRequest", function (evt) {
+        if (evt.target !== form) return;
+        var f = input.files && input.files[0];
+        if (!f) return;
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          var row = document.createElement("div");
+          row.className = "msg msg-user";
+          var bubble = document.createElement("div");
+          bubble.className = "bubble bubble-user";
+          var img = document.createElement("img");
+          img.className = "sent-image";
+          img.src = e.target.result;
+          img.alt = t("sent_image_alt");
+          bubble.appendChild(img);
+          row.appendChild(bubble);
+          chat.appendChild(row);
+          scrollBottom();
+        };
+        reader.readAsDataURL(f);
+      });
+
+      // Após a resposta chegar e ser anexada, rola para o fim.
+      document.body.addEventListener("htmx:afterSwap", function () {
+        scrollBottom();
+      });
+
+      // Limpa o composer ao concluir a requisição (sucesso ou erro).
+      document.body.addEventListener("htmx:afterRequest", function (evt) {
+        if (evt.target !== form) return;
+        form.reset();
+        thumb.classList.remove("show");
+        thumb.removeAttribute("src");
+        resetFileName();
+        submit.disabled = true;
+        scrollBottom();
+      });
+    })();
+  </script>
+</body>
+</html>

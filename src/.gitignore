@@ -1,0 +1,15 @@
+# Segredos — NUNCA versionar/empacotar
+.env
+
+# Ambiente e caches
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+uv.lock
+install.log
+
+# Documentação Astro antiga (não usada mais)
+docs/node_modules/
+docs/dist/
+docs/.astro/

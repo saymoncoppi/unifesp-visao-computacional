@@ -1,0 +1,37 @@
+# ---- Segredos (NUNCA versionar) ----
+.env
+**/.env
+!.env.example
+!**/.env.example
+
+# ---- Ambientes / caches Python ----
+.venv/
+**/.venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+**/.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- Logs e temporários ----
+*.log
+tmp/
+**/tmp/
+.DS_Store
+
+# ---- Artefatos de build LaTeX ----
+*.aux
+*.bbl
+*.blg
+*.brf
+*.fls
+*.fdb_latexmk
+*.out
+*.synctex.gz
+*.toc
+
+# ---- Zips gerados (derivados do próprio repositório) ----
+/src.zip
+/artigo-overleaf.zip

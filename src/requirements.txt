@@ -1,0 +1,33 @@
+# Dependências Python do inspetor de etiquetas.
+# Sugerido: Python 3.10–3.12 (em 3.14 alguns wheels — torch/opencv — podem faltar).
+#
+# Dependências de SISTEMA (instale antes; ex. Debian/Ubuntu):
+#   sudo apt install libzbar0 tesseract-ocr tesseract-ocr-por
+# Fedora:
+#   sudo dnf install zbar tesseract tesseract-langpack-por
+
+# --- Visão computacional ---
+numpy
+opencv-python            # OpenCV (pré-processamento, segmentação, morfologia)
+pillow
+pyzbar                   # decodificação de códigos de barras (ZBar)
+pytesseract              # OCR do texto humano-legível (Tesseract)
+
+# --- Aprendizado profundo (CNN) ---
+torch                    # PyTorch
+torchvision              # MobileNetV3 + transformações
+
+# --- Orquestração multiagente + LLM ---
+google-adk               # Agent Development Kit (ADK)
+google-genai             # SDK do Gemini (usado no fallback e pelo ADK)
+python-dotenv            # carrega .env (GOOGLE_API_KEY)
+
+# --- API / chat web ---
+fastapi
+uvicorn[standard]
+python-multipart         # upload de imagem no FastAPI
+
+# --- Geração do dataset sintético (opcional; já usado em gerar_dataset.py) ---
+segno
+python-barcode
+pystrich

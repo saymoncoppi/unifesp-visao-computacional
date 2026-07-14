@@ -1,0 +1,44 @@
+[project]
+name = "inspetor-etiquetas"
+version = "0.1.0"
+description = "Inspeção de defeitos de impressão em etiquetas de códigos de barras (OpenCV + CNN + ADK)"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "numpy",
+    "opencv-python-headless",
+    "pillow",
+    "pyzbar",
+    "pytesseract",
+    "torch",
+    "torchvision",
+    "google-adk",
+    "google-genai",
+    "python-dotenv",
+    "fastapi",
+    "uvicorn[standard]",
+    "python-multipart",
+    "segno",
+    "python-barcode",
+    "pystrich",
+]
+
+[project.optional-dependencies]
+# Download de datasets externos (Roboflow). Requer chave gratuita de API.
+datasets = ["roboflow"]
+
+[dependency-groups]
+dev = ["pytest", "httpx"]
+
+# --- Configuração do uv ------------------------------------------------------
+[tool.uv]
+package = false                     # não empacota o próprio projeto (é uma aplicação)
+
+# torch/torchvision em versão CPU (leve, sem CUDA)
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+torchvision = [{ index = "pytorch-cpu" }]
