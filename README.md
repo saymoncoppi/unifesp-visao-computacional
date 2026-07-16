@@ -1,5 +1,9 @@
 # Inspetor de Etiquetas — Visão Computacional (UNIFESP)
 
+> **Versão V1** — cópia fiel do que foi entregue como artigo e aplicação funcional
+> na data de conclusão do trabalho. Esta branch é preservada como registro histórico
+> da entrega; a continuidade do desenvolvimento ocorre em outras branches.
+
 Diagnóstico automático de falhas de impressão em etiquetas de código de barras,
 combinando visão computacional clássica (OpenCV, pyzbar, Tesseract), uma CNN
 (MobileNetV3 em PyTorch) e um agente LLM (Google Gemini) com base de conhecimento
