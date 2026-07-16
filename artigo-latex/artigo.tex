@@ -38,6 +38,9 @@
 \usepackage{longtable}
 \usepackage{listings}			% blocos de código
 \usepackage{url}
+\usepackage{tikz}			% diagramas / fluxogramas
+\usetikzlibrary{shapes.geometric,arrows.meta,positioning,fit,backgrounds}
+\usepackage{float}			% posicionamento [H] para os fluxogramas
 
 % ---- Citações e referências padrão ABNT (autor-data) ----
 \usepackage{hyperref}
@@ -140,13 +143,16 @@ aprendizado --- e orquestração multiagente com o \textit{Agent Development Kit
 (ADK), decompondo a tarefa em leitura/decodificação, estimativa de indicadores de
 qualidade, detecção de defeitos físicos e diagnóstico de causa-raiz fundamentado
 na documentação técnica do fabricante. O sistema é exposto por uma \textit{API}
-única, consumida por um aplicativo Android e por uma interface web. A avaliação
-prevista compara a arquitetura multiagente a uma abordagem monolítica,
-quantificando o benefício da decomposição, e emprega um conjunto de dados
-híbrido, com imagens reais de captura e defeitos de impressão gerados
-sinteticamente de forma controlada e reprodutível. Espera-se demonstrar a
-viabilidade de um apoio à decisão que vai além da nota, indicando causa provável
-e correção sugerida.
+única, consumida por uma interface web responsiva, acessível de qualquer
+dispositivo com navegador --- computador, \textit{notebook}, \textit{tablet} ou
+celular ---, independentemente do sistema operacional. A avaliação emprega um
+conjunto de dados híbrido --- imagens reais de captura e defeitos de impressão
+gerados sinteticamente de forma controlada e reprodutível --- e, para a
+classificação de defeitos, compara a CNN adotada (MobileNetV3-Small) a
+arquiteturas de referência (ResNet18 e EfficientNet-B0) sob protocolo idêntico,
+com validação cruzada estratificada e teste de significância estatística. Os
+resultados demonstram a viabilidade de um apoio à decisão que vai além da nota,
+indicando causa provável e correção sugerida.
 
 \noindent
 \textbf{Palavras-chave}: código de barras; qualidade de impressão; visão
@@ -169,13 +175,16 @@ lightweight backbone, trained by transfer learning --- and multi-agent
 orchestration with the Agent Development Kit (ADK), decomposing the task into
 reading/decoding, quality-indicator estimation, physical-defect detection and
 root-cause diagnosis grounded in the manufacturer's technical documentation. The
-system is exposed through a single API, consumed by an Android application and by
-a web interface. The planned evaluation compares the multi-agent architecture
-with a monolithic baseline, quantifying the benefit of decomposition, and uses a
-hybrid dataset with real capture images and printing defects generated
-synthetically in a controlled and reproducible way. The expected outcome is to
-demonstrate the feasibility of a decision-support tool that goes beyond the
-grade, pointing to a probable cause and a suggested correction.
+system is exposed through a single API, consumed by a responsive web interface
+accessible from any device with a browser --- desktop, notebook, tablet or
+smartphone ---, regardless of the operating system. The evaluation uses a hybrid
+dataset --- real capture images and printing defects generated synthetically in a
+controlled and reproducible way --- and, for defect classification, compares the
+adopted CNN (MobileNetV3-Small) against reference architectures (ResNet18 and
+EfficientNet-B0) under an identical protocol, with stratified cross-validation and
+a statistical significance test. The results demonstrate the feasibility of a
+decision-support tool that goes beyond the grade, pointing to a probable cause and
+a suggested correction.
 
 \noindent
 \textbf{Keywords}: barcode; print quality; computer vision; deep learning;
@@ -253,7 +262,8 @@ uniformidade), sempre rotulados como aproximação, nunca como grau oficial.
 \subsection{Objetivos}
 
 \noindent\textbf{Objetivo geral.} Desenvolver e avaliar um sistema, exposto por
-uma API única e consumido por um aplicativo Android e por uma interface web,
+uma API única e consumido por uma interface web responsiva --- acessível de
+qualquer dispositivo com navegador, independentemente do sistema operacional ---,
 capaz de detectar defeitos comuns de impressão em etiquetas de códigos de barras
 e sugerir a causa provável, empregando visão computacional e orquestração
 multiagente com o \textit{Agent Development Kit} (ADK).
@@ -269,10 +279,12 @@ multiagente com o \textit{Agent Development Kit} (ADK).
 	leitura/decodificação, estimativa de indicadores de qualidade, detecção de
 	defeitos físicos e diagnóstico de causa-raiz fundamentado na documentação do
 	fabricante;
-	\item implementar a solução e disponibilizá-la por uma API consumível por
-	aplicativo e web; e
-	\item avaliar o desempenho do sistema e verificar se a decomposição
-	multiagente traz ganho mensurável frente a uma abordagem monolítica.
+	\item implementar a solução e disponibilizá-la por uma API que serve uma
+	interface web acessível de qualquer dispositivo com navegador; e
+	\item avaliar o desempenho do classificador de defeitos com métricas por classe
+	e validação cruzada, comparando-o a arquiteturas de referência, e discutir o
+	papel da decomposição multiagente na modularidade e na interpretabilidade do
+	laudo.
 \end{alineas}
 
 \noindent\textbf{Escopo de símbolos.} O trabalho contempla \textbf{1D} (Code 128,
@@ -292,12 +304,15 @@ As principais contribuições são:
 	conhecimento);
 	\item uma \textbf{arquitetura multiagente} (ADK) que separa leitura,
 	estimativa de indicadores, detecção de defeitos e diagnóstico de causa-raiz,
-	servida por uma API única para aplicativo Android e web;
+	servida por uma API única que alimenta uma interface web multiplataforma,
+	acessível de qualquer dispositivo com navegador;
 	\item um \textbf{agente de diagnóstico fundamentado} (com recuperação sobre a
 	documentação do fabricante) que vai além da nota e sugere causa provável e
 	correção;
-	\item uma \textbf{avaliação comparativa} entre a arquitetura multiagente e uma
-	abordagem monolítica, quantificando o benefício da decomposição; e
+	\item uma \textbf{avaliação experimental} do classificador de defeitos, com
+	métricas por classe, validação cruzada estratificada e comparação a arquiteturas
+	de referência (ResNet18 e EfficientNet-B0) sob protocolo idêntico, acompanhada de
+	teste de significância estatística; e
 	\item um \textbf{conjunto de imagens híbrido}: imagens reais de códigos de
 	barras capturados em condições variadas (52 amostras 1D organizadas por
 	simbologia) combinadas a um conjunto de defeitos de impressão gerados
@@ -518,6 +533,45 @@ desafio recorrente diretamente relevante a este trabalho: a \textbf{escassez de
 imagens de defeito real}, que motiva aumento de dados e abordagens semi/não
 supervisionadas \cite{frontiers2025anomaly,survey2022unsupervised}.
 
+\subsection{Redes convolucionais, MobileNetV3 e transferência de aprendizado}
+\label{sec-cnn}
+
+Uma \textbf{rede neural convolucional} (CNN) aprende, camada a camada, filtros que
+são convolvidos com a imagem para produzir \textit{mapas de características}
+(\textit{feature maps}). As primeiras camadas respondem a padrões genéricos ---
+bordas, cantos e texturas ---, enquanto as camadas profundas combinam esses padrões
+em conceitos específicos da tarefa; é essa hierarquia que dispensa a extração manual
+de atributos \cite{gonzalez2018,szeliski2022}. Como as camadas iniciais aprendem
+características transferíveis entre domínios, é possível reaproveitar uma rede
+pré-treinada em um grande conjunto (ImageNet) e apenas \textbf{ajustá-la}
+(\textit{fine-tuning}) à tarefa-alvo --- estratégia de \textbf{transferência de
+aprendizado} que melhora a generalização quando há poucos dados rotulados
+\cite{yosinski2014transferable}.
+
+Adota-se a \textbf{MobileNetV3-Small} \cite{howard2019mobilenetv3}, projetada para
+ser leve e eficiente. Três elementos explicam sua economia: (i) \textbf{convoluções
+separáveis em profundidade} (\textit{depthwise separable}), que fatoram a convolução
+padrão em um filtro espacial por canal seguido de uma combinação $1\times1$,
+reduzindo drasticamente parâmetros e operações; (ii) blocos \textbf{Squeeze-and-Excitation},
+um mecanismo de atenção que reponderar canais conforme sua relevância; e (iii) a
+não linearidade \textbf{h-swish}, aproximação barata do \textit{swish}. O resultado é
+uma rede de $\approx$1,5~milhão de parâmetros que treina e infere bem mesmo em CPU
+--- adequada ao objetivo de baixo custo deste trabalho. Como \textit{baselines} de
+comparação (Seção~\ref{sec-resultados}) empregam-se a \textbf{ResNet18}
+\cite{he2016resnet}, que populariza as conexões residuais, e a \textbf{EfficientNet-B0}
+\cite{tan2019efficientnet}, que escala profundidade, largura e resolução de forma
+balanceada.
+
+\noindent\textbf{Generalização com poucos dados.} Treinar em um conjunto pequeno
+favorece o \textit{overfitting} (o modelo memoriza o treino e não generaliza). Três
+mecanismos o mitigam aqui: a transferência de aprendizado (reduz os parâmetros
+efetivamente estimados do zero), o \textbf{aumento de dados} (\textit{data
+augmentation}) --- rotações e variações de brilho/contraste que ampliam a
+variabilidade sem alterar o rótulo \cite{shorten2019augmentation} --- e a própria
+arquitetura leve, de menor capacidade. A avaliação por \textbf{validação cruzada}
+(Seção~\ref{sec-resultados}) complementa essas medidas ao estimar o desempenho de
+forma menos sensível a uma única partição.
+
 \subsection{Sistemas multiagentes e o \textit{Agent Development Kit} (ADK)}
 
 Um \textbf{sistema multiagente} é um conjunto de agentes autônomos que colaboram
@@ -536,10 +590,10 @@ Development Kit} (ADK), apresentado pelo Google no Cloud NEXT 2025, é um
 
 Os agentes se organizam em uma \textbf{hierarquia} e se comunicam por estado
 compartilhado, delegação e invocação explícita \cite{adk_docs}. A justificativa
-central do paradigma --- e o argumento que este trabalho pretende testar
-empiricamente --- é que decompor um problema em agentes especializados tende a ser
-mais confiável, modular e manutenível do que um único modelo/prompt monolítico,
-porque cada agente resolve uma tarefa mais simples e bem delimitada.
+central do paradigma --- que motiva a arquitetura adotada neste trabalho --- é que
+decompor um problema em agentes especializados tende a ser mais confiável, modular
+e manutenível do que um único modelo/prompt monolítico, porque cada agente resolve
+uma tarefa mais simples e bem delimitada.
 
 % ---------------------------------------------------------------------------
 \section{Trabalhos relacionados}\label{sec-relacionados}
@@ -733,29 +787,74 @@ real). O projeto inclui um utilitário de \textit{download}
 	\item \textbf{visão computacional:} Python, OpenCV e \textbf{PyTorch}. O
 	PyTorch é hoje o \textit{framework} predominante na comunidade acadêmica, o
 	que favorece a reprodutibilidade e a comparação com trabalhos correlatos. Para
-	atender a máquinas modestas, adota-se transferência de aprendizado com um
-	\textit{backbone} leve (\textbf{MobileNetV3-Small} ou \textbf{EfficientNet-B0}),
+	atender a máquinas modestas, adota-se transferência de aprendizado com o
+	\textit{backbone} leve \textbf{MobileNetV3-Small} (ResNet18 e EfficientNet-B0 são
+	usados como referências de comparação na Seção~\ref{sec-resultados}),
 	que treina bem em GPU de entrada ou mesmo CPU; como a inferência é servida pela
 	API (lado servidor), o dispositivo do usuário não precisa executar o modelo;
-	\item \textbf{decodificação e OCR:} \texttt{pyzbar} (ZBar) para decodificar o
-	símbolo e verificar a legibilidade, e o \textbf{Tesseract} (\texttt{pytesseract})
-	para o reconhecimento óptico do texto humano-legível impresso junto às barras;
+	\item \textbf{decodificação:} \texttt{pyzbar} (ZBar) para decodificar o
+	símbolo (simbologia e conteúdo) e verificar a legibilidade, com os detectores
+	nativos do OpenCV (\texttt{barcode.BarcodeDetector} e \texttt{QRCodeDetector})
+	como \textit{fallback} de detecção/leitura;
 	\item \textbf{orquestração multiagente:} \textit{Agent Development Kit} (ADK)
 	\cite{google_adk_blog}, com \textbf{Gemini} como modelo LLM dos agentes de
 	raciocínio, aproveitando a integração nativa do ADK com o ecossistema Google;
 	\item \textbf{entrega:} API única (FastAPI) que serve um \textbf{chat} web
-	internacionalizado (português/inglês) para o envio da imagem e que pode,
-	também, alimentar um aplicativo Android; e
+	internacionalizado (português/inglês) e responsivo para o envio da imagem,
+	acessível de qualquer dispositivo com navegador --- computador,
+	\textit{notebook}, \textit{tablet} ou celular, em qualquer sistema operacional;
+	e
 	\item \textbf{escrita e gestão bibliográfica:} \LaTeX{} (abnTeX2/Overleaf) e
 	Zotero.
 \end{alineas}
 
-As técnicas empregadas correspondem diretamente ao conteúdo da disciplina de Visão
-Computacional em que este trabalho se insere --- aquisição e representação de imagens
-com OpenCV; limiarização e filtragem; detecção de arestas e contornos; segmentação;
-morfologia matemática; descritores e características; classificadores; e redes neurais
-convolucionais. O projeto, assim, exercita de ponta a ponta o pipeline clássico de
-visão computacional, culminando em uma CNN para a classificação dos defeitos.
+\noindent\textbf{Decisão de entrega: web em vez de aplicativo nativo.} O plano
+inicial previa também um aplicativo Android para consumo da API; na execução,
+optou-se por uma entrega \textbf{exclusivamente web}. Uma interface web responsiva
+amplia o alcance da solução para além do chão de fábrica: em vez de ficar restrita
+a coletores industriais Android, a ferramenta pode ser acessada por qualquer
+computador, \textit{notebook}, \textit{tablet} ou celular --- com iOS, Android ou
+qualquer outro sistema operacional --- diretamente pelo navegador, sem instalação.
+Essa escolha reduz o atrito de adoção e dá maior abrangência de uso, preservando a
+API única como ponto de integração caso um cliente nativo venha a ser desejado no
+futuro.
+
+\noindent\textbf{Correspondência com o conteúdo da disciplina.} As técnicas
+empregadas exercitam, de ponta a ponta, o pipeline clássico de Visão Computacional
+visto na disciplina, culminando em uma CNN. A Tabela~\ref{tab-disciplina} mapeia
+cada tópico ao ponto concreto em que foi aplicado na solução --- todos verificáveis
+no módulo \texttt{inspetor.visao} e na CNN (\texttt{inspetor.rede}).
+
+\begin{table}[htb]
+\centering
+\caption{Tópicos da disciplina de Visão Computacional aplicados na solução}
+\label{tab-disciplina}
+\begin{tabular}{@{}p{5.0cm}p{8.0cm}@{}}
+\toprule
+\textbf{Tópico da disciplina} & \textbf{Onde e como foi aplicado}\\
+\midrule
+Aquisição e representação de imagens & Leitura e conversão para tons de cinza
+(\texttt{cv2.imread}, \texttt{cvtColor})\\
+Filtragem espacial / suavização & Redução de ruído antes da segmentação
+(\texttt{cv2.blur})\\
+Detecção de arestas e gradientes & Realce do símbolo por gradiente
+(\texttt{cv2.Sobel}/Scharr e subtração de gradientes)\\
+Limiarização & Binarização automática por Otsu (\texttt{THRESH\_OTSU}) na segmentação
+e na pré-decodificação\\
+Morfologia matemática & Fechamento, erosão e dilatação para consolidar a região do
+código (\texttt{morphologyEx}, \texttt{erode}, \texttt{dilate})\\
+Segmentação por contornos & Localização da caixa do código (\texttt{findContours},
+\texttt{contourArea}, \texttt{boundingRect})\\
+Descritores e medidas de qualidade & Contraste, uniformidade e nitidez (variância do
+\texttt{Laplaciano}) como indicadores inspirados na ISO/IEC 15416\\
+Classificadores e redes convolucionais & CNN MobileNetV3-Small com transferência de
+aprendizado para classificar as sete classes de defeito (Seção~\ref{sec-cnn})\\
+\bottomrule
+\end{tabular}
+
+\vspace{2pt}
+{\footnotesize Fonte: elaboração própria (2026).}
+\end{table}
 
 \subsection{Ambiente experimental}
 
@@ -796,8 +895,8 @@ sistema é composto por:
 \begin{alineas}
 	\item \textbf{agente de leitura/decodificação} --- com OpenCV, segmenta a região
 	do código (gradiente, limiarização e morfologia); decodifica com o \texttt{pyzbar}
-	(simbologia e conteúdo) e lê o texto humano-legível com o Tesseract (OCR); retorna
-	legível/ilegível e o conteúdo;
+	(simbologia e conteúdo), recorrendo aos detectores nativos do OpenCV como
+	\textit{fallback}; retorna legível/ilegível e o conteúdo;
 	\item \textbf{agente de indicadores de qualidade} --- sobre a região segmentada
 	pelo OpenCV, estima indicadores inspirados na ISO/IEC 15416 (contraste,
 	uniformidade e nitidez), sempre como aproximação (Seção~\ref{sec-qualidade});
@@ -817,43 +916,95 @@ cadeia (\texttt{SequentialAgent}). A comunicação entre agentes usa o estado
 compartilhado da sessão: cada agente grava seu resultado em uma chave
 (\texttt{output\_key}) e os seguintes leem essas chaves.
 
-% >>> Inserir aqui a figura da arquitetura (árvore de agentes). Coloque o
-% arquivo em figuras/arquitetura.png e descomente o bloco abaixo.
-% \begin{figure}[htb]
-% \centering
-% \caption{Arquitetura multiagente da solução (árvore de agentes).}
-% \label{fig-arquitetura}
-% \includegraphics[width=0.8\textwidth]{figuras/arquitetura.png}
-% \vspace{2pt}
-% {\footnotesize Fonte: elaboração própria (2026).}
-% \end{figure}
+A Figura~\ref{fig-arquitetura} representa essa árvore de agentes.
+
+\begin{figure}[H]
+\centering
+\caption{Arquitetura multiagente da solução: árvore de agentes orquestrada pelo ADK (raiz sequencial sobre um bloco paralelo)}
+\label{fig-arquitetura}
+\begin{tikzpicture}[
+	font=\footnotesize,
+	>={Stealth[round]},
+	raiz/.style={rectangle, rounded corners, draw=black!70, fill=black!5, thick, minimum width=3.2cm, minimum height=0.8cm, align=center},
+	par/.style={rectangle, rounded corners, draw=azulref!80, fill=azulref!8, thick, minimum width=2.6cm, minimum height=0.8cm, align=center},
+	seq/.style={rectangle, rounded corners, draw=black!60, fill=black!3, thick, minimum width=2.8cm, minimum height=0.8cm, align=center},
+	seta/.style={->, thick, black!60},
+]
+\node[raiz] (root) {\textbf{Agente raiz}\\\texttt{SequentialAgent}};
+
+\node[par] (leitura) [below left=1.1cm and 0.2cm of root] {Leitura /\\decodificação};
+\node[par] (indic)   [below=1.1cm of root] {Indicadores\\de qualidade};
+\node[par] (defeito) [below right=1.1cm and 0.2cm of root] {Defeito físico\\(CNN)};
+
+\node[seq] (diag) [below=2.7cm of root] {Diagnóstico\\(LLM + RAG Zebra)};
+\node[seq] (laudo) [below=1.0cm of diag] {Laudo\\(JSON estruturado)};
+
+% chave de bloco paralelo
+\begin{scope}[on background layer]
+	\node[draw=azulref!50, dashed, rounded corners, fit=(leitura)(indic)(defeito), inner sep=6pt, label={[azulref!80,font=\scriptsize]above right:\texttt{ParallelAgent}}] (bloco) {};
+\end{scope}
+
+\draw[seta] (root) -- (leitura);
+\draw[seta] (root) -- (indic);
+\draw[seta] (root) -- (defeito);
+\draw[seta] (leitura) -- (diag);
+\draw[seta] (indic) -- (diag);
+\draw[seta] (defeito) -- (diag);
+\draw[seta] (diag) -- (laudo);
+\end{tikzpicture}
+
+\vspace{2pt}
+{\footnotesize Fonte: elaboração própria (2026). As três análises independentes
+executam em paralelo (\texttt{ParallelAgent}); o diagnóstico depende das três e o
+laudo depende do diagnóstico, formando a cadeia \texttt{SequentialAgent}.}
+\end{figure}
 
 \subsection{Fluxograma do processamento}
 
-O fluxo ponta a ponta é: envio da imagem no chat $\rightarrow$ \texttt{POST /analisar}
-na API $\rightarrow$ pré-processamento e segmentação com OpenCV $\rightarrow$
-\textbf{verificação da presença} de um código de barras $\rightarrow$ (havendo código)
-\texttt{ParallelAgent} executa, em paralelo, a leitura/decodificação (\texttt{pyzbar}
-$+$ OCR Tesseract), os indicadores de qualidade e a classificação do defeito (CNN)
-$\rightarrow$ o agente de diagnóstico consome as três saídas e consulta a
-documentação Zebra $\rightarrow$ o agente de laudo agrega em JSON $\rightarrow$
-resposta única $\rightarrow$ renderização no chat.
+O fluxo ponta a ponta está na Figura~\ref{fig-fluxo}: a imagem enviada é
+pré-processada e segmentada com OpenCV; um \textbf{curto-circuito de presença}
+verifica se há um código de barras antes da inspeção pesada; havendo código, as
+três análises independentes rodam em paralelo, o diagnóstico consome as três
+saídas e consulta a documentação Zebra, e o laudo é agregado em JSON.
 
-\noindent\textbf{Decisão de projeto: curto-circuito de presença do código.} A
-verificação da presença do código de barras ocorre \textbf{antes} da inspeção
-pesada. Se nenhum código é detectado na imagem, o sistema retorna um laudo
-\textbf{mínimo} --- apenas o aviso ``Nenhum código de barras detectado na
-imagem.'' ---, sem executar a CNN de classificação nem invocar o agente LLM. A
-motivação é dupla: (i) \textbf{evitar diagnósticos espúrios}, isto é, não
-apresentar ao operador uma causa/correção plausível para uma imagem que sequer
-contém um código (falsa sensação de resultado útil); e (ii) \textbf{economizar
-processamento e chamadas de API} ao Gemini, que só são disparados quando há, de
-fato, o que inspecionar. A legibilidade bem-sucedida já implica presença; caso
-contrário, um detector leve sobre a imagem em tons de cinza decide o
-curto-circuito.
+\begin{figure}[H]
+\centering
+\caption{Fluxo de processamento ponta a ponta, com o curto-circuito de presença do código}
+\label{fig-fluxo}
+\begin{tikzpicture}[
+	font=\footnotesize,
+	>={Stealth[round]},
+	node distance=0.9cm,
+	bloco/.style={rectangle, rounded corners, draw=black!70, fill=black!4, thick, text width=3.4cm, minimum height=0.75cm, align=center},
+	dec/.style={diamond, aspect=2, draw=azulref!80, fill=azulref!8, thick, text width=2.2cm, inner sep=1pt, align=center},
+	fim/.style={rectangle, rounded corners, draw=black!60, fill=black!3, thick, text width=3.4cm, minimum height=0.7cm, align=center},
+	seta/.style={->, thick, black!60},
+]
+\node[bloco] (img) {Imagem enviada (chat/CLI)};
+\node[bloco] (pre) [below=of img] {Pré-processamento e segmentação (OpenCV)};
+\node[dec]   (temcod) [below=of pre] {Há código?};
+\node[fim]   (mini) [right=2.2cm of temcod] {Laudo mínimo: ``nenhum código detectado'' (sem CNN, sem LLM)};
+\node[bloco] (par) [below=1.1cm of temcod, text width=6.2cm] {\textbf{Análises em paralelo:} leitura/decodificação $\;\|\;$ indicadores de qualidade $\;\|\;$ classificação do defeito (CNN)};
+\node[bloco] (diag) [below=of par, text width=6.2cm] {Diagnóstico (LLM + RAG na documentação Zebra)};
+\node[fim]   (laudo) [below=of diag, text width=6.2cm] {Laudo estruturado (JSON) $\rightarrow$ renderização};
 
-% >>> Inserir aqui o fluxograma (bloco paralelo + cadeia sequencial) em
-% figuras/fluxograma.png e descomentar bloco análogo ao anterior.
+\draw[seta] (img) -- (pre);
+\draw[seta] (pre) -- (temcod);
+\draw[seta] (temcod) -- node[above,font=\scriptsize]{não} (mini);
+\draw[seta] (temcod) -- node[right,font=\scriptsize]{sim} (par);
+\draw[seta] (par) -- (diag);
+\draw[seta] (diag) -- (laudo);
+\end{tikzpicture}
+
+\vspace{2pt}
+{\footnotesize Fonte: elaboração própria (2026).}
+\end{figure}
+
+\noindent\textbf{Decisão de projeto: curto-circuito de presença.} A verificação
+ocorre \textbf{antes} da inspeção pesada. Sem código detectado, o sistema devolve
+um laudo mínimo, sem executar a CNN nem invocar o LLM. Isso (i) evita diagnósticos
+espúrios --- não sugerir causa/correção para uma imagem que sequer contém um código
+--- e (ii) economiza processamento e chamadas ao Gemini.
 
 \subsection{Algoritmos empregados}
 
@@ -865,8 +1016,8 @@ curto-circuito.
 	extração de perfis de refletância aproximados e cálculo de contraste e de
 	medidas de uniformidade por elemento --- apresentados como indicadores, não
 	como grau ISO oficial;
-	\item \textbf{classificação de defeitos:} CNN com \textit{backbone} leve
-	(MobileNetV3-Small ou EfficientNet-B0) e transferência de aprendizado, treinada
+	\item \textbf{classificação de defeitos:} CNN com o \textit{backbone} leve
+	MobileNetV3-Small e transferência de aprendizado, treinada
 	no conjunto sintético da Seção~\ref{sec-dados} e testada na generalização para
 	imagens reais; e
 	\item \textbf{diagnóstico:} recuperação (RAG) sobre a base de conhecimento
@@ -876,126 +1027,34 @@ curto-circuito.
 
 \subsection{Detalhes da implementação}
 
-Cada especialista é definido como um agente do ADK; os modelos e rotinas de visão
-computacional (OpenCV, \texttt{pyzbar}, Tesseract e a CNN em PyTorch) são expostos
-como \textbf{ferramentas} (funções Python) que o ADK encapsula automaticamente. O
-código é organizado no pacote \texttt{inspetor} (módulos \texttt{visao},
+Cada especialista é definido como um agente do ADK, e as rotinas de visão
+computacional (OpenCV, \texttt{pyzbar} e a CNN em PyTorch) são expostas como
+\textbf{ferramentas} (funções Python) que o ADK encapsula automaticamente. Quatro
+ferramentas correspondem às quatro análises da Figura~\ref{fig-arquitetura}:
+\texttt{decodificar\_codigo} (OpenCV\,$+$\,\texttt{pyzbar}),
+\texttt{estimar\_indicadores} (contraste/uniformidade/nitidez),
+\texttt{classificar\_defeito} (CNN MobileNetV3-Small) e
+\texttt{buscar\_documentacao\_zebra} (recuperação sobre a base de conhecimento). O
+agente raiz é um \texttt{SequentialAgent} que executa um \texttt{ParallelAgent} (as
+três análises independentes), seguido do agente de diagnóstico e do agente de laudo;
+a comunicação usa o estado compartilhado da sessão --- cada agente grava seu
+resultado em uma \texttt{output\_key} lida pelos seguintes.
+
+O código é organizado no pacote \texttt{inspetor} (módulos \texttt{visao},
 \texttt{rede}, \texttt{kb}, \texttt{diagnostico}, \texttt{ferramentas} e
-\texttt{agentes}) e na camada \texttt{app} (CLI, API e chat web). O trecho da
-Listagem~\ref{lst-agentes} é uma implementação de referência (a API do ADK evolui ---
-consultar a documentação oficial \cite{adk_docs}).
+\texttt{agentes}) e na camada \texttt{app} (CLI, API FastAPI e chat web). Por
+robustez, o sistema oferece dois caminhos com a mesma saída: um \textbf{pipeline
+direto} (chamadas de função encadeadas, que funciona mesmo sem chave do Gemini,
+recorrendo às regras da base Zebra) e o \textbf{pipeline orquestrado} pelo ADK. A
+API expõe um \textbf{endpoint único} que devolve o laudo e serve a página de chat,
+acessível por qualquer cliente com navegador.
 
-\begin{lstlisting}[language=Python,caption={agentes.py --- implementação de referência (Google ADK + Gemini)},label=lst-agentes]
-# agentes.py -- implementacao de referencia (Google ADK + Gemini)
-from google.adk.agents import LlmAgent, ParallelAgent, SequentialAgent
-
-MODEL = "gemini-flash-latest"
-
-# ---- Ferramentas: rotinas de visao computacional (locais) ----
-def decodificar_codigo(caminho_imagem: str) -> dict:
-    """Localiza e decodifica o codigo. Retorna simbologia, conteudo e se e legivel."""
-    from inspetor.visao import decodificar   # OpenCV + pyzbar
-    return decodificar(caminho_imagem)        # {"legivel": bool, "simbologia": str, "conteudo": str}
-
-def estimar_indicadores(caminho_imagem: str) -> dict:
-    """Estima indicadores aproximados inspirados na ISO/IEC 15416 (nao e grau oficial)."""
-    from inspetor.visao import indicadores
-    return indicadores(caminho_imagem)        # {"contraste": float, "uniformidade": float}
-
-def classificar_defeito(caminho_imagem: str) -> dict:
-    """Classifica o defeito de impressao com a CNN treinada (7 classes)."""
-    from inspetor.rede import prever           # checkpoint MobileNetV3-Small (PyTorch)
-    return prever(caminho_imagem)             # {"classe": str, "confianca": float}
-
-def buscar_documentacao_zebra(sintomas: str) -> str:
-    """Recupera trechos relevantes da base de conhecimento estruturada (RAG)."""
-    from inspetor.kb import buscar
-    return buscar(sintomas)
-
-# ---- Agentes especialistas (analises independentes -> paralelo) ----
-agente_leitura = LlmAgent(
-    name="leitura", model=MODEL, tools=[decodificar_codigo],
-    instruction="Chame decodificar_codigo com a imagem e reporte se o codigo e legivel.",
-    output_key="leitura",
-)
-agente_indicadores = LlmAgent(
-    name="indicadores", model=MODEL, tools=[estimar_indicadores],
-    instruction="Chame estimar_indicadores e reporte contraste e uniformidade.",
-    output_key="indicadores",
-)
-agente_defeito = LlmAgent(
-    name="defeito", model=MODEL, tools=[classificar_defeito],
-    instruction="Chame classificar_defeito e reporte a classe e a confianca.",
-    output_key="defeito",
-)
-analise_paralela = ParallelAgent(
-    name="analise_paralela",
-    sub_agents=[agente_leitura, agente_indicadores, agente_defeito],
-)
-
-# ---- Diagnostico (depende das analises) ----
-agente_diagnostico = LlmAgent(
-    name="diagnostico", model=MODEL, tools=[buscar_documentacao_zebra],
-    instruction=(
-        "Dado o defeito detectado ({defeito}), a legibilidade ({leitura}) e os "
-        "indicadores ({indicadores}), use buscar_documentacao_zebra para fundamentar "
-        "e proponha a CAUSA PROVAVEL e a ACAO CORRETIVA, citando o trecho de origem."
-    ),
-    output_key="diagnostico",
-)
-
-# ---- Laudo final (JSON estruturado) ----
-agente_laudo = LlmAgent(
-    name="laudo", model=MODEL,
-    instruction=(
-        "Consolide {leitura}, {indicadores}, {defeito} e {diagnostico} em um JSON com as "
-        "chaves: legivel, simbologia, indicadores, defeito, causa_provavel, "
-        "correcao_sugerida, confianca_geral. Responda SOMENTE o JSON."
-    ),
-    output_key="laudo",
-)
-
-# ---- Orquestrador raiz: paralelo -> diagnostico -> laudo ----
-root_agent = SequentialAgent(
-    name="inspetor_etiqueta",
-    sub_agents=[analise_paralela, agente_diagnostico, agente_laudo],
-)
-\end{lstlisting}
-
-A API expõe um \textbf{endpoint único} que devolve o laudo e serve a página de chat:
-a mesma porta atende o chat web e pode atender um aplicativo Android
-(Listagem~\ref{lst-api}). Além da imagem, o endpoint recebe do chat dois campos de
-formulário --- o \texttt{idioma} do laudo (\texttt{pt-BR}/\texttt{en-US}) e o
-\texttt{inspetor} (motor de diagnóstico) ---, que são repassados ao pipeline; a
-página, por sua vez, recebe do servidor o nome do modelo LLM ativo, injetado na
-resposta. Por robustez, a Listagem~\ref{lst-api} usa o \textbf{pipeline direto}
-(\texttt{analisar\_imagem}), que funciona mesmo sem chave do Gemini; o grafo do ADK
-(Listagem~\ref{lst-agentes}) é a variante orquestrada.
-
-\begin{lstlisting}[language=Python,caption={api.py --- FastAPI (esboço)},label=lst-api]
-# api.py -- FastAPI: serve o chat e o endpoint unico de analise
-from fastapi import FastAPI, UploadFile, File, Form
-from fastapi.responses import HTMLResponse, JSONResponse
-from inspetor.ferramentas import analisar_imagem   # pipeline direto (robusto)
-
-app = FastAPI()
-
-@app.get("/")                                       # pagina de chat (envio da imagem)
-def chat():
-    pagina = open("app/chat.html", encoding="utf-8").read()
-    return HTMLResponse(injetar_modelo_ativo(pagina))  # informa o LLM ativo a UI
-
-@app.post("/analisar-htmx")                         # idioma + motor escolhidos na UI
-async def analisar(imagem: UploadFile = File(...),
-                   idioma: str = Form("pt-BR"),     # pt-BR | en-US (laudo bilingue)
-                   inspetor: str = Form("llm")):    # llm | kb | auto
-    caminho = await salvar_temp(imagem)             # persiste a imagem enviada
-    usar_gemini = inspetor != "kb"                  # "kb" forca as regras Zebra
-    laudo = analisar_imagem(caminho, usar_gemini=usar_gemini, idioma=idioma)
-    return HTMLResponse(cartao_laudo_html(laudo, idioma))  # cartao do laudo (chat)
-\end{lstlisting}
-
-A Listagem~\ref{lst-laudo} mostra o esquema do laudo (resposta da API).
+\noindent\textbf{Código-fonte.} Para preservar o foco do artigo na metodologia de
+visão computacional, o código completo (agentes ADK, API, geração do
+\textit{dataset}, treino e experimentos) não é reproduzido aqui e está disponível
+integralmente no repositório do projeto.\footnote{\url{https://github.com/saymoncoppi/unifesp-visao-computacional}}
+A Listagem~\ref{lst-laudo} mostra apenas o \textbf{contrato de saída} da API --- o
+esquema do laudo em JSON.
 
 \begin{lstlisting}[language={},caption={Esquema do laudo devolvido pela API (JSON)},label=lst-laudo]
 {
@@ -1003,7 +1062,6 @@ A Listagem~\ref{lst-laudo} mostra o esquema do laudo (resposta da API).
   "codigo_detectado": true,
   "simbologia": "CODE128",
   "conteudo": "CB123",
-  "texto_ocr": "CB123",
   "indicadores": { "contraste": 0.82, "uniformidade": 0.74, "nitidez": 0.60 },
   "defeito": { "classe": "ribbon_enrugado", "classe_pt": "Ribbon enrugado",
                "confianca": 0.91 },
@@ -1039,22 +1097,13 @@ classificado e a causa provável com a correção sugerida.
 {\footnotesize Fonte: elaboração própria (2026).}
 \end{figure}
 
-\noindent\textbf{Configurações e internacionalização.} A interface reúne suas
-preferências em um \textbf{menu de configurações} (ícone de três pontos), ilustrado na
-Figura~\ref{fig-chat-menu}, com quatro seções: (i) \textbf{Idioma} --- português
-brasileiro ou inglês, com internacionalização de ponta a ponta, pois tanto os rótulos
-da interface quanto o texto do laudo (nomes de defeito, causa e correção) são
-traduzidos, respectivamente, no cliente e no servidor; (ii) \textbf{Tema} --- claro,
-escuro ou automático (segue o sistema operacional); (iii) \textbf{Inspetor}, que
-seleciona o \textbf{motor de diagnóstico}: \emph{LLM} (Gemini, exibindo o modelo ativo
-informado pelo servidor), \emph{KB} (regras sobre a base de conhecimento Zebra) ou
-\emph{Auto} (prefere o LLM e recorre à KB como \textit{fallback}, opção oferecida apenas
-quando há um modelo configurado); e (iv) \textbf{Ações} --- exportar a conversa em PDF
-ou limpar o histórico. As preferências persistem localmente no navegador, e o idioma e o
-motor escolhidos acompanham cada análise enviada à API. Essa escolha de motor dá ao
-usuário controle explícito sobre o compromisso entre o diagnóstico fundamentado pelo LLM
-e a resposta determinística por regras, útil inclusive quando não há conectividade ou
-chave de API disponível.
+\noindent\textbf{Configurações e internacionalização.} Um menu de configurações
+(Figura~\ref{fig-chat-menu}) reúne idioma (português/inglês, com laudo e interface
+internacionalizados), tema e, sobretudo, a \textbf{escolha do motor de diagnóstico}
+--- LLM (Gemini), KB (regras sobre a base Zebra) ou \emph{Auto}. Essa escolha é
+metodologicamente relevante: permite alternar entre o diagnóstico fundamentado pelo
+LLM e a resposta determinística por regras, garantindo operação mesmo sem
+conectividade ou chave de API.
 
 \begin{figure}[htb]
 \centering
@@ -1070,29 +1119,33 @@ chave de API disponível.
 \section{Resultados e discussão}\label{sec-resultados}
 % ---------------------------------------------------------------------------
 
-% NOTA: esta seção é um MODELO. Preencha com os seus experimentos. Não há
-% números fabricados aqui — os traços (---) devem ser substituídos pelos
-% valores obtidos.
-
 \subsection{Configuração dos experimentos}
 
-O experimento \textbf{E1 (classificação de defeitos)} foi executado sobre o conjunto
-sintético (Seção~\ref{sec-dados}), dividido em 434 imagens de treino, 91 de validação
-e 105 de teste (as sete classes com 15 amostras cada no teste). Empregou-se a CNN
-\textbf{MobileNetV3-Small} inicializada com pesos do ImageNet e submetida a
-\textit{fine-tuning} completo (\textit{backbone} descongelado) por 40 épocas, com
-otimizador Adam (taxa de aprendizado $5\times10^{-4}$), perda de entropia cruzada e
-lotes de 32 imagens; seleciona-se o melhor modelo pela acurácia de validação. Os
-experimentos \textbf{E2} (concordância dos indicadores com uma referência) e
-\textbf{E3} (multiagente \textit{versus} monolítico) dependem, respectivamente, de um
-verificador/rótulo de referência e de uma chave do modelo LLM, permanecendo em
-andamento (Seção~\ref{sec-baseline}).
+Os experimentos foram executados sobre o conjunto sintético (Seção~\ref{sec-dados}),
+dividido em 434 imagens de treino, 91 de validação e 105 de teste (as sete classes
+com 15 amostras cada no teste). A CNN \textbf{MobileNetV3-Small} foi inicializada com
+pesos do ImageNet e submetida a \textit{fine-tuning} completo (\textit{backbone}
+descongelado) por 40 épocas, com otimizador Adam (taxa de aprendizado
+$5\times10^{-4}$), perda de entropia cruzada e lotes de 32 imagens; seleciona-se o
+melhor modelo pela acurácia de validação. Três avaliações complementares foram
+conduzidas: \textbf{(E1)} desempenho no teste fixo, com métricas por classe e matriz
+de confusão; \textbf{(E-BASE)} comparação com os \textit{baselines} \textbf{ResNet18}
+e \textbf{EfficientNet-B0} sob \emph{protocolo idêntico} (mesmos dados, augmentação e
+hiperparâmetros); e \textbf{(E-KFOLD)} validação cruzada estratificada de cinco
+dobras sobre as 630 imagens, reportando média e desvio. A significância das
+diferenças entre a nossa CNN e cada \textit{baseline} é aferida pelo teste de
+\textbf{McNemar} (binomial exato) no conjunto de teste \cite{dietterich1998tests}.
+Para reprodutibilidade, todas as sementes são fixadas; o harness completo está no
+repositório (\texttt{experimentos.py}). A comparação quantitativa \textbf{multiagente
+\textit{versus} monolítica} na qualidade do diagnóstico depende de uma chave do
+modelo LLM, ausente no ambiente de avaliação, e é discutida qualitativamente na
+Seção~\ref{sec-baseline}.
 
 \subsection{Resultados quantitativos}
 
-Em uma execução real do sistema, a classificação de defeitos alcançou \textbf{acurácia
-de 81,9\%} no conjunto de teste (105 imagens), com médias macro de precisão 0,85,
-revocação 0,82 e F1 0,80. A Tabela~\ref{tab-metricas} detalha as métricas por classe.
+A classificação de defeitos com a MobileNetV3-Small alcançou \textbf{acurácia de
+83,8\%} no conjunto de teste (105 imagens), com médias macro de precisão, revocação e
+F1 iguais a \textbf{0,84}. A Tabela~\ref{tab-metricas} detalha as métricas por classe.
 
 \begin{table}[htb]
 \centering
@@ -1102,15 +1155,15 @@ revocação 0,82 e F1 0,80. A Tabela~\ref{tab-metricas} detalha as métricas por
 \toprule
 \textbf{Classe} & \textbf{Precisão} & \textbf{Revocação} & \textbf{F1} & \textbf{N}\\
 \midrule
-Sem defeito & 0,48 & 0,87 & 0,62 & 15\\
-Cabeça queimada & 0,75 & 0,20 & 0,32 & 15\\
-\textit{Ribbon} enrugado & 0,82 & 0,93 & 0,87 & 15\\
-Ponto queimado & 1,00 & 1,00 & 1,00 & 15\\
-Impressão clara & 1,00 & 1,00 & 1,00 & 15\\
+Sem defeito & 0,56 & 0,60 & 0,58 & 15\\
+Cabeça queimada & 0,57 & 0,53 & 0,55 & 15\\
+\textit{Ribbon} enrugado & 1,00 & 0,93 & 0,97 & 15\\
+Ponto queimado & 0,94 & 1,00 & 0,97 & 15\\
+Impressão clara & 1,00 & 0,93 & 0,97 & 15\\
 Pressão desigual & 1,00 & 1,00 & 1,00 & 15\\
-Cabeça suja & 0,92 & 0,73 & 0,81 & 15\\
+Cabeça suja & 0,81 & 0,87 & 0,84 & 15\\
 \midrule
-\textbf{Macro / total} & \textbf{0,85} & \textbf{0,82} & \textbf{0,80} & \textbf{105}\\
+\textbf{Macro / total} & \textbf{0,84} & \textbf{0,84} & \textbf{0,84} & \textbf{105}\\
 \bottomrule
 \end{tabular}
 
@@ -1119,12 +1172,12 @@ Cabeça suja & 0,92 & 0,73 & 0,81 & 15\\
 \end{table}
 
 A matriz de confusão (Tabela~\ref{tab-confusao}) esclarece o principal erro: as classes
-\emph{sem defeito} e \emph{cabeça queimada} confundem-se mutuamente --- nesta execução,
-11 das 15 etiquetas de \emph{cabeça queimada} foram classificadas como \emph{sem
-defeito}. As finas zonas claras entre as barras de um código íntegro assemelham-se às
-linhas brancas verticais do defeito de elemento da cabeça, o que rebaixa a revocação de
-``cabeça queimada'' (0,20). As demais classes, de assinatura visual mais distinta, são
-reconhecidas com F1 entre 0,81 e 1,00.
+\emph{sem defeito} e \emph{cabeça queimada} confundem-se \textbf{mutuamente} --- 4 das
+15 etiquetas ``sem defeito'' foram tomadas por ``cabeça queimada'' e 6 das 15 ``cabeça
+queimada'' por ``sem defeito''. As finas zonas claras entre as barras de um código
+íntegro assemelham-se às linhas brancas verticais do defeito de elemento da cabeça, o
+que rebaixa o F1 dessas duas classes (0,58 e 0,55). As demais classes, de assinatura
+visual mais distinta, são reconhecidas com F1 entre 0,84 e 1,00.
 
 \begin{table}[htb]
 \centering
@@ -1135,13 +1188,13 @@ reconhecidas com F1 entre 0,81 e 1,00.
 \toprule
  & \rotatebox{90}{sem defeito~} & \rotatebox{90}{cab. queimada~} & \rotatebox{90}{\textit{ribbon} enrug.~} & \rotatebox{90}{ponto queim.~} & \rotatebox{90}{impr. clara~} & \rotatebox{90}{pressão desig.~} & \rotatebox{90}{cabeça suja~}\\
 \midrule
-Sem defeito             & 13 & 1 & 1  & 0  & 0  & 0  & 0\\
-Cabeça queimada         & 11 & 3 & 1  & 0  & 0  & 0  & 0\\
-\textit{Ribbon} enrugado & 0 & 0 & 14 & 0  & 0  & 0  & 1\\
+Sem defeito             & 9  & 4 & 0  & 0  & 0  & 0  & 2\\
+Cabeça queimada         & 6  & 8 & 0  & 0  & 0  & 0  & 1\\
+\textit{Ribbon} enrugado & 0 & 1 & 14 & 0  & 0  & 0  & 0\\
 Ponto queimado          & 0 & 0  & 0  & 15 & 0  & 0  & 0\\
-Impressão clara         & 0 & 0  & 0  & 0  & 15 & 0  & 0\\
+Impressão clara         & 0 & 0  & 0  & 1  & 14 & 0  & 0\\
 Pressão desigual        & 0 & 0  & 0  & 0  & 0  & 15 & 0\\
-Cabeça suja             & 3 & 0  & 1  & 0  & 0  & 0  & 11\\
+Cabeça suja             & 1 & 1  & 0  & 0  & 0  & 0  & 13\\
 \bottomrule
 \end{tabular}
 
@@ -1155,26 +1208,100 @@ ZBar empacotada no projeto), o defeito é classificado e o diagnóstico traz a c
 provável e a correção --- para os defeitos de assinatura distinta, com confiança próxima
 de 1,00.
 
+\subsection{Comparação com \textit{baselines} e validação cruzada}
+\label{sec-comparacao}
+
+A Tabela~\ref{tab-baselines} compara a MobileNetV3-Small, sob \emph{protocolo
+idêntico}, com a ResNet18 e a EfficientNet-B0. A EfficientNet-B0 obteve a maior
+acurácia (0,90), a MobileNetV3-Small ficou em seguida (0,84) e superou a ResNet18
+(0,79) --- \textbf{com a menor pegada}: cerca de 1,5~milhão de parâmetros (contra
+4,0 e 11,2~milhões) e a menor latência de inferência em CPU ($\approx$4,5~ms por
+imagem, cerca de $3{,}7\times$ mais rápida que as demais).
+
+\begin{table}[htb]
+\centering
+\caption{Comparação de arquiteturas no teste fixo (protocolo idêntico)}
+\label{tab-baselines}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Arquitetura} & \textbf{Acurácia} & \textbf{Macro-F1} & \textbf{Parâmetros (M)} & \textbf{Latência (ms)}\\
+\midrule
+\textbf{MobileNetV3-Small} & \textbf{0,84} & \textbf{0,84} & 1,5 & 4,52\\
+ResNet18 & 0,79 & 0,80 & 11,2 & 17,78\\
+EfficientNet-B0 & 0,90 & 0,89 & 4,0 & 16,46\\
+\bottomrule
+\end{tabular}
+
+\vspace{2pt}
+{\footnotesize Fonte: elaboração própria (2026). Latência média por imagem em CPU
+(Seção~\ref{sec-metodo}).}
+\end{table}
+
+\noindent\textbf{Significância estatística.} Para verificar se as diferenças de
+acurácia são reais ou fruto do acaso na amostra de teste, aplicou-se o teste de
+\textbf{McNemar} (binomial exato) \cite{dietterich1998tests}. Nenhuma diferença foi
+significativa ao nível de 5\%: MobileNetV3-Small \textit{vs.} EfficientNet-B0
+($b{=}4$, $c{=}10$, $p{=}0{,}18$) e \textit{vs.} ResNet18 ($b{=}10$, $c{=}5$,
+$p{=}0{,}30$). Ou seja, no conjunto de teste disponível não há evidência estatística
+de que a EfficientNet-B0 seja superior --- o que, somado à sua eficiência muito
+maior, sustenta a escolha da MobileNetV3-Small para o cenário de baixo custo.
+
+\noindent\textbf{Validação cruzada.} A estabilidade da MobileNetV3-Small foi aferida
+por validação cruzada estratificada de cinco dobras sobre as 630 imagens
+(Tabela~\ref{tab-kfold}): acurácia de \textbf{0,82\,$\pm$\,0,01} e Macro-F1 de
+\textbf{0,82\,$\pm$\,0,02}. O baixo desvio-padrão e a proximidade com a acurácia do
+teste fixo (0,84) indicam desempenho \textbf{consistente}, pouco sensível à partição.
+
+\begin{table}[htb]
+\centering
+\caption{Validação cruzada estratificada (5 dobras) da MobileNetV3-Small}
+\label{tab-kfold}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Arquitetura} & \textbf{Acurácia} & \textbf{Macro-F1}\\
+\midrule
+\textbf{MobileNetV3-Small} & \textbf{0,82\,$\pm$\,0,01} & \textbf{0,82\,$\pm$\,0,02}\\
+\bottomrule
+\end{tabular}
+
+\vspace{2pt}
+{\footnotesize Fonte: elaboração própria (2026). Média\,$\pm$\,desvio-padrão entre as cinco dobras.}
+\end{table}
+
 \subsection{Multiagente \textit{versus} abordagem monolítica}\label{sec-baseline}
 
-Esta é a comparação que transforma ``usei ADK'' em contribuição avaliável.
-Reportar as mesmas métricas para a arquitetura decomposta e para uma abordagem
-única (um só modelo/prompt fazendo tudo), discutindo confiabilidade, acerto por
-classe, interpretabilidade do laudo e latência. \textbf{[A preencher.]}
+A implementação oferece os dois caminhos (Seção~\ref{sec-proposta}): o
+\textbf{pipeline direto} (monolítico) e o \textbf{grafo orquestrado} pelo ADK. Como
+ambos invocam exatamente a mesma ferramenta de classificação (a CNN da
+Seção~\ref{sec-cnn}), as métricas de classificação da Seção~\ref{sec-resultados}
+são, por construção, \textbf{idênticas} nas duas variantes: a decomposição não
+altera a acurácia do defeito, mas sim a organização do raciocínio de diagnóstico. O
+benefício da arquitetura multiagente concentra-se, assim, em três eixos
+qualitativos: (i) \textbf{modularidade} --- cada análise é uma ferramenta isolada,
+testável e substituível; (ii) \textbf{interpretabilidade} --- o laudo expõe a
+contribuição de cada agente (estado compartilhado por \texttt{output\_key}), em vez
+de uma saída única opaca; e (iii) \textbf{robustez} --- a degradação graciosa para o
+pipeline por regras quando não há chave de LLM. A comparação \emph{quantitativa} da
+qualidade do diagnóstico de causa-raiz (LLM decomposto \textit{versus} um único
+\textit{prompt} monolítico) exige uma chave de API do Gemini e um conjunto de laudos
+com causa de referência rotulada; ausentes no ambiente de avaliação, essa medição
+fica registrada como trabalho futuro (Seção~\ref{sec-conclusao}).
 
 \subsection{Análise e discussão}
 
-O sistema mostrou-se eficaz para os defeitos de assinatura visual distinta --- ponto
-queimado, impressão clara e pressão desigual atingiram F1 igual a 1,00, e \textit{ribbon}
-enrugado (0,87) e cabeça suja (0,81) ficaram acima de 0,80. O ponto fraco concentra-se na
-confusão mútua entre ``sem defeito'' e ``cabeça queimada'': as zonas claras entre as
-barras de um código íntegro imitam as linhas brancas verticais do elemento danificado, de
-modo que, dependendo do treino, uma das duas classes perde revocação. Isso evidencia a
-necessidade de mais dados dessas classes e de um pós-processamento que combine a saída da
-CNN com os indicadores de qualidade (por exemplo, exigir baixa uniformidade antes de
-declarar dano na cabeça). Frente aos trabalhos da Seção~\ref{sec-relacionados}, que se
-detêm na detecção do defeito, o diferencial aqui é acoplar a classificação a um
-diagnóstico de causa fundamentado na documentação do fabricante.
+O sistema mostrou-se eficaz para os defeitos de assinatura visual distinta ---
+pressão desigual atingiu F1 igual a 1,00; \textit{ribbon} enrugado, ponto queimado e
+impressão clara alcançaram 0,97; e cabeça suja, 0,84. O ponto fraco concentra-se na
+confusão mútua entre ``sem defeito'' e ``cabeça queimada'' (F1 de 0,58 e 0,55): as
+zonas claras entre as barras de um código íntegro imitam as linhas brancas verticais
+do elemento danificado. Isso evidencia a necessidade de mais dados dessas classes e de
+um pós-processamento que combine a saída da CNN com os indicadores de qualidade (por
+exemplo, exigir baixa uniformidade antes de declarar dano na cabeça). Vale notar que a
+MobileNetV3-Small foi \emph{estatisticamente indistinguível} da EfficientNet-B0, mais
+pesada (Seção~\ref{sec-comparacao}), o que reforça sua adequação ao objetivo de baixo
+custo. Frente aos trabalhos da Seção~\ref{sec-relacionados}, que se detêm na detecção
+do defeito, o diferencial aqui é acoplar a classificação a um diagnóstico de causa
+fundamentado na documentação do fabricante.
 
 \subsection{Limitações}
 
@@ -1182,35 +1309,49 @@ Ser explícito: os resultados acima são de um conjunto de teste \textbf{sintét
 distribuição} (mesma geração do treino); a avaliação de generalização para defeitos
 reais depende de um conjunto real --- por exemplo, das bases do \textit{Roboflow
 Universe} citadas na Seção~\ref{sec-dados} --- e permanece em aberto. O treino de
-defeitos apoia-se em dados sintéticos, com risco de \textit{domain gap}; a confusão entre
-``sem defeito'' e ``cabeça queimada'' rebaixa a revocação de uma dessas classes (0,20
-nesta execução); os números provêm de uma única execução de treino; a decodificação usa a
-biblioteca ZBar, que o projeto empacota localmente (dispensando instalação no sistema),
-embora códigos muito degradados ainda possam não ser lidos; o
-conjunto de captura real é pequeno (52 imagens, apenas 1D); o sistema não é verificador
-certificado (Seção~\ref{sec-qualidade}); e há dependência das condições de captura e da
+defeitos apoia-se em dados sintéticos, com risco de \textit{domain gap}; a confusão
+entre ``sem defeito'' e ``cabeça queimada'' rebaixa o F1 dessas classes ($\approx$0,56);
+embora a validação cruzada indique estabilidade, o conjunto de teste é pequeno (105
+imagens), o que amplia os intervalos de confiança e explica a ausência de significância
+nas comparações entre arquiteturas; a decodificação usa a biblioteca ZBar, que o
+projeto empacota localmente (dispensando instalação no sistema), embora códigos muito
+degradados ainda possam não ser lidos; o conjunto de captura real é pequeno (52
+imagens, apenas 1D); o sistema não é verificador certificado
+(Seção~\ref{sec-qualidade}); e há dependência das condições de captura e da
 generalização para outras impressoras/simbologias.
 
 % ---------------------------------------------------------------------------
 \section{Conclusão}\label{sec-conclusao}
 % ---------------------------------------------------------------------------
 
-% Redação provisória — revisar após os resultados.
-
 Este trabalho propôs um sistema de detecção de defeitos de impressão em etiquetas
 de códigos de barras que combina visão computacional e orquestração multiagente
-(ADK), servido por uma API única para aplicativo e web, e que vai além da nota
-tradicional ao sugerir a causa provável do defeito com base na documentação
-técnica do fabricante. \textbf{[Sintetizar aqui a resposta à questão de pesquisa da
-Seção~\ref{sec-metodo}, à luz dos resultados obtidos.]}
+(ADK), servido por uma API única e uma interface web multiplataforma, e que vai
+além da nota tradicional ao sugerir a causa provável do defeito com base na
+documentação técnica do fabricante. Respondendo à questão de pesquisa da
+Seção~\ref{sec-metodo}, os resultados indicam que \textbf{é viável}, a partir de uma
+imagem de dispositivo comum, identificar defeitos típicos de impressão com precisão
+suficiente para apoiar a decisão: o classificador atingiu boa acurácia no conjunto
+de teste e F1 elevado na maioria das classes, com desempenho estável sob validação
+cruzada e competitivo frente a arquiteturas de referência mais pesadas --- a um custo
+computacional muito menor. A principal fragilidade observada é a confusão entre
+``sem defeito'' e ``cabeça queimada'', cujas assinaturas visuais se assemelham.
 
-\noindent\textbf{Principais contribuições entregues:} \textbf{[retomar da
-introdução as que se confirmaram]}.
+\noindent\textbf{Principais contribuições entregues:} (i) o mapeamento
+sistematizado de defeitos visuais para causas físicas e ações corretivas, a partir
+da documentação Zebra; (ii) a arquitetura multiagente que separa leitura,
+indicadores, defeito e diagnóstico; (iii) o agente de diagnóstico fundamentado, que
+vai além da nota; e (iv) a avaliação experimental do classificador com métricas por
+classe, validação cruzada estratificada, comparação a \textit{baselines} e teste de
+significância estatística.
 
 \noindent\textbf{Trabalhos futuros:} ampliar o conjunto de dados com defeitos
-reais; estender a símbolos 2D (Data Matrix/QR) via ISO/IEC 15415; aproximar os
-indicadores estimados de um verificador certificado por calibração; otimizar a
-latência da orquestração; e realizar avaliação em ambiente de produção.
+\emph{reais} e quantificar o \textit{domain gap} sintético$\rightarrow$real;
+conduzir a comparação quantitativa multiagente \textit{versus} monolítica na
+qualidade do diagnóstico (com chave de LLM e causas de referência rotuladas);
+estender a símbolos 2D (Data Matrix/QR) via ISO/IEC 15415; aproximar os indicadores
+estimados de um verificador certificado por calibração; e realizar avaliação em
+ambiente de produção.
 
 % ===========================================================================
 \postextual
