@@ -1,0 +1,414 @@
+{
+  "config": {
+    "epochs": 40,
+    "lr": 0.0005,
+    "batch": 32,
+    "kfolds": 5,
+    "seed": 42,
+    "n_train": 434,
+    "n_val": 91,
+    "n_test": 105,
+    "classes": [
+      "no_defect",
+      "damaged_printhead_element",
+      "wrinkled_ribbon",
+      "burnt_spot",
+      "light_print",
+      "uneven_pressure",
+      "dirty_printhead"
+    ]
+  },
+  "fixed_split": {
+    "MobileNetV3-Small": {
+      "accuracy": 0.8381,
+      "macro_precision": 0.8406,
+      "macro_recall": 0.8381,
+      "macro_f1": 0.8386,
+      "per_class": {
+        "no_defect": {
+          "precision": 0.5625,
+          "recall": 0.6,
+          "f1": 0.5806,
+          "n": 15
+        },
+        "damaged_printhead_element": {
+          "precision": 0.5714,
+          "recall": 0.5333,
+          "f1": 0.5517,
+          "n": 15
+        },
+        "wrinkled_ribbon": {
+          "precision": 1.0,
+          "recall": 0.9333,
+          "f1": 0.9655,
+          "n": 15
+        },
+        "burnt_spot": {
+          "precision": 0.9375,
+          "recall": 1.0,
+          "f1": 0.9677,
+          "n": 15
+        },
+        "light_print": {
+          "precision": 1.0,
+          "recall": 0.9333,
+          "f1": 0.9655,
+          "n": 15
+        },
+        "uneven_pressure": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "n": 15
+        },
+        "dirty_printhead": {
+          "precision": 0.8125,
+          "recall": 0.8667,
+          "f1": 0.8387,
+          "n": 15
+        }
+      },
+      "confusion_matrix": [
+        [
+          9,
+          4,
+          0,
+          0,
+          0,
+          0,
+          2
+        ],
+        [
+          6,
+          8,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          14,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          15,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          14,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          15,
+          0
+        ],
+        [
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          13
+        ]
+      ],
+      "val_acc": 0.8571,
+      "n_params": 1525031,
+      "latency_ms": 4.52,
+      "train_time_s": 231.3
+    },
+    "ResNet18": {
+      "accuracy": 0.7905,
+      "macro_precision": 0.8165,
+      "macro_recall": 0.7905,
+      "macro_f1": 0.801,
+      "per_class": {
+        "no_defect": {
+          "precision": 0.4,
+          "recall": 0.4,
+          "f1": 0.4,
+          "n": 15
+        },
+        "damaged_printhead_element": {
+          "precision": 0.3158,
+          "recall": 0.4,
+          "f1": 0.3529,
+          "n": 15
+        },
+        "wrinkled_ribbon": {
+          "precision": 1.0,
+          "recall": 0.9333,
+          "f1": 0.9655,
+          "n": 15
+        },
+        "burnt_spot": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "n": 15
+        },
+        "light_print": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "n": 15
+        },
+        "uneven_pressure": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "n": 15
+        },
+        "dirty_printhead": {
+          "precision": 1.0,
+          "recall": 0.8,
+          "f1": 0.8889,
+          "n": 15
+        }
+      },
+      "confusion_matrix": [
+        [
+          6,
+          9,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          9,
+          6,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          14,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          15,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          15,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          15,
+          0
+        ],
+        [
+          0,
+          3,
+          0,
+          0,
+          0,
+          0,
+          12
+        ]
+      ],
+      "val_acc": 0.8791,
+      "n_params": 11180103,
+      "latency_ms": 17.78,
+      "train_time_s": 935.8
+    },
+    "EfficientNet-B0": {
+      "accuracy": 0.8952,
+      "macro_precision": 0.9,
+      "macro_recall": 0.8952,
+      "macro_f1": 0.8922,
+      "per_class": {
+        "no_defect": {
+          "precision": 0.6,
+          "recall": 0.8,
+          "f1": 0.6857,
+          "n": 15
+        },
+        "damaged_printhead_element": {
+          "precision": 0.7,
+          "recall": 0.4667,
+          "f1": 0.56,
+          "n": 15
+        },
+        "wrinkled_ribbon": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "n": 15
+        },
+        "burnt_spot": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "n": 15
+        },
+        "light_print": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "n": 15
+        },
+        "uneven_pressure": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "n": 15
+        },
+        "dirty_printhead": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "n": 15
+        }
+      },
+      "confusion_matrix": [
+        [
+          12,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          8,
+          7,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          15,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          15,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          15,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          15,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          15
+        ]
+      ],
+      "val_acc": 0.9231,
+      "n_params": 4016515,
+      "latency_ms": 16.46,
+      "train_time_s": 1317.5
+    }
+  },
+  "kfold": {
+    "MobileNetV3-Small": {
+      "accuracy_mean": 0.8191,
+      "accuracy_std": 0.0137,
+      "f1_mean": 0.8196,
+      "f1_std": 0.0155,
+      "accuracies": [
+        0.8413,
+        0.8175,
+        0.8016,
+        0.8095,
+        0.8254
+      ],
+      "f1s": [
+        0.8362,
+        0.823,
+        0.7907,
+        0.8194,
+        0.8288
+      ]
+    }
+  },
+  "mcnemar": {
+    "MobileNetV3-Small vs ResNet18": {
+      "b": 10,
+      "c": 5,
+      "p_value": 0.30176
+    },
+    "MobileNetV3-Small vs EfficientNet-B0": {
+      "b": 4,
+      "c": 10,
+      "p_value": 0.17957
+    }
+  }
+}

@@ -1,45 +1,45 @@
-"""Testes de inspetor.kb (base de conhecimento Zebra)."""
+"""Tests for config.inspector.kb (Zebra knowledge base)."""
 from __future__ import annotations
 
-from inspetor import config, kb
+from config.inspector import settings, kb
 
 
-def test_buscar_por_classe_para_todas_as_classes():
-    for classe in config.CLASSES:
-        item = kb.buscar_por_classe(classe)
-        assert isinstance(item, dict), f"classe sem entrada na KB: {classe}"
-        assert item.get("classe") == classe
-        # causa e ação devem estar preenchidas (inclusive sem_defeito).
-        assert item.get("causa_provavel", "").strip() != ""
-        assert item.get("acao_corretiva", "").strip() != ""
+def test_search_by_class_for_all_classes():
+    for defect_class in settings.CLASSES:
+        item = kb.search_by_class(defect_class)
+        assert isinstance(item, dict), f"class missing a KB entry: {defect_class}"
+        assert item.get("class") == defect_class
+        # Probable cause and corrective action must be filled in (including no_defect).
+        assert kb.localized_field(item, "probable_cause", settings.DEFAULT_LANGUAGE).strip() != ""
+        assert kb.localized_field(item, "corrective_action", settings.DEFAULT_LANGUAGE).strip() != ""
 
 
-def test_buscar_por_classe_inexistente_retorna_none():
-    assert kb.buscar_por_classe("classe_que_nao_existe") is None
-    assert kb.buscar_por_classe("") is None
+def test_search_by_class_unknown_returns_none():
+    assert kb.search_by_class("class_that_does_not_exist") is None
+    assert kb.search_by_class("") is None
 
 
-def test_buscar_ribbon_inclui_ribbon_enrugado():
-    resultados = kb.buscar("ribbon")
-    assert isinstance(resultados, list)
-    classes = {item.get("classe") for item in resultados}
-    assert "ribbon_enrugado" in classes
+def test_search_ribbon_includes_wrinkled_ribbon():
+    results = kb.search("ribbon")
+    assert isinstance(results, list)
+    classes = {item.get("class") for item in results}
+    assert "wrinkled_ribbon" in classes
 
 
-def test_buscar_vazio_retorna_lista_vazia():
-    assert kb.buscar("") == []
+def test_search_empty_returns_empty_list():
+    assert kb.search("") == []
 
 
-def test_contexto_para_llm_retorna_str():
-    contexto = kb.contexto_para_llm(
-        "ribbon_enrugado",
-        {"contraste": 0.4, "uniformidade": 0.5, "nitidez": 0.6},
-        {"legivel": True, "simbologia": "CODE128", "conteudo": "CB123"},
+def test_context_for_llm_returns_str():
+    context = kb.context_for_llm(
+        "wrinkled_ribbon",
+        {"contrast": 0.4, "uniformity": 0.5, "sharpness": 0.6},
+        {"readable": True, "symbology": "CODE128", "content": "CB123"},
     )
-    assert isinstance(contexto, str)
-    assert contexto.strip() != ""
+    assert isinstance(context, str)
+    assert context.strip() != ""
 
-    # Deve tolerar classe desconhecida e dicts vazios sem levantar.
-    contexto2 = kb.contexto_para_llm("classe_inexistente", {}, {})
-    assert isinstance(contexto2, str)
-    assert contexto2.strip() != ""
+    # Must tolerate an unknown class and empty dicts without raising.
+    context2 = kb.context_for_llm("unknown_class", {}, {})
+    assert isinstance(context2, str)
+    assert context2.strip() != ""

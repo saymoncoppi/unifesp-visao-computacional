@@ -1,14 +1,19 @@
-"""API HTTP do inspetor de etiquetas (FastAPI).
+"""HTTP API for the label inspector (FastAPI).
 
-Sobe um servidor que serve a interface de chat e expõe o pipeline de análise.
+Starts a server that serves the chat interface and exposes the analysis
+pipeline.
 
-Rotas:
-    GET  /          -> página de chat (app/chat.html)
-    GET  /saude     -> {"status": "ok"}
-    POST /analisar  -> recebe uma imagem (campo `imagem`) e devolve o laudo JSON.
-                       Query opcional `adk=true` usa o grafo multiagente (ADK).
+Routes:
+    GET  /               -> chat page (app/chat.html)
+    GET  /health         -> {"status": "ok"}
+    POST /analyze        -> receives an image (field `image`) and returns the
+                             report JSON. Optional query `adk=true` uses the
+                             multi-agent graph (ADK).
+    POST /analyze-htmx   -> receives an image (+ form fields `language`,
+                             `inspector`) and returns the report card as an
+                             HTML fragment (used by chat.html's htmx hx-post).
 
-Rodar:
+Run:
     # uvicorn app.api:app --reload
 """
 from __future__ import annotations
@@ -22,388 +27,438 @@ from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from inspetor import config
-from inspetor.ferramentas import analisar_imagem
+from config.inspector import settings
+from config.inspector.tools import analyze_image
 
-# Caminho da página de chat, ao lado deste módulo.
+# Path to the chat page, next to this module.
 _CHAT_HTML = Path(__file__).resolve().parent / "chat.html"
 
 app = FastAPI(
-    title="Inspetor de Etiquetas",
-    description="Analisa etiquetas de código de barras e emite um laudo de defeitos.",
+    title="Label Inspector",
+    description="Analyzes barcode labels and issues a defect report.",
     version="0.1.0",
 )
 
-# Arquivos estáticos (htmx local, etc.). Servidos em /static.
+# Static files (local htmx, etc.). Served at /static.
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
-def _modelo_ativo_js() -> str:
-    """Nome do modelo LLM ativo (só quando há Gemini configurado), seguro p/ JS."""
-    if not config.tem_gemini():
+def _active_model_js() -> str:
+    """Return the active LLM model name, safe for embedding in JS.
+
+    Returns:
+        The Gemini model name (e.g. "gemini-1.5-flash") with backslashes and
+        quotes stripped for safe injection into a JS string literal, or an
+        empty string when Gemini is not configured.
+    """
+    if not settings.has_gemini():
         return ""
-    modelo = config.GEMINI_MODEL or ""
-    # O valor vem da config/ambiente (confiável), mas remove aspas/barras por segurança
-    # já que é injetado dentro de uma string JS na página.
-    return modelo.replace("\\", "").replace('"', "").replace("'", "").strip()
+    model = settings.GEMINI_MODEL or ""
+    # The value comes from config/environment (trusted), but quotes/backslashes
+    # are stripped defensively since it is injected inside a JS string on the page.
+    return model.replace("\\", "").replace('"', "").replace("'", "").strip()
 
 
 @app.get("/", response_class=HTMLResponse)
-def raiz() -> HTMLResponse:
-    """Serve a interface de chat (HTML autossuficiente).
+def index() -> HTMLResponse:
+    """Serve the chat interface (self-contained HTML).
 
-    Injeta na página o modelo LLM ativo (para o seletor "Inspetor") substituindo
-    os marcadores ``__MODELO_ATIVO__`` e ``__TEM_GEMINI__``.
+    Injects the active LLM model into the page (for the "Inspector" selector)
+    by replacing the ``__MODELO_ATIVO__`` and ``__TEM_GEMINI__`` placeholders.
+
+    Returns:
+        HTMLResponse with the rendered chat page, or a 500 error page if
+        ``chat.html`` cannot be read from disk.
     """
     try:
-        pagina = _CHAT_HTML.read_text(encoding="utf-8")
+        page = _CHAT_HTML.read_text(encoding="utf-8")
     except OSError as exc:
         return HTMLResponse(
-            f"<h1>Interface indisponível</h1><p>{exc}</p>",
+            f"<h1>Interface unavailable</h1><p>{exc}</p>",
             status_code=500,
         )
-    pagina = pagina.replace("__MODELO_ATIVO__", _modelo_ativo_js()).replace(
-        "__TEM_GEMINI__", "true" if config.tem_gemini() else "false"
+    page = page.replace("__MODELO_ATIVO__", _active_model_js()).replace(
+        "__TEM_GEMINI__", "true" if settings.has_gemini() else "false"
     )
-    return HTMLResponse(pagina)
+    return HTMLResponse(page)
 
 
-@app.get("/saude")
-def saude() -> dict:
-    """Verificação de saúde do serviço."""
+@app.get("/health")
+def health() -> dict:
+    """Health check endpoint for the service."""
     return {"status": "ok"}
 
 
-@app.post("/analisar")
-async def analisar(imagem: UploadFile = File(...), adk: bool = False) -> JSONResponse:
-    """Recebe uma imagem, roda a análise e devolve o laudo.
+@app.post("/analyze")
+async def analyze(image: UploadFile = File(...), adk: bool = False) -> JSONResponse:
+    """Receive an image, run the analysis pipeline, and return the report.
 
-    A imagem é gravada em um arquivo temporário (o pipeline trabalha com caminhos
-    de arquivo) e removida ao final, independentemente do resultado.
+    Args:
+        image: Uploaded image (multipart/form-data field `image`).
+        adk: When True, tries the multi-agent (ADK) graph first and falls back
+            to the direct pipeline if the ADK path raises any exception.
+
+    Returns:
+        JSONResponse with the report dict on success, or
+        ``{"error": <message>}`` with HTTP 500 on failure.
+
+    Side effects:
+        Writes the uploaded image to a temporary file (the pipeline works
+        with file paths) and always removes it afterwards, regardless of
+        the outcome.
     """
-    sufixo = Path(imagem.filename or "").suffix or ".png"
-    caminho_temp = None
+    suffix = Path(image.filename or "").suffix or ".png"
+    temp_path = None
     try:
-        conteudo = await imagem.read()
-        with tempfile.NamedTemporaryFile(suffix=sufixo, delete=False) as tmp:
-            tmp.write(conteudo)
-            caminho_temp = tmp.name
+        image_bytes = await image.read()
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp.write(image_bytes)
+            temp_path = tmp.name
 
         if adk:
             try:
-                from inspetor.agentes import analisar_via_adk
+                from config.inspector.agents import analyze_via_adk
 
-                laudo = await analisar_via_adk(caminho_temp)
-            except Exception as exc:  # noqa: BLE001 - fallback deliberado
-                laudo = analisar_imagem(caminho_temp)
-                laudo.setdefault("erros", []).append(
-                    f"ADK indisponível ({exc}); usado pipeline direto."
+                report = await analyze_via_adk(temp_path)
+            except Exception as exc:  # noqa: BLE001 - deliberate fallback
+                report = analyze_image(temp_path)
+                report.setdefault("errors", []).append(
+                    f"ADK unavailable ({exc}); used the direct pipeline instead."
                 )
         else:
-            laudo = analisar_imagem(caminho_temp)
+            report = analyze_image(temp_path)
 
-        return JSONResponse(laudo)
-    except Exception as exc:  # noqa: BLE001 - não vazar stacktrace ao cliente
+        return JSONResponse(report)
+    except Exception as exc:  # noqa: BLE001 - do not leak the stacktrace to the client
         return JSONResponse(
-            {"erro": f"Falha ao analisar a imagem: {exc}"},
+            {"error": f"Failed to analyze the image: {exc}"},
             status_code=500,
         )
     finally:
-        if caminho_temp:
+        if temp_path:
             try:
-                os.remove(caminho_temp)
+                os.remove(temp_path)
             except OSError:
                 pass
 
 
 # ---------------------------------------------------------------------------
-# HTMX — fragmento HTML (cartão do laudo, estética shadcn/ui).
+# HTMX -- HTML fragment (report card, shadcn/ui aesthetic).
 # ---------------------------------------------------------------------------
-# Rótulos fixos do cartão, por idioma. O conteúdo dinâmico (causa/correção)
-# já vem traduzido do pipeline (ver inspetor.diagnostico).
+# Fixed card labels, per language. Dynamic content (cause/correction) already
+# comes translated from the pipeline (see config.inspector.diagnosis).
 _LABELS = {
     "pt-BR": {
-        "laudo_titulo": "Laudo de inspeção",
-        "legivel": "Legível",
-        "ilegivel": "Ilegível",
-        "leitura_indisponivel": "Leitura indisponível",
-        "sem_codigo": "Nenhum código de barras detectado na imagem.",
-        "leitura": "Leitura",
-        "texto_ocr": "Texto (OCR):",
-        "nao_decodificado": "Não foi possível decodificar o código.",
-        "indicadores": "Indicadores de qualidade",
-        "ind_contraste": "Contraste",
-        "ind_uniformidade": "Uniformidade",
-        "ind_nitidez": "Nitidez",
-        "defeito": "Defeito",
-        "confianca": "Confiança:",
-        "causa": "Causa provável",
-        "correcao": "Correção sugerida",
-        "fonte": "Fonte:",
-        "via_regras": "regras",
-        "avisos": "Avisos",
-        "falha_analise": "Falha ao analisar a imagem:",
+        "report_title": "Laudo de inspeção",
+        "readable": "Legível",
+        "unreadable": "Ilegível",
+        "reading_unavailable": "Leitura indisponível",
+        "no_code": "Nenhum código de barras detectado na imagem.",
+        "reading": "Leitura",
+        "ocr_text": "Texto (OCR):",
+        "not_decoded": "Não foi possível decodificar o código.",
+        "indicators": "Indicadores de qualidade",
+        "ind_contrast": "Contraste",
+        "ind_uniformity": "Uniformidade",
+        "ind_sharpness": "Nitidez",
+        "defect": "Defeito",
+        "confidence": "Confiança:",
+        "cause": "Causa provável",
+        "correction": "Correção sugerida",
+        "source": "Fonte:",
+        "via_rules": "regras",
+        "warnings": "Avisos",
+        "analysis_failure": "Falha ao analisar a imagem:",
     },
     "en-US": {
-        "laudo_titulo": "Inspection report",
-        "legivel": "Readable",
-        "ilegivel": "Unreadable",
-        "leitura_indisponivel": "Reading unavailable",
-        "sem_codigo": "No barcode detected in the image.",
-        "leitura": "Reading",
-        "texto_ocr": "Text (OCR):",
-        "nao_decodificado": "The code could not be decoded.",
-        "indicadores": "Quality indicators",
-        "ind_contraste": "Contrast",
-        "ind_uniformidade": "Uniformity",
-        "ind_nitidez": "Sharpness",
-        "defeito": "Defect",
-        "confianca": "Confidence:",
-        "causa": "Probable cause",
-        "correcao": "Suggested correction",
-        "fonte": "Source:",
-        "via_regras": "rules",
-        "avisos": "Warnings",
-        "falha_analise": "Failed to analyze the image:",
+        "report_title": "Inspection report",
+        "readable": "Readable",
+        "unreadable": "Unreadable",
+        "reading_unavailable": "Reading unavailable",
+        "no_code": "No barcode detected in the image.",
+        "reading": "Reading",
+        "ocr_text": "Text (OCR):",
+        "not_decoded": "The code could not be decoded.",
+        "indicators": "Quality indicators",
+        "ind_contrast": "Contrast",
+        "ind_uniformity": "Uniformity",
+        "ind_sharpness": "Sharpness",
+        "defect": "Defect",
+        "confidence": "Confidence:",
+        "cause": "Probable cause",
+        "correction": "Suggested correction",
+        "source": "Source:",
+        "via_rules": "rules",
+        "warnings": "Warnings",
+        "analysis_failure": "Failed to analyze the image:",
     },
 }
 
-# Ordem de exibição dos indicadores e a chave de rótulo de cada um.
-_INDICADORES = (
-    ("contraste", "ind_contraste"),
-    ("uniformidade", "ind_uniformidade"),
-    ("nitidez", "ind_nitidez"),
+# Display order of the indicators and the label key for each one.
+_INDICATORS = (
+    ("contrast", "ind_contrast"),
+    ("uniformity", "ind_uniformity"),
+    ("sharpness", "ind_sharpness"),
 )
 
 
-def _lbl(idioma: str, chave: str) -> str:
-    """Rótulo fixo do cartão no idioma pedido (fallback: pt-BR e a própria chave)."""
-    tabela = _LABELS.get(config.normalizar_idioma(idioma), _LABELS["pt-BR"])
-    return tabela.get(chave) or _LABELS["pt-BR"].get(chave, chave)
+def _label(language: str, key: str) -> str:
+    """Look up a fixed card label in the requested language.
+
+    Args:
+        language: Language code ("pt-BR" or "en-US"); normalized internally.
+        key: Label key from ``_LABELS``.
+
+    Returns:
+        The label string in ``language``, falling back to pt-BR and then to
+        ``key`` itself if not found in either table.
+    """
+    table = _LABELS.get(settings.normalize_language(language), _LABELS["pt-BR"])
+    return table.get(key) or _LABELS["pt-BR"].get(key, key)
 
 
-def _esc(valor) -> str:
-    """Escapa qualquer valor vindo do servidor para inserção segura no HTML."""
-    if valor is None:
+def _esc(value) -> str:
+    """Escape a value coming from the server for safe insertion into HTML."""
+    if value is None:
         return ""
-    return html.escape(str(valor))
+    return html.escape(str(value))
 
 
-def _pct(valor) -> str:
-    """Formata uma fração [0,1] como porcentagem inteira; '—' se não numérica."""
-    if isinstance(valor, (int, float)):
-        return f"{round(valor * 100)}%"
+def _pct(value) -> str:
+    """Format a [0, 1] fraction as an integer percentage; '—' if not numeric."""
+    if isinstance(value, (int, float)):
+        return f"{round(value * 100)}%"
     return "—"
 
 
-def _largura_pct(valor) -> int:
-    """Converte uma fração em largura de barra (0–100), com recorte defensivo."""
-    if not isinstance(valor, (int, float)):
+def _pct_width(value) -> int:
+    """Convert a [0, 1] fraction into a meter bar width (0-100), clamped defensively."""
+    if not isinstance(value, (int, float)):
         return 0
-    return max(0, min(100, round(valor * 100)))
+    return max(0, min(100, round(value * 100)))
 
 
-def _cartao_laudo_html(laudo: dict, idioma: str = config.IDIOMA_PADRAO) -> str:
-    """Monta o cartão (fragmento HTML) do laudo, no estilo dos cards shadcn/ui.
+def _report_card_html(report: dict, language: str = settings.DEFAULT_LANGUAGE) -> str:
+    """Build the report card (HTML fragment), styled like shadcn/ui cards.
 
-    Todo dado proveniente do laudo é escapado com ``html.escape`` antes de entrar
-    no HTML. As classes CSS usadas aqui são as mesmas definidas em ``chat.html``.
-    Os rótulos fixos seguem ``idioma`` (o conteúdo dinâmico já vem traduzido do
-    pipeline).
+    All data coming from the report is escaped with ``html.escape`` before
+    being inserted into the HTML. The CSS classes used here match the ones
+    defined in ``chat.html``. Fixed labels follow ``language``; dynamic
+    content (probable cause / corrective action) already comes translated
+    from the pipeline.
+
+    Args:
+        report: Report dict following the FINALIZED REPORT CONTRACT keys
+            (readable, code_detected, symbology, content, ocr_text,
+            indicators, defect, probable_cause, corrective_action, source,
+            diagnosis_method, errors, ...), as produced by ``analyze_image``
+            or ``analyze_via_adk``.
+        language: Display language for the fixed labels ("pt-BR" or "en-US").
+
+    Returns:
+        An HTML fragment (string) ready to be appended to the chat.
     """
-    idioma = config.normalizar_idioma(idioma)
-    partes: list[str] = []
-    partes.append('<div class="msg msg-bot">')
-    partes.append('<div class="avatar">IE</div>')
-    partes.append('<div class="card laudo">')
+    language = settings.normalize_language(language)
+    parts: list[str] = []
+    parts.append('<div class="msg msg-bot">')
+    parts.append('<img class="avatar" src="/static/img/logo.svg" alt="" />')
+    parts.append('<div class="card report">')
 
-    # -- Cabeçalho do card + selo de legibilidade -------------------------
-    legivel = laudo.get("legivel")
-    if legivel is True:
-        selo = f'<span class="badge badge-ok">{_esc(_lbl(idioma, "legivel"))}</span>'
-    elif legivel is False:
-        selo = f'<span class="badge badge-bad">{_esc(_lbl(idioma, "ilegivel"))}</span>'
+    # -- Card header + readability badge -----------------------------------
+    readable = report.get("readable")
+    if readable is True:
+        badge = f'<span class="badge badge-ok">{_esc(_label(language, "readable"))}</span>'
+    elif readable is False:
+        badge = f'<span class="badge badge-bad">{_esc(_label(language, "unreadable"))}</span>'
     else:
-        selo = (f'<span class="badge badge-muted">'
-                f'{_esc(_lbl(idioma, "leitura_indisponivel"))}</span>')
-    partes.append(
+        badge = (f'<span class="badge badge-muted">'
+                 f'{_esc(_label(language, "reading_unavailable"))}</span>')
+    parts.append(
         '<div class="card-header">'
-        f'<h3 class="card-title">{_esc(_lbl(idioma, "laudo_titulo"))}</h3>'
-        f"{selo}"
+        f'<h3 class="card-title">{_esc(_label(language, "report_title"))}</h3>'
+        f"{badge}"
         "</div>"
     )
 
-    # -- Aviso destacado: nenhum código de barras na imagem ---------------
-    if laudo.get("codigo_detectado") is False:
-        partes.append(
+    # -- Highlighted alert: no barcode found in the image -------------------
+    if report.get("code_detected") is False:
+        parts.append(
             '<div class="alert alert-nocode"><div class="alert-title">'
-            f"⚠️ {_esc(_lbl(idioma, 'sem_codigo'))}"
+            f"⚠️ {_esc(_label(language, 'no_code'))}"
             "</div></div>"
         )
-        # Sem código detectado, o laudo se resume ao aviso: nada de leitura,
-        # indicadores, defeito ou diagnóstico (o pipeline nem os calcula).
-        partes.append("</div>")  # .card
-        partes.append("</div>")  # .msg
-        return "".join(partes)
+        # No code detected: the report is reduced to this warning -- no
+        # reading, indicators, defect, or diagnosis (the pipeline doesn't
+        # even compute them in this case).
+        parts.append("</div>")  # .card
+        parts.append("</div>")  # .msg
+        return "".join(parts)
 
-    # -- Leitura (simbologia / conteúdo / OCR) ----------------------------
-    leitura_html = [
+    # -- Reading (symbology / content / OCR) --------------------------------
+    reading_html = [
         '<div class="section"><div class="section-label">'
-        f'{_esc(_lbl(idioma, "leitura"))}</div>'
+        f'{_esc(_label(language, "reading"))}</div>'
     ]
-    if legivel is True:
-        simbologia = _esc(laudo.get("simbologia") or "?")
-        conteudo = _esc(laudo.get("conteudo") or "")
-        leitura_html.append(
-            f'<div class="kv"><span class="k">{simbologia}:</span> '
-            f'<span class="mono">{conteudo}</span></div>'
+    if readable is True:
+        symbology = _esc(report.get("symbology") or "?")
+        content = _esc(report.get("content") or "")
+        reading_html.append(
+            f'<div class="kv"><span class="k">{symbology}:</span> '
+            f'<span class="mono">{content}</span></div>'
         )
-    ocr = (laudo.get("texto_ocr") or "").strip()
+    ocr = (report.get("ocr_text") or "").strip()
     if ocr:
-        leitura_html.append(
-            f'<div class="ocr">{_esc(_lbl(idioma, "texto_ocr"))} {_esc(ocr)}</div>'
+        reading_html.append(
+            f'<div class="ocr">{_esc(_label(language, "ocr_text"))} {_esc(ocr)}</div>'
         )
-    if legivel is not True and not ocr:
-        leitura_html.append(
-            f'<div class="section-body">{_esc(_lbl(idioma, "nao_decodificado"))}</div>'
+    if readable is not True and not ocr:
+        reading_html.append(
+            f'<div class="section-body">{_esc(_label(language, "not_decoded"))}</div>'
         )
-    leitura_html.append("</div>")
-    partes.append("".join(leitura_html))
+    reading_html.append("</div>")
+    parts.append("".join(reading_html))
 
-    # -- Indicadores (barras) --------------------------------------------
-    indicadores = laudo.get("indicadores") or {}
-    chaves = [(k, lbl) for k, lbl in _INDICADORES
-              if isinstance(indicadores.get(k), (int, float))]
-    if chaves:
+    # -- Indicators (bars) ---------------------------------------------------
+    indicators = report.get("indicators") or {}
+    keys = [(k, lbl) for k, lbl in _INDICATORS
+            if isinstance(indicators.get(k), (int, float))]
+    if keys:
         ind_html = [
             '<div class="section"><div class="section-label">'
-            f'{_esc(_lbl(idioma, "indicadores"))}</div>'
+            f'{_esc(_label(language, "indicators"))}</div>'
         ]
-        for k, lbl in chaves:
-            v = indicadores.get(k)
+        for k, lbl in keys:
+            v = indicators.get(k)
             ind_html.append(
                 '<div class="meter">'
                 '<div class="meter-head">'
-                f"<span>{_esc(_lbl(idioma, lbl))}</span>"
+                f"<span>{_esc(_label(language, lbl))}</span>"
                 f'<span class="val">{_pct(v)}</span>'
                 "</div>"
-                f'<div class="track"><span class="fill" style="width:{_largura_pct(v)}%"></span></div>'
+                f'<div class="track"><span class="fill" style="width:{_pct_width(v)}%"></span></div>'
                 "</div>"
             )
         ind_html.append("</div>")
-        partes.append("".join(ind_html))
+        parts.append("".join(ind_html))
 
-    # -- Defeito (nome localizado + confiança) ---------------------------
-    defeito = laudo.get("defeito") or {}
-    classe = defeito.get("classe")
-    if classe:
-        nome = config.nome_classe(classe, idioma)
+    # -- Defect (localized name + confidence) --------------------------------
+    defect = report.get("defect") or {}
+    defect_class = defect.get("class")
+    if defect_class:
+        name = settings.class_display_name(defect_class, language)
     else:
-        nome = defeito.get("classe_pt") or "—"
+        name = defect.get("class_label") or "—"
     def_html = [
         '<div class="section"><div class="section-label">'
-        f'{_esc(_lbl(idioma, "defeito"))}</div>',
-        f'<div class="defect-name">{_esc(nome)}</div>',
+        f'{_esc(_label(language, "defect"))}</div>',
+        f'<div class="defect-name">{_esc(name)}</div>',
     ]
-    if isinstance(defeito.get("confianca"), (int, float)):
+    if isinstance(defect.get("confidence"), (int, float)):
         def_html.append(
-            f'<div class="defect-conf">{_esc(_lbl(idioma, "confianca"))} '
-            f'{_pct(defeito.get("confianca"))}</div>'
+            f'<div class="defect-conf">{_esc(_label(language, "confidence"))} '
+            f'{_pct(defect.get("confidence"))}</div>'
         )
     def_html.append("</div>")
-    partes.append("".join(def_html))
+    parts.append("".join(def_html))
 
-    # -- Causa provável ---------------------------------------------------
-    partes.append(
+    # -- Probable cause --------------------------------------------------------
+    parts.append(
         '<div class="section"><div class="section-label">'
-        f'{_esc(_lbl(idioma, "causa"))}</div>'
-        f'<div class="section-body">{_esc(laudo.get("causa_provavel") or "—")}</div></div>'
+        f'{_esc(_label(language, "cause"))}</div>'
+        f'<div class="section-body">{_esc(report.get("probable_cause") or "—")}</div></div>'
     )
 
-    # -- Correção sugerida ------------------------------------------------
-    partes.append(
+    # -- Suggested correction ----------------------------------------------------
+    parts.append(
         '<div class="section"><div class="section-label">'
-        f'{_esc(_lbl(idioma, "correcao"))}</div>'
-        f'<div class="section-body">{_esc(laudo.get("correcao_sugerida") or "—")}</div></div>'
+        f'{_esc(_label(language, "correction"))}</div>'
+        f'<div class="section-body">{_esc(report.get("corrective_action") or "—")}</div></div>'
     )
 
-    # -- Fonte / via ------------------------------------------------------
-    fonte = laudo.get("fonte")
-    via = laudo.get("via_diagnostico")
-    if fonte or via:
-        rodape = []
-        if fonte:
-            rodape.append(f'{_lbl(idioma, "fonte")} {_esc(fonte)}')
-        if via:
-            via_txt = "Gemini" if via == "gemini" else (
-                _lbl(idioma, "via_regras") if via == "regras" else via
+    # -- Source / diagnosis method -------------------------------------------------
+    source = report.get("source")
+    method = report.get("diagnosis_method")
+    if source or method:
+        footer = []
+        if source:
+            footer.append(f'{_label(language, "source")} {_esc(source)}')
+        if method:
+            method_txt = "Gemini" if method == "gemini" else (
+                _label(language, "via_rules") if method == "rules" else method
             )
-            rodape.append(f"via {_esc(via_txt)}")
-        partes.append(f'<div class="card-footer">{"  •  ".join(rodape)}</div>')
+            footer.append(f"via {_esc(method_txt)}")
+        parts.append(f'<div class="card-footer">{"  •  ".join(footer)}</div>')
 
-    # -- Avisos (erros) ---------------------------------------------------
-    erros = laudo.get("erros")
-    if isinstance(erros, list) and erros:
-        itens = "".join(f"<li>{_esc(e)}</li>" for e in erros)
-        partes.append(
+    # -- Warnings (errors) -------------------------------------------------------
+    errors = report.get("errors")
+    if isinstance(errors, list) and errors:
+        items = "".join(f"<li>{_esc(e)}</li>" for e in errors)
+        parts.append(
             '<div class="alert"><div class="alert-title">'
-            f'{_esc(_lbl(idioma, "avisos"))}</div>'
-            f"<ul>{itens}</ul></div>"
+            f'{_esc(_label(language, "warnings"))}</div>'
+            f"<ul>{items}</ul></div>"
         )
 
-    partes.append("</div>")  # .card
-    partes.append("</div>")  # .msg
-    return "".join(partes)
+    parts.append("</div>")  # .card
+    parts.append("</div>")  # .msg
+    return "".join(parts)
 
 
-def _cartao_erro_html(mensagem: str) -> str:
-    """Bolha de erro (fragmento) para falhas na análise."""
+def _error_card_html(message: str) -> str:
+    """Build an error bubble (HTML fragment) for analysis failures."""
     return (
         '<div class="msg msg-bot">'
-        '<div class="avatar">IE</div>'
-        f'<div class="bubble is-error">⚠️ {_esc(mensagem)}</div>'
+        '<img class="avatar" src="/static/img/logo.svg" alt="" />'
+        f'<div class="bubble is-error">⚠️ {_esc(message)}</div>'
         "</div>"
     )
 
 
-@app.post("/analisar-htmx", response_class=HTMLResponse)
-async def analisar_htmx(
-    imagem: UploadFile = File(...),
-    idioma: str = Form(config.IDIOMA_PADRAO),
-    inspetor: str = Form("llm"),
+@app.post("/analyze-htmx", response_class=HTMLResponse)
+async def analyze_htmx(
+    image: UploadFile = File(...),
+    language: str = Form(settings.DEFAULT_LANGUAGE),
+    inspector: str = Form("llm"),
 ) -> HTMLResponse:
-    """Versão HTMX: recebe uma imagem e devolve o cartão do laudo em HTML.
+    """HTMX variant: receive an image and return the report card as HTML.
 
-    Salva a imagem em um arquivo temporário, roda ``analisar_imagem`` e retorna
-    um FRAGMENTO HTML (cartão shadcn) para ser anexado ao chat. O arquivo
-    temporário é sempre removido no ``finally``.
+    Saves the image to a temporary file, runs ``analyze_image``, and returns
+    an HTML FRAGMENT (shadcn-styled card) to be appended to the chat. The
+    temporary file is always removed in the ``finally`` block.
 
-    ``idioma`` define a língua do laudo (pt-BR/en-US) e ``inspetor`` escolhe o
-    motor: ``"kb"`` força a base de conhecimento Zebra (regras); ``"llm"`` e
-    ``"auto"`` dão preferência ao Gemini quando disponível, caindo nas regras
-    caso contrário (o ``"auto"`` só é oferecido na UI quando há LLM configurado).
+    Args:
+        image: Uploaded image (multipart/form-data field `image`).
+        language: Report language (pt-BR/en-US).
+        inspector: Engine selector -- ``"kb"`` forces the Zebra knowledge base
+            (rules); ``"llm"`` and ``"auto"`` prefer Gemini when available,
+            falling back to the rules otherwise (``"auto"`` is only offered
+            in the UI when an LLM is configured).
+
+    Returns:
+        HTMLResponse with the report card fragment, or an error card fragment
+        with HTTP 500 on failure.
     """
-    idioma = config.normalizar_idioma(idioma)
-    usar_gemini = inspetor != "kb"
-    sufixo = Path(imagem.filename or "").suffix or ".png"
-    caminho_temp = None
+    language = settings.normalize_language(language)
+    use_gemini = inspector != "kb"
+    suffix = Path(image.filename or "").suffix or ".png"
+    temp_path = None
     try:
-        conteudo = await imagem.read()
-        with tempfile.NamedTemporaryFile(suffix=sufixo, delete=False) as tmp:
-            tmp.write(conteudo)
-            caminho_temp = tmp.name
+        image_bytes = await image.read()
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp.write(image_bytes)
+            temp_path = tmp.name
 
-        laudo = analisar_imagem(caminho_temp, usar_gemini=usar_gemini, idioma=idioma)
-        return HTMLResponse(_cartao_laudo_html(laudo, idioma))
-    except Exception as exc:  # noqa: BLE001 - não vazar stacktrace ao cliente
+        report = analyze_image(temp_path, use_gemini=use_gemini, language=language)
+        return HTMLResponse(_report_card_html(report, language))
+    except Exception as exc:  # noqa: BLE001 - do not leak the stacktrace to the client
         return HTMLResponse(
-            _cartao_erro_html(f"{_lbl(idioma, 'falha_analise')} {exc}"),
+            _error_card_html(f"{_label(language, 'analysis_failure')} {exc}"),
             status_code=500,
         )
     finally:
-        if caminho_temp:
+        if temp_path:
             try:
-                os.remove(caminho_temp)
+                os.remove(temp_path)
             except OSError:
                 pass
 

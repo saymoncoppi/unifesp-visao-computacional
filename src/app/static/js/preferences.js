@@ -1,0 +1,42 @@
+import { state, lsSet } from "./state.js";
+import { el } from "./dom.js";
+import { applyI18n } from "./i18n.js";
+
+// ===================================================== Menu selection
+export function markSelected(group, value) {
+  var items = el.menuPanel.querySelectorAll("[data-" + group + "]");
+  for (var i = 0; i < items.length; i++) {
+    var sel = items[i].getAttribute("data-" + group) === value;
+    items[i].classList.toggle("is-selected", sel);
+    items[i].setAttribute("aria-checked", sel ? "true" : "false");
+  }
+}
+
+export function applyTheme(v) {
+  state.theme = v;
+  if (v === "light" || v === "dark") el.root.setAttribute("data-theme", v);
+  else el.root.removeAttribute("data-theme");   // "auto" -> follows the system
+  lsSet("theme", v);
+  markSelected("tema", v);
+}
+
+export function applyLanguage(v) {
+  state.language = v;
+  lsSet("language", v);
+  applyI18n(v);
+  markSelected("idioma", v);
+  // If no file is selected, the default label is reapplied by applyI18n;
+  // once a file is chosen, data-i18n is removed (see showFileName).
+}
+
+export function applyInspector(v) {
+  state.inspector = v;
+  lsSet("inspector", v);
+  markSelected("inspector", v);
+}
+
+export function initModelLabel() {
+  var cfg = window.INSPECTOR_CONFIG || {};
+  var name = cfg.activeModel && String(cfg.activeModel).trim();
+  el.modelLabel.textContent = name || "Gemini";
+}

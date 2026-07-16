@@ -1,0 +1,91 @@
+{
+  "_source": "Extraído de: Zebra Support 'Resolving Print Quality Issues (ZM and ZT Series)', Article ID 000015124; ZT411/ZT421 User Guide e Maintenance Manual.",
+  "defects": [
+    {
+      "id": "no_defect",
+      "name_pt": "Sem defeito (impressão de referência)",
+      "appearance": "Impressão correta usada como referência; a etiqueta de teste de pausa serve de linha de base para os ajustes iniciais de qualidade.",
+      "probable_cause": "",
+      "corrective_action": "",
+      "related_parameters": [],
+      "source_excerpt": "Utilize a etiqueta de teste de pausa da impressora ao realizar os ajustes iniciais de qualidade de impressão."
+    },
+    {
+      "id": "damaged_printhead_element",
+      "name_pt": "Cabeça de impressão queimada (linhas brancas verticais)",
+      "appearance": "Linha branca vertical contínua na impressão; trilhas de impressão faltando.",
+      "probable_cause": "Elemento queimado da cabeça de impressão (uma linha branca vertical também pode indicar sujeira na cabeça).",
+      "corrective_action": "Limpar a cabeça primeiro; se persistir, substituir a cabeça de impressão.",
+      "related_parameters": ["cabeca", "limpeza"],
+      "source_excerpt": "Linhas brancas na impressão (vertical) — Limpe a cabeça de impressão / Elemento queimado da cabeça — Substituir cabeça"
+    },
+    {
+      "id": "burnt_spot",
+      "name_pt": "Ponto/elemento único queimado da cabeça (darkness alto)",
+      "appearance": "Manchas escuras localizadas ou barras engrossadas por excesso de temperatura; linha branca fina de um único elemento queimado.",
+      "probable_cause": "Excesso de temperatura/intensidade (darkness alto); ou elemento único queimado da cabeça.",
+      "corrective_action": "Reduzir o darkness ao menor valor com boa qualidade; reduzir a velocidade; se for elemento queimado, substituir a cabeça.",
+      "related_parameters": ["darkness", "velocidade", "cabeca"],
+      "source_excerpt": "Impressão borrada — Temperatura excessiva / Linha vertical — Elemento queimado da cabeça"
+    },
+    {
+      "id": "dirty_printhead",
+      "name_pt": "Cabeça suja (voids / linha preta vertical / mancha)",
+      "appearance": "Voids e falhas pontuais nas barras; linha preta vertical; manchas.",
+      "probable_cause": "Sujeira/detritos acumulados na cabeça de impressão.",
+      "corrective_action": "Limpar a cabeça de impressão e o rolete com álcool isopropílico 99,7% (ou kit de manutenção Zebra).",
+      "related_parameters": ["limpeza", "cabeca", "rolete"],
+      "source_excerpt": "Mancha — Cabeça suja — Limpeza com álcool isopropílico / Linha preta vertical — Sujeira na cabeça"
+    },
+    {
+      "id": "light_print",
+      "name_pt": "Impressão clara / desbotada (faded)",
+      "appearance": "A impressão está desbotada ou muito clara (faded); imagens fracas.",
+      "probable_cause": "Darkness/temperatura baixa; fita (ribbon) ou mídia inadequada/incompatível; pressão da cabeça baixa (industriais); rolo de pressão/rolamentos desgastados (mesa); cabeça suja; fonte de alimentação incorreta.",
+      "corrective_action": "Limpar a cabeça; aumentar o darkness no driver ZDesigner; em industriais, aumentar a pressão da cabeça; verificar compatibilidade e carregamento da fita/mídia; garantir a fonte de alimentação correta.",
+      "related_parameters": ["darkness", "pressao", "ribbon", "midia", "cabeca"],
+      "source_excerpt": "A impressão está desbotada ou muito clara. ... Ajuste a intensidade da luz ... Verifique a compatibilidade da faixa de mídia."
+    },
+    {
+      "id": "uneven_pressure",
+      "name_pt": "Impressão desbotada de um lado (pressão desigual)",
+      "appearance": "Código de barras desbotado/claro à esquerda ou à direita (um lado da etiqueta).",
+      "probable_cause": "Pressão da cabeça desequilibrada; rolo/rolamentos desgastados; trava da cabeça mal encaixada; desgaste do rolete.",
+      "corrective_action": "Em industriais, equilibrar a pressão da cabeça (toggles); em impressoras de mesa, substituir rolo/rolamentos; verificar as travas da cabeça e o desgaste do rolete.",
+      "related_parameters": ["pressao", "rolete"],
+      "source_excerpt": "A estampa está desbotada de um lado. ... Equilibre a pressão da cabeça de impressão."
+    },
+    {
+      "id": "wrinkled_ribbon",
+      "name_pt": "Fita (ribbon) enrugada",
+      "appearance": "Linhas cinza finas e angulares; falhas verticais no código por fita enrugada.",
+      "probable_cause": "Carregamento incorreto/tensão inadequada da fita (ribbon).",
+      "corrective_action": "Verificar/corrigir o carregamento, a tensão e o alinhamento da fita (ribbon).",
+      "related_parameters": ["ribbon"],
+      "source_excerpt": "A fita está enrugada ... Verificar o carregamento da faixa de opções"
+    }
+  ],
+  "additional_defects": [
+    {"id": "impressao_borrada", "name_pt": "Impressão borrando (smear)", "probable_cause": "Incompatibilidade da fita com a mídia; temperatura excessiva.", "corrective_action": "Verificar compatibilidade fita/mídia; reduzir darkness."},
+    {"id": "codigo_baixa_qualidade", "name_pt": "Código 1D/2D com baixa qualidade/ilegível", "probable_cause": "Dithering inadequado; zona de silêncio insuficiente; darkness incorreto; detritos na cabeça.", "corrective_action": "Ajustar dithering (ZDesigner); garantir zona de silêncio; ajustar darkness; limpar a cabeça."},
+    {"id": "imagem_cortada", "name_pt": "Imagem cortada (cutoff)", "probable_cause": "Largura/altura de impressão incorreta; fita mais estreita que a etiqueta; obstruções; firmware desatualizado.", "corrective_action": "Corrigir largura/altura no driver; usar fita mais larga que a etiqueta; limpar a cabeça; atualizar firmware."},
+    {"id": "imagem_deslocada", "name_pt": "Imagem deslocada / perda de registro", "probable_cause": "Falha de calibração ou sensor de mídia.", "corrective_action": "Calibrar a impressora; verificar/limpar o sensor de mídia."},
+    {"id": "falha_repetitiva", "name_pt": "Falha repetitiva em intervalos fixos", "probable_cause": "Rolete (platen roller) danificado.", "corrective_action": "Trocar o rolete (platen)."},
+    {"id": "etiqueta_branco", "name_pt": "Etiqueta em branco", "probable_cause": "Ribbon invertido ou cabeça não aquece.", "corrective_action": "Recarregar a fita corretamente; verificar a cabeça."},
+    {"id": "ghosting", "name_pt": "Ghosting (imagem repetida)", "probable_cause": "Velocidade alta ou pressão incorreta.", "corrective_action": "Reduzir a velocidade; ajustar a pressão."}
+  ],
+  "general_notes": [
+    "Iniciar os ajustes de qualidade pela etiqueta de teste de pausa (elimina problemas de origem no aplicativo/driver).",
+    "Ajustar o darkness ao menor valor que ainda produz boa qualidade (via driver ZDesigner).",
+    "Limpar a cabeça de impressão e o rolete com álcool isopropílico (kit de manutenção Zebra).",
+    "Industriais: ajustar/equilibrar a pressão da cabeça; mesa: substituir rolo de pressão e rolamentos desgastados.",
+    "Verificar compatibilidade e carregamento correto da fita (ribbon) com a mídia; usar fita mais larga que a etiqueta.",
+    "Para códigos: ajustar o dithering e respeitar a zona de silêncio (quiet zone).",
+    "Uma linha branca vertical pode ser sujeira (limpar primeiro) ou elemento queimado (trocar cabeça)."
+  ],
+  "references": [
+    "Zebra Support — Resolving Print Quality Issues (ZM and ZT Series), Article ID 000015124: https://support.zebra.com/pt-BR/article/ZM-and-ZT-Series-Resolving-Print-Quality-Issues",
+    "ZT411/ZT421 User Guide — Printing or Print Quality Issues: https://docs.zebra.com/us/en/printers/industrial/zt411-zt421-industrial-printer-user-guide.html",
+    "ZT411/ZT421 Maintenance Manual (PDF oficial)"
+  ]
+}

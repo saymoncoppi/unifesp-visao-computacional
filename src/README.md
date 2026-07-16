@@ -28,37 +28,38 @@ imagem, receba o laudo.
                     agente de laudo (JSON) ─────────────────────► resposta no chat
 ```
 
-- **Pipeline direto** (`inspetor.ferramentas.analisar_imagem`): encadeia as funções
+- **Pipeline direto** (`config.inspector.tools.analyze_image`): encadeia as funções
   sem o ADK. Funciona **mesmo sem chave do Gemini** (diagnóstico por regras da base
   Zebra). É o *baseline* monolítico da avaliação.
-- **Pipeline orquestrado** (`inspetor.agentes`): o grafo ADK acima.
+- **Pipeline orquestrado** (`config.inspector.agents`): o grafo ADK acima.
 
 ## Estrutura
 
 ```
 src/
-├── inspetor/               # pacote principal
-│   ├── config.py           # classes, caminhos, constantes
-│   ├── visao.py            # OpenCV (segmentação), pyzbar (decode), Tesseract (OCR), indicadores
-│   ├── rede.py             # CNN MobileNetV3-Small (construir/carregar/prever)
-│   ├── dataset.py          # Dataset PyTorch (lê dataset_sintetico/labels.csv)
-│   ├── treino.py           # treino por transferência de aprendizado
-│   ├── kb.py               # base de conhecimento Zebra (defeito→causa→ação)
-│   ├── diagnostico.py      # Gemini com fallback por regras
-│   ├── ferramentas.py      # ferramentas do ADK + analisar_imagem (pipeline direto)
-│   ├── agentes.py          # grafo ADK (paralelo → diagnóstico → laudo)
-│   └── laudo.py            # esquema do laudo
+├── config/
+│   ├── inspector/            # pacote principal
+│   │   ├── settings.py       # classes, caminhos, constantes
+│   │   ├── vision.py         # OpenCV (segmentação), pyzbar (decode), Tesseract (OCR), indicadores
+│   │   ├── network.py        # CNN MobileNetV3-Small (construir/carregar/prever)
+│   │   ├── dataset.py        # Dataset PyTorch (lê dataset_sintetico/labels.csv)
+│   │   ├── training.py       # treino por transferência de aprendizado
+│   │   ├── kb.py             # base de conhecimento Zebra (defeito→causa→ação)
+│   │   ├── diagnosis.py      # Gemini com fallback por regras
+│   │   ├── tools.py          # ferramentas do ADK + analyze_image (pipeline direto)
+│   │   ├── agents.py         # grafo ADK (paralelo → diagnóstico → laudo)
+│   │   └── report.py         # esquema do laudo
+│   └── data/kb_zebra.json    # KB extraída da documentação Zebra
 ├── app/
 │   ├── cli.py              # linha de comando
-│   ├── api.py              # FastAPI (/analisar) + serve o chat
+│   ├── api.py              # FastAPI (/analyze) + serve o chat
 │   └── chat.html           # chat web (envio de imagem)
-├── dados/kb_zebra.json     # KB extraída da documentação Zebra
 ├── requirements.txt
 ├── .env.example
 └── ESPECIFICACAO.md        # contrato de interfaces
 ```
 
-O dataset sintético fica em `datasets/dataset_sintetico/` (gerado por `gerar_dataset.py`).
+O dataset sintético fica em `config/datasets/dataset_sintetico/` (gerado por `config/generate_dataset.py`).
 
 ## Instalação
 
@@ -84,18 +85,18 @@ cp .env.example .env      # opcional: preencha GOOGLE_API_KEY para usar o Gemini
 
 **1) (Opcional) Gerar/atualizar o dataset sintético**
 ```bash
-python gerar_dataset.py --out datasets/dataset_sintetico --per-class 90 --seed 42
+python config/generate_dataset.py --out config/datasets/dataset_sintetico --per-class 90 --seed 42
 ```
 
 **2) Treinar a CNN**
 ```bash
-python -m inspetor.treino --epocas 10
-# salva o modelo em inspetor/modelos/classificador_defeitos.pt
+python -m config.inspector.training --epochs 10
+# salva o modelo em config/models/classificador_defeitos.pt
 ```
 
 **3) Analisar uma imagem (CLI)**
 ```bash
-python -m app.cli datasets/dataset_sintetico/images/test/ribbon_enrugado/ean13_075.png
+python -m app.cli config/datasets/dataset_sintetico/images/test/wrinkled_ribbon/ean13_075.png
 python -m app.cli minha_etiqueta.jpg --json      # laudo completo em JSON
 python -m app.cli minha_etiqueta.jpg --adk       # via grafo ADK (requer Gemini)
 ```
@@ -108,23 +109,23 @@ uvicorn app.api:app --reload
 
 **5) Chat nativo do ADK (opcional)**
 ```bash
-adk web        # interface de chat do ADK sobre inspetor/agentes.py
+adk web        # interface de chat do ADK sobre config/inspector/agents.py
 ```
 
 ## Degradação graciosa
 
 O sistema nunca "quebra" por falta de biblioteca: se `pyzbar`/Tesseract/torch/Gemini
-não estiverem disponíveis, a etapa correspondente retorna um aviso no campo `erros`
+não estiverem disponíveis, a etapa correspondente retorna um aviso no campo `errors`
 do laudo e as demais continuam. Sem `GOOGLE_API_KEY`, o diagnóstico usa as **regras
-da base Zebra** (`inspetor/kb.py` + `dados/kb_zebra.json`) em vez do Gemini.
+da base Zebra** (`config/inspector/kb.py` + `config/data/kb_zebra.json`) em vez do Gemini.
 
 ## Base de conhecimento
 
-`dados/kb_zebra.json` consolida o mapeamento **defeito → causa → ação** da
+`config/data/kb_zebra.json` consolida o mapeamento **defeito → causa → ação** da
 documentação oficial da Zebra (ZT411/ZT421 e base de conhecimento *Resolving Print
 Quality Issues*), usado pelo agente de diagnóstico.
 
 ## Classes de defeito (CNN)
 
-`sem_defeito`, `cabeca_queimada`, `ribbon_enrugado`, `ponto_queimado`,
-`impressao_clara`, `pressao_desigual`, `cabeca_suja` (ver `inspetor/config.py`).
+`no_defect`, `damaged_printhead_element`, `wrinkled_ribbon`, `burnt_spot`,
+`light_print`, `uneven_pressure`, `dirty_printhead` (ver `config/inspector/settings.py`).

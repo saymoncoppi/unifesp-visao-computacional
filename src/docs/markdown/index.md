@@ -48,65 +48,69 @@ diagnóstico e da montagem do laudo.
 
 ### Dois modos de execução
 
-- **Pipeline direto** (`inspetor.ferramentas.analisar_imagem`): encadeia as funções
+- **Pipeline direto** (`config.inspector.tools.analyze_image`): encadeia as funções
   sem o ADK. Funciona **mesmo sem chave do Gemini** (diagnóstico por regras da base
   Zebra). É o *baseline* monolítico da avaliação e o núcleo usado por CLI e API.
-- **Pipeline orquestrado** (`inspetor.agentes`): o grafo ADK acima
+- **Pipeline orquestrado** (`config.inspector.agents`): o grafo ADK acima
   (`ParallelAgent` → diagnóstico → laudo), acionado com `--adk` na CLI ou
   `adk=true` na API.
 
 ## Degradação graciosa
 
 O sistema nunca "quebra" por falta de biblioteca: se `pyzbar`/Tesseract/`torch`/Gemini
-não estiverem disponíveis, a etapa correspondente retorna um aviso no campo `erros`
+não estiverem disponíveis, a etapa correspondente retorna um aviso no campo `errors`
 do laudo e as demais continuam. Sem `GOOGLE_API_KEY`, o diagnóstico usa as **regras
-da base Zebra** (`inspetor/kb.py` + `dados/kb_zebra.json`) em vez do Gemini.
+da base Zebra** (`config/inspector/kb.py` + `config/data/kb_zebra.json`) em vez do Gemini.
 
 ## Classes de defeito (CNN)
 
 A CNN classifica a etiqueta entre **7 classes** (a ordem define o índice usado pela
-rede — ver `inspetor/config.py`):
+rede — ver `config/inspector/settings.py`):
 
-| Classe (`CLASSES`) | Rótulo (`CLASSE_PT`) |
+| Classe (`CLASSES`) | Rótulo (`CLASS_LABELS_PT`) |
 | --- | --- |
-| `sem_defeito` | Sem defeito |
-| `cabeca_queimada` | Elemento da cabeça danificado |
-| `ribbon_enrugado` | Ribbon enrugado |
-| `ponto_queimado` | Ponto queimado (darkness alto) |
-| `impressao_clara` | Impressão clara (darkness baixo) |
-| `pressao_desigual` | Pressão desigual da cabeça |
-| `cabeca_suja` | Cabeça de impressão suja (voids) |
+| `no_defect` | Sem defeito |
+| `damaged_printhead_element` | Elemento da cabeça danificado |
+| `wrinkled_ribbon` | Ribbon enrugado |
+| `burnt_spot` | Ponto queimado (darkness alto) |
+| `light_print` | Impressão clara (darkness baixo) |
+| `uneven_pressure` | Pressão desigual da cabeça |
+| `dirty_printhead` | Cabeça de impressão suja (voids) |
 
 ## Estrutura do projeto
 
 ```
 src/
-├── inspetor/               # pacote principal
-│   ├── config.py           # classes, caminhos, constantes
-│   ├── visao.py            # OpenCV (segmentação), pyzbar (decode), Tesseract (OCR), indicadores
-│   ├── rede.py             # CNN MobileNetV3-Small (construir/carregar/prever)
-│   ├── dataset.py          # Dataset PyTorch (lê dataset_sintetico/labels.csv)
-│   ├── treino.py           # treino por transferência de aprendizado
-│   ├── kb.py               # base de conhecimento Zebra (defeito→causa→ação)
-│   ├── diagnostico.py      # Gemini com fallback por regras
-│   ├── ferramentas.py      # ferramentas do ADK + analisar_imagem (pipeline direto)
-│   ├── agentes.py          # grafo ADK (paralelo → diagnóstico → laudo)
-│   └── laudo.py            # esquema do laudo
+├── config/
+│   ├── inspector/          # pacote principal
+│   │   ├── settings.py     # classes, caminhos, constantes
+│   │   ├── vision.py       # OpenCV (segmentação), pyzbar (decode), Tesseract (OCR), indicadores
+│   │   ├── network.py      # CNN MobileNetV3-Small (construir/carregar/prever)
+│   │   ├── dataset.py      # Dataset PyTorch (lê dataset_sintetico/labels.csv)
+│   │   ├── training.py     # treino por transferência de aprendizado
+│   │   ├── kb.py           # base de conhecimento Zebra (defeito→causa→ação)
+│   │   ├── diagnosis.py    # Gemini com fallback por regras
+│   │   ├── tools.py        # ferramentas do ADK + analyze_image (pipeline direto)
+│   │   ├── agents.py       # grafo ADK (paralelo → diagnóstico → laudo)
+│   │   └── report.py       # esquema do laudo
+│   ├── data/kb_zebra.json  # KB extraída da documentação Zebra
+│   ├── datasets/           # datasets (sintético + externos)
+│   ├── models/             # modelos treinados
+│   ├── results/            # resultados de experimentos
+│   └── generate_dataset.py # gerador do dataset sintético
 ├── app/
 │   ├── cli.py              # linha de comando
-│   ├── api.py              # FastAPI (/analisar) + serve o chat
+│   ├── api.py              # FastAPI (/analyze) + serve o chat
 │   └── chat.html           # chat web (envio de imagem)
-├── dados/kb_zebra.json     # KB extraída da documentação Zebra
-├── gerar_dataset.py        # gerador do dataset sintético
 ├── pyproject.toml          # dependências (gerenciadas por uv)
 └── ESPECIFICACAO.md        # contrato de interfaces
 ```
 
 ## Base de conhecimento
 
-`dados/kb_zebra.json` consolida o mapeamento **defeito → causa → ação** da
+`config/data/kb_zebra.json` consolida o mapeamento **defeito → causa → ação** da
 documentação oficial da Zebra (ZT411/ZT421 e a base *Resolving Print Quality
-Issues*), usado pelo agente de diagnóstico. O campo `fonte` referencia
+Issues*), usado pelo agente de diagnóstico. O campo `source` referencia
 "Zebra Technologies (2024)".
 
 ## Próximos passos

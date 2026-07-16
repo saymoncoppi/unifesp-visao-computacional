@@ -1,33 +1,33 @@
-# Dependências Python do inspetor de etiquetas.
-# Sugerido: Python 3.10–3.12 (em 3.14 alguns wheels — torch/opencv — podem faltar).
+# Python dependencies of the label inspector.
+# Suggested: Python 3.10-3.12 (on 3.14 some wheels - torch/opencv - may be missing).
 #
-# Dependências de SISTEMA (instale antes; ex. Debian/Ubuntu):
+# SYSTEM dependencies (install first; e.g. Debian/Ubuntu):
 #   sudo apt install libzbar0 tesseract-ocr tesseract-ocr-por
 # Fedora:
 #   sudo dnf install zbar tesseract tesseract-langpack-por
 
-# --- Visão computacional ---
+# --- Computer vision ---
 numpy
-opencv-python            # OpenCV (pré-processamento, segmentação, morfologia)
+opencv-python            # OpenCV (pre-processing, segmentation, morphology)
 pillow
-pyzbar                   # decodificação de códigos de barras (ZBar)
-pytesseract              # OCR do texto humano-legível (Tesseract)
+pyzbar                   # barcode decoding (ZBar)
+pytesseract              # OCR of the human-readable text (Tesseract)
 
-# --- Aprendizado profundo (CNN) ---
+# --- Deep learning (CNN) ---
 torch                    # PyTorch
-torchvision              # MobileNetV3 + transformações
+torchvision              # MobileNetV3 + transforms
 
-# --- Orquestração multiagente + LLM ---
+# --- Multi-agent orchestration + LLM ---
 google-adk               # Agent Development Kit (ADK)
-google-genai             # SDK do Gemini (usado no fallback e pelo ADK)
-python-dotenv            # carrega .env (GOOGLE_API_KEY)
+google-genai             # Gemini SDK (used in the fallback and by the ADK)
+python-dotenv            # loads .env (GOOGLE_API_KEY)
 
-# --- API / chat web ---
+# --- API / web chat ---
 fastapi
 uvicorn[standard]
-python-multipart         # upload de imagem no FastAPI
+python-multipart         # image upload in FastAPI
 
-# --- Geração do dataset sintético (opcional; já usado em gerar_dataset.py) ---
+# --- Synthetic dataset generation (optional; used by config/generate_dataset.py) ---
 segno
 python-barcode
 pystrich

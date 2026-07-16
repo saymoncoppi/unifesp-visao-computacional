@@ -22,138 +22,138 @@ A orquestração usa o **ADK**: análises 1–4 em paralelo → diagnóstico →
   `google.adk`, `google.genai` devem ficar **dentro das funções**, nunca no topo do
   módulo. Assim o pacote importa mesmo sem essas libs instaladas, e `python -m
   py_compile` passa. No topo só: stdlib, `from __future__ import annotations`, e
-  imports de `inspetor.config` / `inspetor.laudo`.
+  imports de `config.inspector.settings` / `config.inspector.report`.
 - **Degradação graciosa**: se uma lib/binário faltar, capture o `ImportError`/erro e
   retorne um dict com o campo de erro preenchido e valores neutros (não derrube o
-  processo). Ex.: decodificação sem pyzbar → `{"legivel": None, ..., "erro": "pyzbar ausente"}`.
-- Constantes vêm de `inspetor.config` (CLASSES, CLASSE_PT, IMG_SIZE, BACKBONE, MEAN,
-  STD, DATASET_DIR, LABELS_CSV, MODELO_PATH, GEMINI_MODEL, `tem_gemini()`).
+  processo). Ex.: decodificação sem pyzbar → `{"readable": None, ..., "error": "pyzbar ausente"}`.
+- Constantes vêm de `config.inspector.settings` (CLASSES, CLASS_LABELS_PT, IMG_SIZE, BACKBONE, MEAN,
+  STD, DATASET_DIR, LABELS_CSV, MODEL_PATH, GEMINI_MODEL, `has_gemini()`).
 - Sem `print` fora de scripts `__main__`; use `return`/`raise`.
 
 ## Módulos e assinaturas
 
-### inspetor/visao.py
+### config/inspector/vision.py
 ```python
-def carregar_imagem(caminho: str) -> "np.ndarray"        # BGR (cv2.imread)
-def para_cinza(img) -> "np.ndarray"
-def segmentar_codigo(cinza) -> tuple["np.ndarray", tuple | None]
+def load_image(path: str) -> "np.ndarray"        # BGR (cv2.imread)
+def to_gray(img) -> "np.ndarray"
+def segment_code(gray) -> tuple["np.ndarray", tuple | None]
     # detecta a região do código: gradiente (Sobel/Scharr) -> blur -> threshold
     # (Otsu) -> morfologia (close+erode+dilate) -> maior contorno.
-    # retorna (roi_cinza, bbox) com bbox=(x, y, w, h) ou (cinza, None) se não achar.
-def decodificar(caminho_ou_img) -> dict
+    # retorna (roi_gray, bbox) com bbox=(x, y, w, h) ou (gray, None) se não achar.
+def decode(path_or_img) -> dict
     # usa pyzbar.decode (tenta imagem original e ROI/limiarizada).
-    # -> {"legivel": bool|None, "simbologia": str|None, "conteudo": str|None,
-    #     "n_simbolos": int, "erro": str|None}
-def ocr_texto(img_ou_roi) -> str      # pytesseract.image_to_string; "" se indisponível
-def indicadores(cinza, roi=None) -> dict
+    # -> {"readable": bool|None, "symbology": str|None, "content": str|None,
+    #     "symbol_count": int, "error": str|None}
+def ocr_text(img_or_roi) -> str      # pytesseract.image_to_string; "" se indisponível
+def indicators(gray, roi=None) -> dict
     # contraste = (Imax - Imin)/255 sobre a ROI; uniformidade = 1 - desvio-padrão
     # normalizado do perfil; nitidez = variância do Laplaciano normalizada em [0,1].
-    # -> {"contraste": float, "uniformidade": float, "nitidez": float}
+    # -> {"contrast": float, "uniformity": float, "sharpness": float}
 ```
 
-### inspetor/rede.py  (CNN — PyTorch/torchvision)
+### config/inspector/network.py  (CNN — PyTorch/torchvision)
 ```python
-def construir_modelo(num_classes=len(CLASSES), backbone=BACKBONE, preTreinado=True)
+def build_model(num_classes=len(CLASSES), backbone=BACKBONE, pretrained=True)
     # torchvision.models.mobilenet_v3_small; troca a última Linear por num_classes.
-def transformacoes(treino: bool = False)
-    # Resize(IMG_SIZE), (treino: augment leve), Grayscale(3), ToTensor, Normalize(MEAN,STD)
-def carregar_modelo(caminho=MODELO_PATH, device=None) -> "nn.Module"
+def build_transforms(train: bool = False)
+    # Resize(IMG_SIZE), (train: augment leve), Grayscale(3), ToTensor, Normalize(MEAN,STD)
+def load_model(path=MODEL_PATH, device=None) -> "nn.Module"
     # constrói + load_state_dict(eval). Se o arquivo não existir, levanta FileNotFoundError
-    # com mensagem clara ("treine com: python -m inspetor.treino").
-def prever(caminho_ou_img, modelo=None, device=None) -> dict
-    # -> {"classe": str, "classe_pt": str, "confianca": float, "probs": {classe: float},
-    #     "erro": str|None}. Se torch/modelo faltarem, retorna erro e classe=None.
+    # com mensagem clara ("treine com: python -m config.inspector.training").
+def predict(path_or_img, model=None, device=None) -> dict
+    # -> {"class": str, "class_label": str, "confidence": float, "probs": {class: float},
+    #     "error": str|None}. Se torch/modelo faltarem, retorna erro e class=None.
 ```
 
-### inspetor/dataset.py  (PyTorch Dataset)
+### config/inspector/dataset.py  (PyTorch Dataset)
 ```python
-class DatasetDefeitos(torch.utils.data.Dataset)   # lê LABELS_CSV, filtra por split
+class DefectDataset(torch.utils.data.Dataset)   # lê LABELS_CSV, filtra por split
     # __init__(self, split="train", dataset_dir=DATASET_DIR, transform=None)
-    # rótulo = índice de CLASSES; imagem = DATASET_DIR / linha["filename"]
-def carregar_loaders(dataset_dir=DATASET_DIR, batch_size=32, num_workers=2) -> dict
+    # rótulo = índice de CLASSES; imagem = DATASET_DIR / row["filename"]
+def build_loaders(dataset_dir=DATASET_DIR, batch_size=32, num_workers=2) -> dict
     # -> {"train": DataLoader, "val": DataLoader, "test": DataLoader}
 ```
 
-### inspetor/treino.py  (script de treino)
+### config/inspector/training.py  (script de treino)
 ```python
-def treinar(epocas=10, lr=1e-3, batch_size=32, dataset_dir=DATASET_DIR,
-            saida=MODELO_PATH, congelar_backbone=True) -> dict
-    # transferência de aprendizado; CrossEntropy; Adam; salva o melhor por val_acc em `saida`.
-    # retorna métricas finais {"val_acc":..., "test_acc":..., "por_classe": {...}}.
-# if __name__ == "__main__": argparse (--epocas --lr --batch --saida)
+def train(epochs=10, lr=1e-3, batch_size=32, dataset_dir=DATASET_DIR,
+          output_path=MODEL_PATH, freeze_backbone=True) -> dict
+    # transferência de aprendizado; CrossEntropy; Adam; salva o melhor por val_acc em `output_path`.
+    # retorna métricas finais {"val_acc":..., "test_acc":..., "per_class": {...}}.
+# if __name__ == "__main__": argparse (--epochs --lr --batch --output)
 ```
 
-### inspetor/kb.py  (base de conhecimento Zebra)
+### config/inspector/kb.py  (base de conhecimento Zebra)
 ```python
-KB: list[dict]   # cada item: {"classe", "aparencia", "causa_provavel",
-                 #             "acao_corretiva", "parametros": [...], "fonte"}
-def buscar_por_classe(classe: str) -> dict | None
-def buscar(sintomas: str) -> list[dict]           # recuperação simples por palavra-chave
-def contexto_para_llm(classe: str, indicadores: dict, leitura: dict) -> str
+KB: list[dict]   # cada item: {"class", "appearance", "probable_cause",
+                 #             "corrective_action", "parameters": [...], "source"}
+def search_by_class(defect_class: str) -> dict | None
+def search(symptoms: str) -> list[dict]           # recuperação simples por palavra-chave
+def context_for_llm(defect_class: str, indicators: dict, reading: dict) -> str
 ```
 > Preencher KB com o mapeamento defeito→causa→ação da documentação Zebra
 > (será fornecido um JSON extraído dos PDFs; enquanto isso, use a taxonomia das 7
-> classes de CLASSE_PT). Campo `fonte` = "Zebra Technologies (2024)".
+> classes de CLASS_LABELS_PT). Campo `source` = "Zebra Technologies (2024)".
 
-### inspetor/diagnostico.py
+### config/inspector/diagnosis.py
 ```python
-def diagnosticar(defeito: dict, leitura: dict, indicadores: dict,
-                 usar_gemini: bool = True) -> dict
-    # -> {"causa_provavel", "correcao_sugerida", "fundamentacao", "fonte", "via"}
-    # via="gemini" se tem_gemini() e google.genai disponível (monta prompt com
-    # kb.contexto_para_llm e pede JSON); caso contrário via="regras" usando
-    # kb.buscar_por_classe(defeito["classe"]).
+def diagnose(defect: dict, reading: dict, indicators: dict,
+            use_gemini: bool = True) -> dict
+    # -> {"probable_cause", "corrective_action", "rationale", "source", "method"}
+    # method="gemini" se has_gemini() e google.genai disponível (monta prompt com
+    # kb.context_for_llm e pede JSON); caso contrário method="rules" usando
+    # kb.search_by_class(defect["class"]).
 ```
 
-### inspetor/ferramentas.py  (ferramentas para o ADK + pipeline direto)
+### config/inspector/tools.py  (ferramentas para o ADK + pipeline direto)
 ```python
 # Funções-ferramenta (docstring clara — o ADK usa a docstring como descrição):
-def decodificar_codigo(caminho_imagem: str) -> dict      # -> visao.decodificar (+ ocr)
-def estimar_indicadores(caminho_imagem: str) -> dict     # -> visao.indicadores
-def classificar_defeito(caminho_imagem: str) -> dict     # -> rede.prever
-def buscar_documentacao_zebra(sintomas: str) -> str      # -> kb.buscar (texto)
+def decode_code(image_path: str) -> dict      # -> vision.decode (+ ocr)
+def estimate_indicators(image_path: str) -> dict     # -> vision.indicators
+def classify_defect(image_path: str) -> dict     # -> network.predict
+def search_zebra_docs(symptoms: str) -> str      # -> kb.search (texto)
 
-def analisar_imagem(caminho_imagem: str) -> dict
-    # PIPELINE DIRETO (sem ADK): decodificar+ocr, indicadores, classificar,
-    # diagnosticar -> laudo.montar_laudo(...).to_dict(). É o núcleo robusto usado
+def analyze_image(image_path: str) -> dict
+    # PIPELINE DIRETO (sem ADK): decode+ocr, indicators, classify,
+    # diagnose -> report.build_report(...).to_dict(). É o núcleo robusto usado
     # por CLI/API e serve de "baseline monolítico". Nunca levanta por lib ausente:
-    # acumula avisos em laudo["erros"].
+    # acumula avisos em report["errors"].
 ```
 
-### inspetor/agentes.py  (grafo ADK — google.adk)
+### config/inspector/agents.py  (grafo ADK — google.adk)
 ```python
-def construir_root_agent()   # LlmAgent p/ leitura, indicadores, defeito (tools acima) ->
-                             # ParallelAgent -> LlmAgent diagnóstico -> LlmAgent laudo ->
-                             # SequentialAgent root. MODEL=config.GEMINI_MODEL.
-async def analisar_via_adk(caminho_imagem: str) -> dict   # roda o grafo via Runner
-# Se google.adk indisponível, construir_root_agent levanta ImportError com dica.
+def build_root_agent()   # LlmAgent p/ leitura, indicadores, defeito (tools acima) ->
+                         # ParallelAgent -> LlmAgent diagnóstico -> LlmAgent laudo ->
+                         # SequentialAgent root. MODEL=settings.GEMINI_MODEL.
+async def analyze_via_adk(image_path: str) -> dict   # roda o grafo via Runner
+# Se google.adk indisponível, build_root_agent levanta ImportError com dica.
 ```
 
 ### app/cli.py
-`python -m app.cli CAMINHO [--adk] [--json]` → chama `analisar_imagem` (ou
-`analisar_via_adk` se `--adk`), imprime `Laudo.resumo()` e, com `--json`, o JSON.
+`python -m app.cli PATH [--adk] [--json]` → chama `analyze_image` (ou
+`analyze_via_adk` se `--adk`), imprime `Report.summary()` e, com `--json`, o JSON.
 
 ### app/api.py  (FastAPI)
 - `GET /` → serve `app/chat.html`.
-- `POST /analisar` (multipart, campo `imagem`; query `adk: bool=false`) → salva temp,
-  chama `analisar_imagem` (ou ADK), devolve o laudo JSON.
-- `GET /saude` → `{"status": "ok"}`.
+- `POST /analyze` (multipart, campo `image`; query `adk: bool=false`) → salva temp,
+  chama `analyze_image` (ou ADK), devolve o laudo JSON.
+- `GET /health` → `{"status": "ok"}`.
 Rodar: `uvicorn app.api:app --reload`.
 
 ### app/chat.html
 Página única autossuficiente (HTML+CSS+JS vanilla, sem CDN): input de imagem +
-preview + botão "Analisar" que faz `POST /analisar` e renderiza o laudo como
+preview + botão "Analisar" que faz `POST /analyze` e renderiza o laudo como
 mensagens de chat (legível/simbologia, defeito+confiança, causa, correção). Trata erro.
 
-## Formato do laudo (retorno de analisar_imagem)
+## Formato do laudo (retorno de analyze_image)
 ```json
 {
-  "legivel": true, "simbologia": "CODE128", "conteudo": "CB123",
-  "texto_ocr": "CB123", "indicadores": {"contraste":0.82,"uniformidade":0.74,"nitidez":0.6},
-  "defeito": {"classe":"ribbon_enrugado","classe_pt":"Ribbon enrugado","confianca":0.91,"probs":{...}},
-  "causa_provavel":"Tensão/alinhamento do ribbon",
-  "correcao_sugerida":"Ajustar a tensão do ribbon; verificar o percurso",
-  "fundamentacao":"...", "fonte":"Zebra Technologies (2024)",
-  "via_diagnostico":"regras", "confianca_geral":0.91, "erros":[]
+  "readable": true, "code_detected": true, "symbology": "CODE128", "content": "CB123",
+  "ocr_text": "CB123", "indicators": {"contrast":0.82,"uniformity":0.74,"sharpness":0.6},
+  "defect": {"class":"wrinkled_ribbon","class_label":"Ribbon enrugado","confidence":0.91,"probs":{...}},
+  "probable_cause":"Tensão/alinhamento do ribbon",
+  "corrective_action":"Ajustar a tensão do ribbon; verificar o percurso",
+  "reasoning":"...", "source":"Zebra Technologies (2024)",
+  "diagnosis_method":"rules", "overall_confidence":0.91, "errors":[]
 }
 ```

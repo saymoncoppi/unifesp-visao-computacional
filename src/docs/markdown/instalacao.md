@@ -31,7 +31,7 @@ sudo dnf install zbar tesseract tesseract-langpack-por
 
 :::note
 Sem essas bibliotecas o sistema **não quebra**: as etapas de leitura/OCR apenas
-retornam um aviso no campo `erros` do laudo (degradação graciosa).
+retornam um aviso no campo `errors` do laudo (degradação graciosa).
 :::
 
 ## 2. Ambiente Python com uv
@@ -46,12 +46,6 @@ uv sync
 O `uv sync` cria o ambiente virtual (`.venv/`) e instala as dependências fixadas
 no `uv.lock`. O projeto já configura o índice **CPU** do PyTorch (torch/torchvision
 sem CUDA), então a instalação é leve.
-
-Para instalar também o grupo opcional de **download de datasets** (Roboflow):
-
-```bash
-uv sync --extra datasets
-```
 
 Para rodar comandos dentro do ambiente, use `uv run`:
 

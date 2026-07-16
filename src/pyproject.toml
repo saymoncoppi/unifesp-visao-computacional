@@ -1,7 +1,7 @@
 [project]
-name = "inspetor-etiquetas"
+name = "label-inspector"
 version = "0.1.0"
-description = "Inspeção de defeitos de impressão em etiquetas de códigos de barras (OpenCV + CNN + ADK)"
+description = "Print-defect inspection for barcode labels (OpenCV + CNN + ADK)"
 requires-python = ">=3.10,<3.13"
 dependencies = [
     "numpy",
@@ -22,18 +22,14 @@ dependencies = [
     "pystrich",
 ]
 
-[project.optional-dependencies]
-# Download de datasets externos (Roboflow). Requer chave gratuita de API.
-datasets = ["roboflow"]
-
 [dependency-groups]
 dev = ["pytest", "httpx"]
 
-# --- Configuração do uv ------------------------------------------------------
+# --- uv configuration --------------------------------------------------------
 [tool.uv]
-package = false                     # não empacota o próprio projeto (é uma aplicação)
+package = false                     # do not package the project itself (it is an application)
 
-# torch/torchvision em versão CPU (leve, sem CUDA)
+# torch/torchvision as CPU-only builds (lightweight, no CUDA)
 [[tool.uv.index]]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"

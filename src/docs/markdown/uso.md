@@ -22,15 +22,15 @@ python -m app.cli foto.jpg
 Exemplos com uma imagem do dataset e as opções disponíveis:
 
 ```bash
-python -m app.cli datasets/dataset_sintetico/images/test/ribbon_enrugado/ean13_075.png
+python -m app.cli config/datasets/dataset_sintetico/images/test/wrinkled_ribbon/ean13_075.png
 python -m app.cli minha_etiqueta.jpg --json      # laudo completo em JSON (indentado)
 python -m app.cli minha_etiqueta.jpg --adk       # via grafo ADK (requer Gemini)
 ```
 
 Interface: `python -m app.cli CAMINHO [--adk] [--json]`.
 
-- Sem `--adk`: roda o **pipeline direto** (`inspetor.ferramentas.analisar_imagem`).
-- Com `--adk`: tenta o **grafo multiagente** (`inspetor.agentes.analisar_via_adk`) e,
+- Sem `--adk`: roda o **pipeline direto** (`config.inspector.tools.analyze_image`).
+- Com `--adk`: tenta o **grafo multiagente** (`config.inspector.agents.analyze_via_adk`) e,
   se ele falhar por qualquer motivo (lib ausente, erro de execução, sem chave),
   **cai de volta** para o pipeline direto — a análise nunca deixa de acontecer.
 - Com `--json`: imprime o laudo completo em JSON além do resumo.
@@ -49,7 +49,7 @@ como mensagens de chat (legível/simbologia, defeito + confiança, causa, corre�
 ![Chat do Inspetor de Etiquetas exibindo um laudo completo](img/chat_inspetor.png)
 
 A página (`app/chat.html`) é autossuficiente (HTML + CSS + JS *vanilla*, sem CDN) e
-envia a imagem via **htmx** para `POST /analisar-htmx`, inserindo o cartão do laudo
+envia a imagem via **htmx** para `POST /analyze-htmx`, inserindo o cartão do laudo
 na conversa. Detalhes dos endpoints em [API HTTP](/api/).
 
 ### Menu de configurações (⋮)
@@ -72,7 +72,7 @@ preferências ficam salvas no `localStorage` do navegador:
 
 O idioma e o motor de inspeção escolhidos são enviados a cada envio (via
 `htmx:configRequest`), como os campos `idioma` e `inspetor` do
-[`POST /analisar-htmx`](/api/).
+[`POST /analyze-htmx`](/api/).
 
 ### Imagem sem código de barras (curto-circuito)
 
@@ -84,7 +84,7 @@ chamadas de API e evita diagnósticos espúrios.
 
 ## 3. Chat nativo do ADK (opcional)
 
-Interface de chat do próprio ADK sobre o grafo de agentes (`inspetor/agentes.py`):
+Interface de chat do próprio ADK sobre o grafo de agentes (`config/inspector/agents.py`):
 
 ```bash
 adk web
@@ -96,5 +96,5 @@ Veja [Configurar o Gemini](/configurar-gemini/).
 ## Fluxo típico
 
 1. (Opcional) Gerar/atualizar o [dataset sintético](/datasets/).
-2. [Treinar a CNN](/treinamento/) para produzir `inspetor/modelos/classificador_defeitos.pt`.
+2. [Treinar a CNN](/treinamento/) para produzir `config/models/classificador_defeitos.pt`.
 3. Analisar imagens pela **CLI** ou pelo **chat web**.

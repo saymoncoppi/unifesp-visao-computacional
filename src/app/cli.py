@@ -1,12 +1,12 @@
-"""Interface de linha de comando do inspetor de etiquetas.
+"""Command-line interface for the label inspector.
 
-Uso:
-    python -m app.cli CAMINHO [--adk] [--json]
+Usage:
+    python -m app.cli PATH [--adk] [--json]
 
-Sem ``--adk`` executa o pipeline direto (``inspetor.ferramentas.analisar_imagem``).
-Com ``--adk`` tenta o grafo multiagente (``inspetor.agentes.analisar_via_adk``) e,
-se ele falhar por qualquer motivo (lib ausente, erro de execução), cai de volta
-para o pipeline direto — a análise nunca deixa de acontecer.
+Without ``--adk`` it runs the direct pipeline (``config.inspector.tools.analyze_image``).
+With ``--adk`` it tries the multi-agent graph (``config.inspector.agents.analyze_via_adk``)
+and, if that fails for any reason (missing library, execution error), it falls back
+to the direct pipeline — the analysis always happens regardless.
 """
 from __future__ import annotations
 
@@ -16,146 +16,215 @@ import json
 import os
 import sys
 
-from inspetor.ferramentas import analisar_imagem
+from config.inspector.tools import analyze_image
 
 
-def _pct(valor) -> str:
-    """Formata um número em [0, 1] como porcentagem legível; '—' se ausente."""
-    if isinstance(valor, (int, float)):
-        return f"{valor:.0%}"
+def _pct(value) -> str:
+    """Format a number in [0, 1] as a readable percentage; '—' if absent.
+
+    Args:
+        value: The numeric value to format, expected to be in the range [0, 1].
+            May be ``None`` or any non-numeric type, in which case a
+            placeholder is returned.
+
+    Returns:
+        The formatted percentage string (e.g. ``"87%"``), or ``"—"`` when
+        ``value`` is not an ``int``/``float``.
+    """
+    if isinstance(value, (int, float)):
+        return f"{value:.0%}"
     return "—"
 
 
-def _barra(valor, largura: int = 20) -> str:
-    """Barrinha textual simples para um indicador em [0, 1]."""
+def _bar(value, width: int = 20) -> str:
+    """Render a simple textual bar for an indicator in [0, 1].
+
+    Args:
+        value: The indicator value to render, expected to be in [0, 1].
+            Values outside that range are clamped; non-numeric values
+            produce a placeholder.
+        width: Total number of characters in the bar. Defaults to 20.
+
+    Returns:
+        A string of filled (``█``) and empty (``░``) block characters
+        representing the fraction, or ``"—"`` if ``value`` cannot be
+        converted to ``float``.
+    """
     try:
-        fracao = max(0.0, min(1.0, float(valor)))
+        fraction = max(0.0, min(1.0, float(value)))
     except (TypeError, ValueError):
         return "—"
-    cheios = int(round(fracao * largura))
-    return "█" * cheios + "░" * (largura - cheios)
+    filled = int(round(fraction * width))
+    return "█" * filled + "░" * (width - filled)
 
 
-def formatar_resumo(laudo: dict) -> str:
-    """Monta um resumo amigável e legível do laudo (dicionário)."""
-    legivel = laudo.get("legivel")
-    if legivel:
-        estado = "legível"
-    elif legivel is None:
-        estado = "leitura indisponível"
+def format_summary(report: dict) -> str:
+    """Build a friendly, human-readable summary of the report (dict).
+
+    Args:
+        report: The report dictionary as produced by
+            ``config.inspector.tools.analyze_image`` or
+            ``config.inspector.agents.analyze_via_adk``. Expected to follow
+            the finalized report contract (keys such as ``readable``,
+            ``code_detected``, ``symbology``, ``content``, ``ocr_text``,
+            ``indicators``, ``defect``, ``probable_cause``,
+            ``corrective_action``, ``source``, ``diagnosis_method``,
+            ``errors``).
+
+    Returns:
+        A multi-line string with a boxed summary suitable for printing to
+        a terminal.
+    """
+    readable = report.get("readable")
+    if readable:
+        state = "readable"
+    elif readable is None:
+        state = "reading unavailable"
     else:
-        estado = "ilegível"
+        state = "unreadable"
 
-    linha_leitura = f"Leitura: {estado}"
-    if legivel:
-        simbologia = laudo.get("simbologia") or "?"
-        conteudo = laudo.get("conteudo") or ""
-        linha_leitura += f" — {simbologia}: {conteudo}"
+    reading_line = f"Reading: {state}"
+    if readable:
+        symbology = report.get("symbology") or "?"
+        content = report.get("content") or ""
+        reading_line += f" — {symbology}: {content}"
 
-    texto_ocr = (laudo.get("texto_ocr") or "").strip()
+    ocr_text = (report.get("ocr_text") or "").strip()
 
-    indicadores = laudo.get("indicadores") or {}
-    linhas_indicadores = []
-    rotulos = {
-        "contraste": "Contraste",
-        "uniformidade": "Uniformidade",
-        "nitidez": "Nitidez",
+    indicators = report.get("indicators") or {}
+    indicator_lines = []
+    labels = {
+        "contrast": "Contrast",
+        "uniformity": "Uniformity",
+        "sharpness": "Sharpness",
     }
-    for chave, rotulo in rotulos.items():
-        if chave in indicadores:
-            valor = indicadores.get(chave)
-            linhas_indicadores.append(f"    {rotulo:<12} {_barra(valor)} {_pct(valor)}")
+    for key, label in labels.items():
+        if key in indicators:
+            value = indicators.get(key)
+            indicator_lines.append(f"    {label:<12} {_bar(value)} {_pct(value)}")
 
-    defeito = laudo.get("defeito") or {}
-    classe = defeito.get("classe_pt") or defeito.get("classe") or "—"
-    conf = defeito.get("confianca")
+    defect = report.get("defect") or {}
+    defect_class = defect.get("class_label") or defect.get("class") or "—"
+    conf = defect.get("confidence")
 
-    partes = [
+    parts = [
         "=" * 52,
-        "  LAUDO DE INSPEÇÃO — Inspetor de Etiquetas",
+        "  INSPECTION REPORT — Label Inspector",
         "=" * 52,
     ]
-    # Aviso destacado, no topo, quando não há código de barras na imagem.
-    if laudo.get("codigo_detectado") is False:
-        partes.append("⚠ Nenhum código de barras detectado na imagem.")
-        partes.append("-" * 52)
-    partes.append(linha_leitura)
-    if texto_ocr:
-        partes.append(f"Texto (OCR): {texto_ocr}")
-    if linhas_indicadores:
-        partes.append("Indicadores de qualidade:")
-        partes.extend(linhas_indicadores)
-    partes.extend([
-        f"Defeito: {classe} ({_pct(conf)})",
-        f"Causa provável: {laudo.get('causa_provavel') or '—'}",
-        f"Correção sugerida: {laudo.get('correcao_sugerida') or '—'}",
+    # Highlighted warning, at the top, when no barcode is found in the image.
+    if report.get("code_detected") is False:
+        parts.append("⚠ No barcode detected in the image.")
+        parts.append("-" * 52)
+    parts.append(reading_line)
+    if ocr_text:
+        parts.append(f"Text (OCR): {ocr_text}")
+    if indicator_lines:
+        parts.append("Quality indicators:")
+        parts.extend(indicator_lines)
+    parts.extend([
+        f"Defect: {defect_class} ({_pct(conf)})",
+        f"Probable cause: {report.get('probable_cause') or '—'}",
+        f"Corrective action: {report.get('corrective_action') or '—'}",
     ])
 
-    fonte = laudo.get("fonte")
-    via = laudo.get("via_diagnostico")
-    if fonte or via:
-        rodape = "Fonte: " + (fonte or "—")
-        if via:
-            rodape += f"  |  via: {via}"
-        partes.append(rodape)
+    source = report.get("source")
+    method = report.get("diagnosis_method")
+    if source or method:
+        footer = "Source: " + (source or "—")
+        if method:
+            footer += f"  |  via: {method}"
+        parts.append(footer)
 
-    erros = laudo.get("erros") or []
-    if erros:
-        partes.append("Avisos:")
-        partes.extend(f"    - {erro}" for erro in erros)
+    errors = report.get("errors") or []
+    if errors:
+        parts.append("Warnings:")
+        parts.extend(f"    - {error}" for error in errors)
 
-    partes.append("=" * 52)
-    return "\n".join(partes)
+    parts.append("=" * 52)
+    return "\n".join(parts)
 
 
-def _executar(caminho: str, usar_adk: bool) -> dict:
-    """Roda a análise, com fallback do ADK para o pipeline direto."""
-    if usar_adk:
+def _run(path: str, use_adk: bool) -> dict:
+    """Run the analysis, falling back from ADK to the direct pipeline.
+
+    Args:
+        path: Filesystem path to the label image to analyze.
+        use_adk: If ``True``, attempt the multi-agent (ADK) pipeline first;
+            on any failure (missing library, runtime error), fall back to
+            the direct pipeline. If ``False``, use the direct pipeline
+            directly.
+
+    Returns:
+        The report dictionary produced by whichever pipeline succeeded.
+
+    Side Effects:
+        Prints a warning to stderr if the ADK pipeline was requested but
+        failed and the code fell back to the direct pipeline.
+    """
+    if use_adk:
         try:
-            from inspetor.agentes import analisar_via_adk
+            from config.inspector.agents import analyze_via_adk
 
-            return asyncio.run(analisar_via_adk(caminho))
-        except Exception as exc:  # noqa: BLE001 - fallback deliberado e amplo
+            return asyncio.run(analyze_via_adk(path))
+        except Exception as exc:  # noqa: BLE001 - deliberate, broad fallback
             print(
-                f"[aviso] Análise via ADK indisponível ({exc}); "
-                "usando pipeline direto.",
+                f"[warning] ADK analysis unavailable ({exc}); "
+                "using direct pipeline.",
                 file=sys.stderr,
             )
-    return analisar_imagem(caminho)
+    return analyze_image(path)
 
 
 def main(argv: list[str] | None = None) -> int:
-    # Limpa a tela do terminal ao executar (só quando a saída é um terminal).
+    """Entry point for ``python -m app.cli``.
+
+    Parses command-line arguments, runs the label analysis, and prints
+    either a human-readable summary or the full report as JSON.
+
+    Args:
+        argv: Optional list of command-line arguments (excluding the
+            program name). If ``None``, arguments are taken from
+            ``sys.argv``.
+
+    Returns:
+        Process exit code (``0`` on success).
+
+    Side Effects:
+        Clears the terminal screen when stdout is a tty. Prints the
+        analysis result (summary or JSON) to stdout.
+    """
+    # Clear the terminal screen on launch (only when stdout is a terminal).
     if sys.stdout.isatty():
         try:
             os.system("cls" if os.name == "nt" else "clear")
-        except Exception:  # noqa: BLE001 - limpeza é conveniência, nunca crítica
+        except Exception:  # noqa: BLE001 - clearing is a convenience, never critical
             pass
 
     parser = argparse.ArgumentParser(
         prog="app.cli",
-        description="Analisa a imagem de uma etiqueta de código de barras e emite um laudo.",
+        description="Analyzes a barcode label image and produces a report.",
     )
-    parser.add_argument("caminho", help="Caminho da imagem da etiqueta a inspecionar.")
+    parser.add_argument("path", help="Path to the label image to inspect.")
     parser.add_argument(
         "--adk",
         action="store_true",
-        help="Usa o grafo multiagente (ADK/Gemini); cai para o pipeline direto se falhar.",
+        help="Use the multi-agent graph (ADK/Gemini); falls back to the direct pipeline on failure.",
     )
     parser.add_argument(
         "--json",
-        dest="como_json",
+        dest="as_json",
         action="store_true",
-        help="Imprime o laudo completo em JSON (indentado).",
+        help="Print the full report as (indented) JSON.",
     )
     args = parser.parse_args(argv)
 
-    laudo = _executar(args.caminho, args.adk)
+    report = _run(args.path, args.adk)
 
-    if args.como_json:
-        print(json.dumps(laudo, indent=2, ensure_ascii=False))
+    if args.as_json:
+        print(json.dumps(report, indent=2, ensure_ascii=False))
     else:
-        print(formatar_resumo(laudo))
+        print(format_summary(report))
 
     return 0
 

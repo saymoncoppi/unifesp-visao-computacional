@@ -28,7 +28,7 @@ Um guia detalhado fica em **`src/CONFIGURAR_GEMINI.md`**. Esta página é um res
    # Opcionais:
    # GEMINI_MODEL=gemini-flash-latest
    # DATASET_DIR=/caminho/para/dataset_sintetico
-   # MODELO_PATH=/caminho/para/classificador_defeitos.pt
+   # MODEL_PATH=/caminho/para/classificador_defeitos.pt
    ```
 
    Alternativamente, exporte a variável no ambiente:
@@ -38,12 +38,12 @@ Um guia detalhado fica em **`src/CONFIGURAR_GEMINI.md`**. Esta página é um res
    ```
 
 3. **Modelo**: o padrão é `gemini-flash-latest` (constante `GEMINI_MODEL` em
-   `inspetor/config.py`), sobreponível pela variável de ambiente `GEMINI_MODEL`.
+   `config/inspector/settings.py`), sobreponível pela variável de ambiente `GEMINI_MODEL`.
 
-Com a chave presente, o diagnóstico (`inspetor/diagnostico.py`) monta um *prompt*
-com o contexto da base Zebra (`kb.contexto_para_llm`) e pede ao Gemini uma resposta
-**estritamente em JSON** (`causa_provavel`, `correcao_sugerida`, `fundamentacao`).
-O campo `via_diagnostico` do laudo fica `"gemini"`.
+Com a chave presente, o diagnóstico (`config/inspector/diagnosis.py`) monta um *prompt*
+com o contexto da base Zebra (`kb.context_for_llm`) e pede ao Gemini uma resposta
+**estritamente em JSON** (`probable_cause`, `corrective_action`, `reasoning`).
+O campo `diagnosis_method` do laudo fica `"gemini"`.
 
 :::note
 Na interface de [chat web](/uso/), a seção **Inspetor** do menu (⋮) mostra o
@@ -54,7 +54,7 @@ configurado no `.env`; sem chave, o menu oferece apenas a **KB Zebra Technologie
 :::
 
 :::tip
-A função `config.tem_gemini()` considera configurada a chave se **`GOOGLE_API_KEY`
+A função `settings.has_gemini()` considera configurada a chave se **`GOOGLE_API_KEY`
 ou `GEMINI_API_KEY`** estiver definida no ambiente.
 :::
 
@@ -63,9 +63,9 @@ ou `GEMINI_API_KEY`** estiver definida no ambiente.
 Se **não houver** chave configurada — ou se a chamada ao Gemini falhar por qualquer
 motivo (lib ausente, rede, cota, JSON inválido) — o diagnóstico recorre
 **graciosamente** às **regras** da base de conhecimento Zebra
-(`inspetor/kb.py` + `dados/kb_zebra.json`): para a classe do defeito, retorna a
+(`config/inspector/kb.py` + `config/data/kb_zebra.json`): para a classe do defeito, retorna a
 causa provável e a ação corretiva mapeadas na documentação. Nesse caso o campo
-`via_diagnostico` fica `"regras"`.
+`diagnosis_method` fica `"rules"`.
 
 Ou seja: **o sistema funciona sem chave** — apenas o texto do diagnóstico deixa de
 ser gerado pelo LLM e passa a vir das regras.

@@ -303,56 +303,60 @@
 
         <h3 id="modos-execucao">Dois modos de execução</h3>
         <ul>
-          <li><strong>Pipeline direto</strong> (<code>inspetor.ferramentas.analisar_imagem</code>): encadeia as funções sem o ADK. Funciona <strong>mesmo sem chave do Gemini</strong> (diagnóstico por regras da base Zebra). É o <em>baseline</em> monolítico da avaliação e o núcleo usado por CLI e API.</li>
-          <li><strong>Pipeline orquestrado</strong> (<code>inspetor.agentes</code>): o grafo ADK acima (<code>ParallelAgent</code> → diagnóstico → laudo), acionado com <code>--adk</code> na CLI ou <code>adk=true</code> na API.</li>
+          <li><strong>Pipeline direto</strong> (<code>config.inspector.tools.analyze_image</code>): encadeia as funções sem o ADK. Funciona <strong>mesmo sem chave do Gemini</strong> (diagnóstico por regras da base Zebra). É o <em>baseline</em> monolítico da avaliação e o núcleo usado por CLI e API.</li>
+          <li><strong>Pipeline orquestrado</strong> (<code>config.inspector.agents</code>): o grafo ADK acima (<code>ParallelAgent</code> → diagnóstico → laudo), acionado com <code>--adk</code> na CLI ou <code>adk=true</code> na API.</li>
         </ul>
 
         <h2 id="degradacao">Degradação graciosa</h2>
-        <p>O sistema nunca "quebra" por falta de biblioteca: se <code>pyzbar</code>/Tesseract/<code>torch</code>/Gemini não estiverem disponíveis, a etapa correspondente retorna um aviso no campo <code>erros</code> do laudo e as demais continuam. Sem <code>GOOGLE_API_KEY</code>, o diagnóstico usa as <strong>regras da base Zebra</strong> (<code>inspetor/kb.py</code> + <code>dados/kb_zebra.json</code>) em vez do Gemini.</p>
+        <p>O sistema nunca "quebra" por falta de biblioteca: se <code>pyzbar</code>/Tesseract/<code>torch</code>/Gemini não estiverem disponíveis, a etapa correspondente retorna um aviso no campo <code>errors</code> do laudo e as demais continuam. Sem <code>GOOGLE_API_KEY</code>, o diagnóstico usa as <strong>regras da base Zebra</strong> (<code>config/inspector/kb.py</code> + <code>config/data/kb_zebra.json</code>) em vez do Gemini.</p>
 
         <h2 id="classes-defeito">Classes de defeito (CNN)</h2>
-        <p>A CNN classifica a etiqueta entre <strong>7 classes</strong> (a ordem define o índice usado pela rede — ver <code>inspetor/config.py</code>):</p>
+        <p>A CNN classifica a etiqueta entre <strong>7 classes</strong> (a ordem define o índice usado pela rede — ver <code>config/inspector/settings.py</code>):</p>
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Classe (<code>CLASSES</code>)</th><th>Rótulo (<code>CLASSE_PT</code>)</th></tr>
+              <tr><th>Classe (<code>CLASSES</code>)</th><th>Rótulo (<code>CLASS_LABELS_PT</code>)</th></tr>
             </thead>
             <tbody>
-              <tr><td><code>sem_defeito</code></td><td>Sem defeito</td></tr>
-              <tr><td><code>cabeca_queimada</code></td><td>Elemento da cabeça danificado</td></tr>
-              <tr><td><code>ribbon_enrugado</code></td><td>Ribbon enrugado</td></tr>
-              <tr><td><code>ponto_queimado</code></td><td>Ponto queimado (darkness alto)</td></tr>
-              <tr><td><code>impressao_clara</code></td><td>Impressão clara (darkness baixo)</td></tr>
-              <tr><td><code>pressao_desigual</code></td><td>Pressão desigual da cabeça</td></tr>
-              <tr><td><code>cabeca_suja</code></td><td>Cabeça de impressão suja (voids)</td></tr>
+              <tr><td><code>no_defect</code></td><td>Sem defeito</td></tr>
+              <tr><td><code>damaged_printhead_element</code></td><td>Elemento da cabeça danificado</td></tr>
+              <tr><td><code>wrinkled_ribbon</code></td><td>Ribbon enrugado</td></tr>
+              <tr><td><code>burnt_spot</code></td><td>Ponto queimado (darkness alto)</td></tr>
+              <tr><td><code>light_print</code></td><td>Impressão clara (darkness baixo)</td></tr>
+              <tr><td><code>uneven_pressure</code></td><td>Pressão desigual da cabeça</td></tr>
+              <tr><td><code>dirty_printhead</code></td><td>Cabeça de impressão suja (voids)</td></tr>
             </tbody>
           </table>
         </div>
 
         <h2 id="estrutura">Estrutura do projeto</h2>
         <pre><code class="nohighlight">src/
-&#9500;&#9472;&#9472; inspetor/               # pacote principal
-&#9474;   &#9500;&#9472;&#9472; config.py           # classes, caminhos, constantes
-&#9474;   &#9500;&#9472;&#9472; visao.py            # OpenCV (segmenta&#231;&#227;o), pyzbar (decode), Tesseract (OCR), indicadores
-&#9474;   &#9500;&#9472;&#9472; rede.py             # CNN MobileNetV3-Small (construir/carregar/prever)
-&#9474;   &#9500;&#9472;&#9472; dataset.py          # Dataset PyTorch (l&#234; dataset_sintetico/labels.csv)
-&#9474;   &#9500;&#9472;&#9472; treino.py           # treino por transfer&#234;ncia de aprendizado
-&#9474;   &#9500;&#9472;&#9472; kb.py               # base de conhecimento Zebra (defeito&#8594;causa&#8594;a&#231;&#227;o)
-&#9474;   &#9500;&#9472;&#9472; diagnostico.py      # Gemini com fallback por regras
-&#9474;   &#9500;&#9472;&#9472; ferramentas.py      # ferramentas do ADK + analisar_imagem (pipeline direto)
-&#9474;   &#9500;&#9472;&#9472; agentes.py          # grafo ADK (paralelo &#8594; diagn&#243;stico &#8594; laudo)
-&#9474;   &#9492;&#9472;&#9472; laudo.py            # esquema do laudo
+&#9500;&#9472;&#9472; config/
+&#9474;   &#9500;&#9472;&#9472; inspector/           # pacote principal
+&#9474;   &#9474;   &#9500;&#9472;&#9472; settings.py      # classes, caminhos, constantes
+&#9474;   &#9474;   &#9500;&#9472;&#9472; vision.py        # OpenCV (segmenta&#231;&#227;o), pyzbar (decode), Tesseract (OCR), indicadores
+&#9474;   &#9474;   &#9500;&#9472;&#9472; network.py       # CNN MobileNetV3-Small (construir/carregar/prever)
+&#9474;   &#9474;   &#9500;&#9472;&#9472; dataset.py       # Dataset PyTorch (l&#234; dataset_sintetico/labels.csv)
+&#9474;   &#9474;   &#9500;&#9472;&#9472; training.py      # treino por transfer&#234;ncia de aprendizado
+&#9474;   &#9474;   &#9500;&#9472;&#9472; kb.py            # base de conhecimento Zebra (defeito&#8594;causa&#8594;a&#231;&#227;o)
+&#9474;   &#9474;   &#9500;&#9472;&#9472; diagnosis.py     # Gemini com fallback por regras
+&#9474;   &#9474;   &#9500;&#9472;&#9472; tools.py         # ferramentas do ADK + analyze_image (pipeline direto)
+&#9474;   &#9474;   &#9500;&#9472;&#9472; agents.py        # grafo ADK (paralelo &#8594; diagn&#243;stico &#8594; laudo)
+&#9474;   &#9474;   &#9492;&#9472;&#9472; report.py        # esquema do laudo
+&#9474;   &#9500;&#9472;&#9472; data/kb_zebra.json   # KB extra&#237;da da documenta&#231;&#227;o Zebra
+&#9474;   &#9500;&#9472;&#9472; datasets/             # datasets (sint&#233;tico + externos)
+&#9474;   &#9500;&#9472;&#9472; models/              # modelos treinados
+&#9474;   &#9500;&#9472;&#9472; results/             # resultados de experimentos
+&#9474;   &#9492;&#9472;&#9472; generate_dataset.py  # gerador do dataset sint&#233;tico
 &#9500;&#9472;&#9472; app/
 &#9474;   &#9500;&#9472;&#9472; cli.py              # linha de comando
-&#9474;   &#9500;&#9472;&#9472; api.py              # FastAPI (/analisar) + serve o chat
+&#9474;   &#9500;&#9472;&#9472; api.py              # FastAPI (/analyze) + serve o chat
 &#9474;   &#9492;&#9472;&#9472; chat.html           # chat web (envio de imagem)
-&#9500;&#9472;&#9472; dados/kb_zebra.json     # KB extra&#237;da da documenta&#231;&#227;o Zebra
-&#9500;&#9472;&#9472; gerar_dataset.py        # gerador do dataset sint&#233;tico
 &#9500;&#9472;&#9472; pyproject.toml          # depend&#234;ncias (gerenciadas por uv)
 &#9492;&#9472;&#9472; ESPECIFICACAO.md        # contrato de interfaces</code></pre>
 
         <h2 id="base-conhecimento">Base de conhecimento</h2>
-        <p><code>dados/kb_zebra.json</code> consolida o mapeamento <strong>defeito → causa → ação</strong> da documentação oficial da Zebra (ZT411/ZT421 e a base <em>Resolving Print Quality Issues</em>), usado pelo agente de diagnóstico. O campo <code>fonte</code> referencia "Zebra Technologies (2024)".</p>
+        <p><code>config/data/kb_zebra.json</code> consolida o mapeamento <strong>defeito → causa → ação</strong> da documentação oficial da Zebra (ZT411/ZT421 e a base <em>Resolving Print Quality Issues</em>), usado pelo agente de diagnóstico. O campo <code>source</code> referencia "Zebra Technologies (2024)".</p>
 
         <h2 id="proximos-passos">Próximos passos</h2>
         <ul>
@@ -388,7 +392,7 @@ sudo apt install libzbar0 tesseract-ocr tesseract-ocr-por
 sudo dnf install zbar tesseract tesseract-langpack-por</code></pre>
         <div class="callout note">
           <span class="callout-title">Nota</span>
-          <p>Sem essas bibliotecas o sistema <strong>não quebra</strong>: as etapas de leitura/OCR apenas retornam um aviso no campo <code>erros</code> do laudo (degradação graciosa).</p>
+          <p>Sem essas bibliotecas o sistema <strong>não quebra</strong>: as etapas de leitura/OCR apenas retornam um aviso no campo <code>errors</code> do laudo (degradação graciosa).</p>
         </div>
 
         <h2 id="ambiente-uv">2. Ambiente Python com uv</h2>
@@ -396,8 +400,6 @@ sudo dnf install zbar tesseract tesseract-langpack-por</code></pre>
         <pre><code class="language-bash">cd src
 uv sync</code></pre>
         <p>O <code>uv sync</code> cria o ambiente virtual (<code>.venv/</code>) e instala as dependências fixadas no <code>uv.lock</code>. O projeto já configura o índice <strong>CPU</strong> do PyTorch (torch/torchvision sem CUDA), então a instalação é leve.</p>
-        <p>Para instalar também o grupo opcional de <strong>download de datasets</strong> (Roboflow):</p>
-        <pre><code class="language-bash">uv sync --extra datasets</code></pre>
         <p>Para rodar comandos dentro do ambiente, use <code>uv run</code>:</p>
         <pre><code class="language-bash">uv run python -m app.cli --help</code></pre>
         <div class="callout tip">
@@ -429,13 +431,13 @@ uv sync</code></pre>
         <p>Analisa a imagem de uma etiqueta e imprime um resumo do laudo:</p>
         <pre><code class="language-bash">python -m app.cli foto.jpg</code></pre>
         <p>Exemplos com uma imagem do dataset e as opções disponíveis:</p>
-        <pre><code class="language-bash">python -m app.cli datasets/dataset_sintetico/images/test/ribbon_enrugado/ean13_075.png
+        <pre><code class="language-bash">python -m app.cli config/datasets/dataset_sintetico/images/test/wrinkled_ribbon/ean13_075.png
 python -m app.cli minha_etiqueta.jpg --json      # laudo completo em JSON (indentado)
 python -m app.cli minha_etiqueta.jpg --adk       # via grafo ADK (requer Gemini)</code></pre>
         <p>Interface: <code>python -m app.cli CAMINHO [--adk] [--json]</code>.</p>
         <ul>
-          <li>Sem <code>--adk</code>: roda o <strong>pipeline direto</strong> (<code>inspetor.ferramentas.analisar_imagem</code>).</li>
-          <li>Com <code>--adk</code>: tenta o <strong>grafo multiagente</strong> (<code>inspetor.agentes.analisar_via_adk</code>) e, se ele falhar por qualquer motivo (lib ausente, erro de execução, sem chave), <strong>cai de volta</strong> para o pipeline direto — a análise nunca deixa de acontecer.</li>
+          <li>Sem <code>--adk</code>: roda o <strong>pipeline direto</strong> (<code>config.inspector.tools.analyze_image</code>).</li>
+          <li>Com <code>--adk</code>: tenta o <strong>grafo multiagente</strong> (<code>config.inspector.agents.analyze_via_adk</code>) e, se ele falhar por qualquer motivo (lib ausente, erro de execução, sem chave), <strong>cai de volta</strong> para o pipeline direto — a análise nunca deixa de acontecer.</li>
           <li>Com <code>--json</code>: imprime o laudo completo em JSON além do resumo.</li>
         </ul>
 
@@ -447,7 +449,7 @@ python -m app.cli minha_etiqueta.jpg --adk       # via grafo ADK (requer Gemini)
           <img src="img/chat_inspetor.png" alt="Chat do Inspetor de Etiquetas exibindo um laudo completo">
           <figcaption>O chat web: a imagem enviada e o cartão de laudo com leitura, indicadores, defeito, causa e correção.</figcaption>
         </figure>
-        <p>A página (<code>app/chat.html</code>) é autossuficiente (HTML + CSS + JS <em>vanilla</em>, sem CDN) e envia a imagem via <strong>htmx</strong> para <code>POST /analisar-htmx</code>, inserindo o cartão do laudo na conversa. Detalhes dos endpoints em <a href="#api">API HTTP</a>.</p>
+        <p>A página (<code>app/chat.html</code>) é autossuficiente (HTML + CSS + JS <em>vanilla</em>, sem CDN) e envia a imagem via <strong>htmx</strong> para <code>POST /analyze-htmx</code>, inserindo o cartão do laudo na conversa. Detalhes dos endpoints em <a href="#api">API HTTP</a>.</p>
 
         <h3 id="menu-configuracoes">Menu de configurações (⋮)</h3>
         <p>O botão de três pontinhos (⋮) no topo abre um menu com quatro seções; as preferências ficam salvas no <code>localStorage</code> do navegador:</p>
@@ -461,20 +463,20 @@ python -m app.cli minha_etiqueta.jpg --adk       # via grafo ADK (requer Gemini)
           <img src="img/chat_menu.png" alt="Menu de configurações do chat aberto">
           <figcaption>O menu (⋮) com as seções Idioma, Tema, Inspetor e Ações.</figcaption>
         </figure>
-        <p>O idioma e o motor de inspeção escolhidos são enviados a cada envio (via <code>htmx:configRequest</code>), como os campos <code>idioma</code> e <code>inspetor</code> do <a href="#post-analisar-htmx"><code>POST /analisar-htmx</code></a>.</p>
+        <p>O idioma e o motor de inspeção escolhidos são enviados a cada envio (via <code>htmx:configRequest</code>), como os campos <code>idioma</code> e <code>inspetor</code> do <a href="#post-analisar-htmx"><code>POST /analyze-htmx</code></a>.</p>
 
         <h3 id="curto-circuito-sem-codigo">Imagem sem código de barras (curto-circuito)</h3>
         <p>Se a imagem enviada <strong>não contém um código de barras</strong>, o inspetor faz um <strong>curto-circuito</strong>: a presença do código é verificada <strong>antes</strong> da inspeção pesada e, quando não há código, o laudo traz apenas o aviso <em>"Nenhum código de barras detectado na imagem."</em> — <strong>sem rodar a CNN nem chamar o LLM</strong>. Isso economiza processamento e chamadas de API e evita diagnósticos espúrios.</p>
 
         <h2 id="uso-adk">3. Chat nativo do ADK (opcional)</h2>
-        <p>Interface de chat do próprio ADK sobre o grafo de agentes (<code>inspetor/agentes.py</code>):</p>
+        <p>Interface de chat do próprio ADK sobre o grafo de agentes (<code>config/inspector/agents.py</code>):</p>
         <pre><code class="language-bash">adk web</code></pre>
         <p>Requer o <strong>Gemini</strong> configurado (chave de API) e o pacote <code>google-adk</code> instalado. Veja <a href="#configurar-gemini">Configurar o Gemini</a>.</p>
 
         <h2 id="fluxo-tipico">Fluxo típico</h2>
         <ol>
           <li>(Opcional) Gerar/atualizar o <a href="#datasets">dataset sintético</a>.</li>
-          <li><a href="#treinamento">Treinar a CNN</a> para produzir <code>inspetor/modelos/classificador_defeitos.pt</code>.</li>
+          <li><a href="#treinamento">Treinar a CNN</a> para produzir <code>config/models/classificador_defeitos.pt</code>.</li>
           <li>Analisar imagens pela <strong>CLI</strong> ou pelo <strong>chat web</strong>.</li>
         </ol>
       </section>
@@ -489,23 +491,23 @@ python -m app.cli minha_etiqueta.jpg --adk       # via grafo ADK (requer Gemini)
         <h2 id="treinamento-pre-requisitos">Pré-requisitos</h2>
         <ul>
           <li>Ambiente Python instalado (ver <a href="#instalacao">Instalação</a>).</li>
-          <li>Um dataset rotulado em <code>datasets/dataset_sintetico/</code> com o <code>labels.csv</code> (splits <code>train</code>/<code>val</code>/<code>test</code>). Gere-o conforme <a href="#datasets">Datasets</a> se ainda não existir.</li>
+          <li>Um dataset rotulado em <code>config/datasets/dataset_sintetico/</code> com o <code>labels.csv</code> (splits <code>train</code>/<code>val</code>/<code>test</code>). Gere-o conforme <a href="#datasets">Datasets</a> se ainda não existir.</li>
         </ul>
 
         <h2 id="treinar">Treinar</h2>
-        <pre><code class="language-bash">python -m inspetor.treino --epocas 10
-# salva o melhor modelo (por val_acc) em inspetor/modelos/classificador_defeitos.pt</code></pre>
-        <p>Argumentos do script (<code>inspetor/treino.py</code>):</p>
+        <pre><code class="language-bash">python -m config.inspector.training --epochs 10
+# salva o melhor modelo (por val_acc) em config/models/classificador_defeitos.pt</code></pre>
+        <p>Argumentos do script (<code>config/inspector/training.py</code>):</p>
         <div class="table-wrap">
           <table>
             <thead>
               <tr><th>Flag</th><th>Padrão</th><th>Descrição</th></tr>
             </thead>
             <tbody>
-              <tr><td><code>--epocas</code></td><td><code>10</code></td><td>Número de épocas de treino.</td></tr>
+              <tr><td><code>--epochs</code></td><td><code>10</code></td><td>Número de épocas de treino.</td></tr>
               <tr><td><code>--lr</code></td><td><code>1e-3</code></td><td>Taxa de aprendizado (otimizador Adam).</td></tr>
               <tr><td><code>--batch</code></td><td><code>32</code></td><td>Tamanho do <em>batch</em>.</td></tr>
-              <tr><td><code>--saida</code></td><td><code>inspetor/modelos/classificador_defeitos.pt</code></td><td>Caminho do modelo salvo.</td></tr>
+              <tr><td><code>--output</code></td><td><code>config/models/classificador_defeitos.pt</code></td><td>Caminho do modelo salvo.</td></tr>
             </tbody>
           </table>
         </div>
@@ -513,33 +515,33 @@ python -m app.cli minha_etiqueta.jpg --adk       # via grafo ADK (requer Gemini)
         <h2 id="como-funciona">Como funciona</h2>
         <ul>
           <li><strong>Backbone</strong>: <code>mobilenet_v3_small</code> pré-treinado (ImageNet); a última camada <code>Linear</code> é trocada para as <strong>7 classes</strong> do projeto.</li>
-          <li><strong>Transferência de aprendizado</strong>: por padrão o <em>backbone</em> é congelado e apenas a cabeça é treinada (<code>congelar_backbone=True</code>).</li>
-          <li><strong>Pré-processamento</strong>: <code>Resize(224)</code>, <code>Grayscale(3)</code>, <code>ToTensor</code> e <code>Normalize</code> com média/desvio do ImageNet (<code>MEAN</code>/<code>STD</code> em <code>inspetor/config.py</code>); no treino há <em>augmentation</em> leve.</li>
+          <li><strong>Transferência de aprendizado</strong>: por padrão o <em>backbone</em> é congelado e apenas a cabeça é treinada (<code>freeze_backbone=True</code>).</li>
+          <li><strong>Pré-processamento</strong>: <code>Resize(224)</code>, <code>Grayscale(3)</code>, <code>ToTensor</code> e <code>Normalize</code> com média/desvio do ImageNet (<code>MEAN</code>/<code>STD</code> em <code>config/inspector/settings.py</code>); no treino há <em>augmentation</em> leve.</li>
           <li><strong>Otimização</strong>: perda <code>CrossEntropy</code>, otimizador <code>Adam</code>; salva o <strong>melhor</strong> modelo pela acurácia de validação.</li>
-          <li><strong>Retorno</strong>: a função <code>treinar(...)</code> devolve métricas finais <code>{"val_acc": ..., "test_acc": ..., "por_classe": {...}}</code>.</li>
+          <li><strong>Retorno</strong>: a função <code>train(...)</code> devolve métricas finais <code>{"val_acc": ..., "test_acc": ..., "per_class": {...}}</code>.</li>
         </ul>
         <div class="callout caution">
           <span class="callout-title">Atenção</span>
-          <p>A <strong>ordem</strong> das classes em <code>CLASSES</code> (em <code>inspetor/config.py</code>) define o índice usado pela rede. Não reordene as classes sem <strong>retreinar</strong> o modelo.</p>
+          <p>A <strong>ordem</strong> das classes em <code>CLASSES</code> (em <code>config/inspector/settings.py</code>) define o índice usado pela rede. Não reordene as classes sem <strong>retreinar</strong> o modelo.</p>
         </div>
 
         <h2 id="treinamento-dataset">Dataset</h2>
-        <p>O modelo aprende sobre o <strong>dataset sintético</strong> (padrão) em <code>datasets/dataset_sintetico/</code>, cujas 7 classes reproduzem assinaturas visuais de defeitos de impressão térmica descritas na documentação Zebra. Para gerar ou substituir o dataset (inclusive por dados reais do Roboflow), veja <a href="#datasets">Datasets</a>.</p>
+        <p>O modelo aprende sobre o <strong>dataset sintético</strong> (padrão) em <code>config/datasets/dataset_sintetico/</code>, cujas 7 classes reproduzem assinaturas visuais de defeitos de impressão térmica descritas na documentação Zebra. Para gerar ou substituir o dataset (inclusive por dados reais do Roboflow), veja <a href="#datasets">Datasets</a>.</p>
 
         <h2 id="depois-de-treinar">Depois de treinar</h2>
-        <p>Com o modelo salvo em <code>inspetor/modelos/classificador_defeitos.pt</code>, a etapa de classificação passa a funcionar na <a href="#uso">CLI</a> e na <a href="#api">API</a>. Se o arquivo do modelo não existir, a etapa de classificação retorna um aviso no campo <code>erros</code> do laudo (degradação graciosa) — as demais análises continuam.</p>
+        <p>Com o modelo salvo em <code>config/models/classificador_defeitos.pt</code>, a etapa de classificação passa a funcionar na <a href="#uso">CLI</a> e na <a href="#api">API</a>. Se o arquivo do modelo não existir, a etapa de classificação retorna um aviso no campo <code>errors</code> do laudo (degradação graciosa) — as demais análises continuam.</p>
       </section>
 
       <!-- ===== Datasets ===== -->
       <section id="datasets">
         <h1>Datasets</h1>
-        <p class="lead">Dataset sintético (gerar_dataset.py) e datasets externos de códigos de barras danificados (Roboflow) com o downloader baixar_roboflow.py.</p>
+        <p class="lead">Dataset sintético (generate_dataset.py) e datasets externos de códigos de barras danificados (Roboflow).</p>
 
         <p>O treinamento do classificador usa, por padrão, um <strong>dataset sintético</strong> gerado localmente. Também é possível complementar/substituir por <strong>datasets externos</strong> (Roboflow) de códigos de barras danificados.</p>
 
-        <h2 id="dataset-sintetico">Dataset sintético (<code>gerar_dataset.py</code>)</h2>
-        <p>O script <code>gerar_dataset.py</code> produz um dataset <strong>sintético, balanceado e rotulado</strong> de defeitos de impressão de códigos de barras (1D e 2D). Cada defeito reproduz a assinatura visual descrita na documentação Zebra ZT411/ZT421 (<em>troubleshooting</em> de qualidade de impressão) — é o dataset que treina o "agente de defeitos físicos".</p>
-        <pre><code class="language-bash">python gerar_dataset.py --out datasets/dataset_sintetico --per-class 90 --seed 42</code></pre>
+        <h2 id="dataset-sintetico">Dataset sintético (<code>generate_dataset.py</code>)</h2>
+        <p>O script <code>generate_dataset.py</code> produz um dataset <strong>sintético, balanceado e rotulado</strong> de defeitos de impressão de códigos de barras (1D e 2D). Cada defeito reproduz a assinatura visual descrita na documentação Zebra ZT411/ZT421 (<em>troubleshooting</em> de qualidade de impressão) — é o dataset que treina o "agente de defeitos físicos".</p>
+        <pre><code class="language-bash">python config/generate_dataset.py --out config/datasets/dataset_sintetico --per-class 90 --seed 42</code></pre>
         <p>Argumentos:</p>
         <div class="table-wrap">
           <table>
@@ -556,31 +558,21 @@ python -m app.cli minha_etiqueta.jpg --adk       # via grafo ADK (requer Gemini)
         </div>
         <p><strong>Saída</strong> gerada:</p>
         <pre><code class="nohighlight">&lt;out&gt;/
-&#9500;&#9472;&#9472; images/&lt;split&gt;/&lt;classe&gt;/&lt;simbologia&gt;_&lt;idx&gt;.png
-&#9500;&#9472;&#9472; labels.csv           # filename, split, classe, simbologia, payload, params
-&#9492;&#9472;&#9472; previews/&lt;classe&gt;.png # montagem para o artigo</code></pre>
+&#9500;&#9472;&#9472; images/&lt;split&gt;/&lt;class&gt;/&lt;symbology&gt;_&lt;idx&gt;.png
+&#9500;&#9472;&#9472; labels.csv           # filename, split, class, symbology, payload, params
+&#9492;&#9472;&#9472; previews/&lt;class&gt;.png # montagem para o artigo</code></pre>
         <ul>
-          <li><strong>Classes</strong> (7): <code>sem_defeito</code>, <code>cabeca_queimada</code>, <code>ribbon_enrugado</code>, <code>ponto_queimado</code>, <code>impressao_clara</code>, <code>pressao_desigual</code>, <code>cabeca_suja</code>.</li>
+          <li><strong>Classes</strong> (7): <code>no_defect</code>, <code>damaged_printhead_element</code>, <code>wrinkled_ribbon</code>, <code>burnt_spot</code>, <code>light_print</code>, <code>uneven_pressure</code>, <code>dirty_printhead</code>.</li>
           <li><strong>Simbologias</strong>: 1D (<code>code128</code>, <code>code39</code>, <code>ean13</code>, <code>ean8</code>, <code>itf</code>) e 2D (<code>qr</code>, <code>datamatrix</code>).</li>
         </ul>
-        <p>O caminho padrão esperado pelo treino é <code>datasets/dataset_sintetico/</code> (configurável pela variável de ambiente <code>DATASET_DIR</code>).</p>
+        <p>O caminho padrão esperado pelo treino é <code>config/datasets/dataset_sintetico/</code> (configurável pela variável de ambiente <code>DATASET_DIR</code>).</p>
 
         <h2 id="datasets-externos">Datasets externos (Roboflow)</h2>
         <p>Para treinar/avaliar com <strong>imagens reais</strong> de códigos de barras danificados, o Roboflow Universe reúne vários datasets públicos. Busque por códigos de barras com dano/qualidade de impressão:</p>
         <ul>
           <li><strong><a href="https://universe.roboflow.com/search?q=barcode+damage">https://universe.roboflow.com/search?q=barcode+damage</a></strong></li>
         </ul>
-
-        <h3 id="downloader-roboflow">Downloader <code>baixar_roboflow.py</code></h3>
-        <p>O download é automatizado pelo script <code>baixar_roboflow.py</code>, que usa o SDK do Roboflow (dependência opcional do projeto). Instale o extra e forneça sua chave gratuita de API:</p>
-        <pre><code class="language-bash">uv sync --extra datasets          # instala o pacote `roboflow`
-export ROBOFLOW_API_KEY="sua_chave_aqui"
-python baixar_roboflow.py</code></pre>
-        <div class="callout note">
-          <span class="callout-title">Nota</span>
-          <p>O acesso ao Roboflow requer uma <strong>chave de API gratuita</strong> (crie uma conta em roboflow.com). O extra <code>datasets</code> (que traz o pacote <code>roboflow</code>) está declarado no <code>pyproject.toml</code> e <strong>não</strong> é instalado pelo <code>uv sync</code> padrão.</p>
-        </div>
-        <p>Após baixar, ajuste o layout para o formato esperado (<code>images/&lt;split&gt;/&lt;classe&gt;/...</code> + <code>labels.csv</code>) ou aponte <code>DATASET_DIR</code> para a pasta do dataset externo antes de <a href="#treinamento">treinar a CNN</a>.</p>
+        <p>Após baixar, ajuste o layout para o formato esperado (<code>images/&lt;split&gt;/&lt;class&gt;/...</code> + <code>labels.csv</code>) ou aponte <code>DATASET_DIR</code> para a pasta do dataset externo antes de <a href="#treinamento">treinar a CNN</a>.</p>
       </section>
 
       <!-- ===== API ===== -->
@@ -598,22 +590,22 @@ python baixar_roboflow.py</code></pre>
         <h3 id="get-raiz"><code>GET /</code></h3>
         <p>Serve a interface de <strong>chat</strong> (<code>app/chat.html</code>, HTML autossuficiente). Resposta: <code>text/html</code>.</p>
 
-        <h3 id="post-analisar"><code>POST /analisar</code></h3>
+        <h3 id="post-analisar"><code>POST /analyze</code></h3>
         <p>Recebe uma imagem, roda a análise e devolve o <strong>laudo em JSON</strong>.</p>
         <ul>
           <li><strong>Corpo</strong>: <code>multipart/form-data</code> com o campo <strong><code>imagem</code></strong> (arquivo).</li>
-          <li><strong>Query opcional</strong>: <code>adk</code> (bool, padrão <code>false</code>) — usa o <strong>grafo multiagente (ADK)</strong> em vez do pipeline direto; se o ADK falhar, cai automaticamente no pipeline direto e registra o aviso em <code>erros</code>.</li>
-          <li><strong>Resposta</strong>: <code>application/json</code> com o <a href="#formato-do-laudo">laudo</a>. Em erro interno, retorna <code>{"erro": "..."}</code> com status <code>500</code>.</li>
+          <li><strong>Query opcional</strong>: <code>adk</code> (bool, padrão <code>false</code>) — usa o <strong>grafo multiagente (ADK)</strong> em vez do pipeline direto; se o ADK falhar, cai automaticamente no pipeline direto e registra o aviso em <code>errors</code>.</li>
+          <li><strong>Resposta</strong>: <code>application/json</code> com o <a href="#formato-do-laudo">laudo</a>. Em erro interno, retorna <code>{"error": "..."}</code> com status <code>500</code>.</li>
         </ul>
         <pre><code class="language-bash"># pipeline direto
-curl -F "imagem=@minha_etiqueta.jpg" http://localhost:8000/analisar
+curl -F "imagem=@minha_etiqueta.jpg" http://localhost:8000/analyze
 
 # via grafo ADK (requer Gemini)
-curl -F "imagem=@minha_etiqueta.jpg" "http://localhost:8000/analisar?adk=true"</code></pre>
+curl -F "imagem=@minha_etiqueta.jpg" "http://localhost:8000/analyze?adk=true"</code></pre>
         <p>A imagem é gravada em um arquivo temporário (o pipeline trabalha com caminhos de arquivo) e removida ao final, independentemente do resultado.</p>
 
-        <h3 id="post-analisar-htmx"><code>POST /analisar-htmx</code></h3>
-        <p>Igual ao <code>POST /analisar</code>, mas devolve um <strong>fragmento HTML</strong> (o cartão do laudo, no estilo shadcn) em vez de JSON. É o endpoint usado pela página de chat via <strong>htmx</strong> (<code>hx-post="/analisar-htmx"</code>), para atualizar a conversa sem recarregar a página.</p>
+        <h3 id="post-analisar-htmx"><code>POST /analyze-htmx</code></h3>
+        <p>Igual ao <code>POST /analyze</code>, mas devolve um <strong>fragmento HTML</strong> (o cartão do laudo, no estilo shadcn) em vez de JSON. É o endpoint usado pela página de chat via <strong>htmx</strong> (<code>hx-post="/analyze-htmx"</code>), para atualizar a conversa sem recarregar a página.</p>
         <p>Além da imagem, o corpo (<code>multipart/form-data</code>) aceita dois campos de formulário, enviados pelo chat via <code>htmx:configRequest</code>:</p>
         <ul>
           <li><strong><code>imagem</code></strong> (arquivo) — a etiqueta a analisar.</li>
@@ -625,57 +617,57 @@ curl -F "imagem=@minha_etiqueta.jpg" "http://localhost:8000/analisar?adk=true"</
         <p>Arquivos estáticos servidos localmente (ex.: <code>htmx.min.js</code>), sem depender de CDN.</p>
         <div class="callout note">
           <span class="callout-title">Nota</span>
-          <p>A página de chat (<code>GET /</code>) envia a imagem via <strong>htmx</strong> para <code>POST /analisar-htmx</code> e insere na conversa o cartão do laudo retornado. O <code>POST /analisar</code> (JSON) continua disponível para integrações programáticas.</p>
+          <p>A página de chat (<code>GET /</code>) envia a imagem via <strong>htmx</strong> para <code>POST /analyze-htmx</code> e insere na conversa o cartão do laudo retornado. O <code>POST /analyze</code> (JSON) continua disponível para integrações programáticas.</p>
         </div>
 
-        <h3 id="get-saude"><code>GET /saude</code></h3>
+        <h3 id="get-saude"><code>GET /health</code></h3>
         <p>Verificação de saúde do serviço. Resposta: <code>{"status": "ok"}</code>.</p>
 
         <h2 id="formato-do-laudo">Formato do laudo</h2>
-        <p>O <code>POST /analisar</code> devolve o laudo consolidado (dataclass <code>Laudo</code>, <code>inspetor/laudo.py</code>). Campos:</p>
+        <p>O <code>POST /analyze</code> devolve o laudo consolidado (dataclass <code>Report</code>, <code>config/inspector/report.py</code>). Campos:</p>
         <div class="table-wrap">
           <table>
             <thead>
               <tr><th>Campo</th><th>Tipo</th><th>Descrição</th></tr>
             </thead>
             <tbody>
-              <tr><td><code>legivel</code></td><td><code>bool | null</code></td><td>O código pôde ser decodificado? <code>null</code> se a leitura ficou indisponível.</td></tr>
-              <tr><td><code>simbologia</code></td><td><code>str | null</code></td><td>Ex.: <code>"CODE128"</code>, <code>"EAN13"</code>, <code>"QRCODE"</code>.</td></tr>
-              <tr><td><code>conteudo</code></td><td><code>str | null</code></td><td><em>Payload</em> decodificado do código.</td></tr>
-              <tr><td><code>texto_ocr</code></td><td><code>str</code></td><td>Texto humano-legível (Tesseract); <code>""</code> se indisponível.</td></tr>
-              <tr><td><code>indicadores</code></td><td><code>object</code></td><td><code>{contraste, uniformidade, nitidez}</code> em <code>[0,1]</code>.</td></tr>
-              <tr><td><code>defeito</code></td><td><code>object</code></td><td><code>{classe, classe_pt, confianca, probs}</code> da CNN.</td></tr>
-              <tr><td><code>causa_provavel</code></td><td><code>str</code></td><td>Causa provável do defeito.</td></tr>
-              <tr><td><code>correcao_sugerida</code></td><td><code>str</code></td><td>Correção recomendada.</td></tr>
-              <tr><td><code>fundamentacao</code></td><td><code>str</code></td><td>Trecho/raciocínio que embasa o diagnóstico.</td></tr>
-              <tr><td><code>fonte</code></td><td><code>str</code></td><td>Referência (ex.: <code>"Zebra Technologies (2024)"</code>).</td></tr>
-              <tr><td><code>via_diagnostico</code></td><td><code>str</code></td><td><code>"gemini"</code> ou <code>"regras"</code>.</td></tr>
-              <tr><td><code>confianca_geral</code></td><td><code>float</code></td><td>Confiança global (0–1).</td></tr>
-              <tr><td><code>erros</code></td><td><code>array</code></td><td>Avisos/degradações (libs ausentes, ADK indisponível etc.).</td></tr>
+              <tr><td><code>readable</code></td><td><code>bool | null</code></td><td>O código pôde ser decodificado? <code>null</code> se a leitura ficou indisponível.</td></tr>
+              <tr><td><code>symbology</code></td><td><code>str | null</code></td><td>Ex.: <code>"CODE128"</code>, <code>"EAN13"</code>, <code>"QRCODE"</code>.</td></tr>
+              <tr><td><code>content</code></td><td><code>str | null</code></td><td><em>Payload</em> decodificado do código.</td></tr>
+              <tr><td><code>ocr_text</code></td><td><code>str</code></td><td>Texto humano-legível (Tesseract); <code>""</code> se indisponível.</td></tr>
+              <tr><td><code>indicators</code></td><td><code>object</code></td><td><code>{contrast, uniformity, sharpness}</code> em <code>[0,1]</code>.</td></tr>
+              <tr><td><code>defect</code></td><td><code>object</code></td><td><code>{class, class_label, confidence, probs}</code> da CNN.</td></tr>
+              <tr><td><code>probable_cause</code></td><td><code>str</code></td><td>Causa provável do defeito.</td></tr>
+              <tr><td><code>corrective_action</code></td><td><code>str</code></td><td>Correção recomendada.</td></tr>
+              <tr><td><code>reasoning</code></td><td><code>str</code></td><td>Trecho/raciocínio que embasa o diagnóstico.</td></tr>
+              <tr><td><code>source</code></td><td><code>str</code></td><td>Referência (ex.: <code>"Zebra Technologies (2024)"</code>).</td></tr>
+              <tr><td><code>diagnosis_method</code></td><td><code>str</code></td><td><code>"gemini"</code> ou <code>"rules"</code>.</td></tr>
+              <tr><td><code>overall_confidence</code></td><td><code>float</code></td><td>Confiança global (0–1).</td></tr>
+              <tr><td><code>errors</code></td><td><code>array</code></td><td>Avisos/degradações (libs ausentes, ADK indisponível etc.).</td></tr>
             </tbody>
           </table>
         </div>
 
         <h3 id="laudo-exemplo">Exemplo</h3>
         <pre><code class="language-json">{
-  "legivel": true,
-  "simbologia": "CODE128",
-  "conteudo": "CB123",
-  "texto_ocr": "CB123",
-  "indicadores": { "contraste": 0.82, "uniformidade": 0.74, "nitidez": 0.6 },
-  "defeito": {
-    "classe": "ribbon_enrugado",
-    "classe_pt": "Ribbon enrugado",
-    "confianca": 0.91,
+  "readable": true,
+  "symbology": "CODE128",
+  "content": "CB123",
+  "ocr_text": "CB123",
+  "indicators": { "contrast": 0.82, "uniformity": 0.74, "sharpness": 0.6 },
+  "defect": {
+    "class": "wrinkled_ribbon",
+    "class_label": "Ribbon enrugado",
+    "confidence": 0.91,
     "probs": {}
   },
-  "causa_provavel": "Tensão/alinhamento do ribbon",
-  "correcao_sugerida": "Ajustar a tensão do ribbon; verificar o percurso",
-  "fundamentacao": "...",
-  "fonte": "Zebra Technologies (2024)",
-  "via_diagnostico": "regras",
-  "confianca_geral": 0.91,
-  "erros": []
+  "probable_cause": "Tensão/alinhamento do ribbon",
+  "corrective_action": "Ajustar a tensão do ribbon; verificar o percurso",
+  "reasoning": "...",
+  "source": "Zebra Technologies (2024)",
+  "diagnosis_method": "rules",
+  "overall_confidence": 0.91,
+  "errors": []
 }</code></pre>
       </section>
 
@@ -702,24 +694,24 @@ curl -F "imagem=@minha_etiqueta.jpg" "http://localhost:8000/analisar?adk=true"</
 # Opcionais:
 # GEMINI_MODEL=gemini-flash-latest
 # DATASET_DIR=/caminho/para/dataset_sintetico
-# MODELO_PATH=/caminho/para/classificador_defeitos.pt</code></pre>
+# MODEL_PATH=/caminho/para/classificador_defeitos.pt</code></pre>
             Alternativamente, exporte a variável no ambiente:
             <pre><code class="language-bash">export GOOGLE_API_KEY="sua_chave_aqui"</code></pre>
           </li>
-          <li><strong>Modelo</strong>: o padrão é <code>gemini-flash-latest</code> (constante <code>GEMINI_MODEL</code> em <code>inspetor/config.py</code>), sobreponível pela variável de ambiente <code>GEMINI_MODEL</code>.</li>
+          <li><strong>Modelo</strong>: o padrão é <code>gemini-flash-latest</code> (constante <code>GEMINI_MODEL</code> em <code>config/inspector/settings.py</code>), sobreponível pela variável de ambiente <code>GEMINI_MODEL</code>.</li>
         </ol>
-        <p>Com a chave presente, o diagnóstico (<code>inspetor/diagnostico.py</code>) monta um <em>prompt</em> com o contexto da base Zebra (<code>kb.contexto_para_llm</code>) e pede ao Gemini uma resposta <strong>estritamente em JSON</strong> (<code>causa_provavel</code>, <code>correcao_sugerida</code>, <code>fundamentacao</code>). O campo <code>via_diagnostico</code> do laudo fica <code>"gemini"</code>.</p>
+        <p>Com a chave presente, o diagnóstico (<code>config/inspector/diagnosis.py</code>) monta um <em>prompt</em> com o contexto da base Zebra (<code>kb.context_for_llm</code>) e pede ao Gemini uma resposta <strong>estritamente em JSON</strong> (<code>probable_cause</code>, <code>corrective_action</code>, <code>reasoning</code>). O campo <code>diagnosis_method</code> do laudo fica <code>"gemini"</code>.</p>
         <div class="callout note">
           <span class="callout-title">Nota</span>
           <p>Na interface de <a href="#uso">chat web</a>, a seção <strong>Inspetor</strong> do menu (⋮) mostra o <strong>modelo ativo</strong> (ex.: <code>gemini-flash-latest</code>) ao lado da opção <strong>LLM</strong>. A opção <strong>Auto</strong> (LLM com <em>fallback</em> para a KB Zebra) só aparece quando há um LLM configurado no <code>.env</code>; sem chave, o menu oferece apenas a <strong>KB Zebra Technologies</strong> (regras).</p>
         </div>
         <div class="callout tip">
           <span class="callout-title">Dica</span>
-          <p>A função <code>config.tem_gemini()</code> considera configurada a chave se <strong><code>GOOGLE_API_KEY</code> ou <code>GEMINI_API_KEY</code></strong> estiver definida no ambiente.</p>
+          <p>A função <code>settings.has_gemini()</code> considera configurada a chave se <strong><code>GOOGLE_API_KEY</code> ou <code>GEMINI_API_KEY</code></strong> estiver definida no ambiente.</p>
         </div>
 
         <h2 id="sem-chave">Sem chave (fallback por regras)</h2>
-        <p>Se <strong>não houver</strong> chave configurada — ou se a chamada ao Gemini falhar por qualquer motivo (lib ausente, rede, cota, JSON inválido) — o diagnóstico recorre <strong>graciosamente</strong> às <strong>regras</strong> da base de conhecimento Zebra (<code>inspetor/kb.py</code> + <code>dados/kb_zebra.json</code>): para a classe do defeito, retorna a causa provável e a ação corretiva mapeadas na documentação. Nesse caso o campo <code>via_diagnostico</code> fica <code>"regras"</code>.</p>
+        <p>Se <strong>não houver</strong> chave configurada — ou se a chamada ao Gemini falhar por qualquer motivo (lib ausente, rede, cota, JSON inválido) — o diagnóstico recorre <strong>graciosamente</strong> às <strong>regras</strong> da base de conhecimento Zebra (<code>config/inspector/kb.py</code> + <code>config/data/kb_zebra.json</code>): para a classe do defeito, retorna a causa provável e a ação corretiva mapeadas na documentação. Nesse caso o campo <code>diagnosis_method</code> fica <code>"rules"</code>.</p>
         <p>Ou seja: <strong>o sistema funciona sem chave</strong> — apenas o texto do diagnóstico deixa de ser gerado pelo LLM e passa a vir das regras.</p>
 
         <h2 id="adk-grafo">ADK (grafo multiagente)</h2>

@@ -10,15 +10,15 @@ Etiquetas — ou continuar usando o sistema **de graça**, sem chave nenhuma.
 **Não.** O sistema **já funciona sem chave de API**, com **custo zero**.
 
 Quando não há `GOOGLE_API_KEY` configurada, o diagnóstico usa o **fallback por
-regras** sobre a **base de conhecimento Zebra** (`inspetor/kb.py` +
-`dados/kb_zebra.json`). Ele é determinístico, roda 100% localmente e nunca
+regras** sobre a **base de conhecimento Zebra** (`config/inspector/kb.py` +
+`config/data/kb_zebra.json`). Ele é determinístico, roda 100% localmente e nunca
 "quebra": toda a etapa de causa/correção continua funcionando normalmente.
 
-Nesse modo, o laudo sai com o campo **`via_diagnostico="regras"`**.
+Nesse modo, o laudo sai com o campo **`diagnosis_method="rules"`**.
 
 A chave do Gemini é **opcional** e serve só para **enriquecer o diagnóstico**:
 em vez das regras fixas, o texto de causa provável e correção passa a ser
-gerado pelo LLM, e o laudo sai com **`via_diagnostico="gemini"`**.
+gerado pelo LLM, e o laudo sai com **`diagnosis_method="gemini"`**.
 
 > Resumo: **sem chave → funciona por regras (grátis)**; **com chave → funciona
 > por Gemini**. Em ambos os casos você recebe um laudo completo. E qualquer
@@ -49,7 +49,7 @@ Passo a passo:
 ## 3) Configurar no projeto
 
 Você pode fornecer a chave de duas formas. Ambas são lidas por
-`inspetor/config.py`, cuja função **`config.tem_gemini()`** detecta
+`config/inspector/settings.py`, cuja função **`settings.has_gemini()`** detecta
 automaticamente se há chave presente (aceita `GOOGLE_API_KEY` **ou**
 `GEMINI_API_KEY`).
 
@@ -86,9 +86,9 @@ free tier). Só mexa aqui se quiser trocar de modelo:
 GEMINI_MODEL=gemini-flash-latest
 ```
 
-Detalhe técnico: com a chave presente, `diagnostico.py` faz um import **lazy** de
+Detalhe técnico: com a chave presente, `diagnosis.py` faz um import **lazy** de
 `google.genai`, cria `genai.Client()` e chama o modelo definido em
-`config.GEMINI_MODEL`. Se faltar a biblioteca ou a chamada falhar, volta para as
+`settings.GEMINI_MODEL`. Se faltar a biblioteca ou a chamada falhar, volta para as
 regras sem interromper a análise.
 
 ---
@@ -103,7 +103,7 @@ totalmente funcional e gratuito). Suas opções:
 ### (a) Rodar sem chave — fallback por regras (custo zero)
 
 É o padrão. Não configure nada e o diagnóstico virá da base de conhecimento
-Zebra, com `via_diagnostico="regras"`. Ideal para reproduzir o baseline, rodar
+Zebra, com `diagnosis_method="rules"`. Ideal para reproduzir o baseline, rodar
 em máquina offline ou evitar qualquer dependência de nuvem.
 
 ### (b) Modelo local/gratuito com Ollama + LiteLLM no ADK
@@ -117,7 +117,7 @@ nuvem. No código de agentes do ADK, o modelo é declarado assim:
 from google.adk.models.lite_llm import LiteLlm
 
 # Modelo local servido pelo Ollama (ex.: llama3)
-modelo = LiteLlm(model="ollama/llama3")
+model = LiteLlm(model="ollama/llama3")
 ```
 
 Passos gerais: instale o Ollama, baixe um modelo (`ollama pull llama3`), garanta
@@ -127,7 +127,7 @@ Para os detalhes de integração (LiteLLM, Ollama, variáveis e formatos de
 **https://google.github.io/adk-docs/**
 
 > Observação: essa via é para o **pipeline orquestrado do ADK** (`--adk`). O
-> diagnóstico do pipeline direto (`inspetor/diagnostico.py`) usa o cliente do
+> diagnóstico do pipeline direto (`config/inspector/diagnosis.py`) usa o cliente do
 > Gemini; para um LLM 100% local sem Gemini, o caminho é o grafo ADK com
 > LiteLlm/Ollama.
 
@@ -147,21 +147,21 @@ Rode a CLI apontando para uma imagem de etiqueta:
 python -m app.cli caminho/da/imagem.jpg
 ```
 
-Como interpretar o resultado (campo `via_diagnostico`):
+Como interpretar o resultado (campo `diagnosis_method`):
 
-- **Sem chave** → o rodapé mostra `via: regras` (e no JSON,
-  `"via_diagnostico": "regras"`). Diagnóstico veio da base Zebra.
+- **Sem chave** → o rodapé mostra `via: rules` (e no JSON,
+  `"diagnosis_method": "rules"`). Diagnóstico veio da base Zebra.
 - **Com chave válida** → mostra `via: gemini` (JSON:
-  `"via_diagnostico": "gemini"`). Diagnóstico veio do LLM.
+  `"diagnosis_method": "gemini"`). Diagnóstico veio do LLM.
 
-Para inspecionar o laudo completo, incluindo o campo `via_diagnostico`, use o
+Para inspecionar o laudo completo, incluindo o campo `diagnosis_method`, use o
 formato JSON:
 
 ```bash
 python -m app.cli caminho/da/imagem.jpg --json
 ```
 
-> Dica: se você configurou a chave mas continua vendo `via: regras`, verifique
+> Dica: se você configurou a chave mas continua vendo `via: rules`, verifique
 > se o `.env` está em `src/`, se a variável foi de fato exportada na sessão
 > atual, e se a biblioteca do Gemini (`google-genai`) está instalada. Qualquer
 > falha faz o sistema cair, de forma silenciosa e graciosa, para as regras.
