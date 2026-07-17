@@ -1,5 +1,11 @@
 import { el } from "./dom.js";
 import { scrollBottom, stampTime } from "./composer.js";
+import { ls, lsSet } from "./state.js";
+
+// localStorage keys: the camera and zoom the user last used are restored on the
+// next open (so the right device + zoom come back automatically).
+const LS_DEVICE = "scan_device";
+const LS_ZOOM = "scan_zoom";
 
 // ===================================================== Scan (ZXing barcode)
 // Backs the attach ("+") menu's "Scan" option (and "Camera" when the .env opt-in
@@ -79,8 +85,16 @@ function setupControls() {
     el.scanZoom.min = caps.zoom.min;
     el.scanZoom.max = caps.zoom.max;
     el.scanZoom.step = caps.zoom.step || 0.1;
-    el.scanZoom.value = settings.zoom != null ? settings.zoom : caps.zoom.min;
+    // Restore the saved zoom (clamped to this device's range); else keep current.
+    var saved = parseFloat(ls(LS_ZOOM));
+    var value = isNaN(saved)
+      ? (settings.zoom != null ? settings.zoom : caps.zoom.min)
+      : Math.min(caps.zoom.max, Math.max(caps.zoom.min, saved));
+    el.scanZoom.value = value;
     el.scanZoomRow.hidden = false;
+    if (!isNaN(saved) && track.applyConstraints) {
+      track.applyConstraints({ advanced: [{ zoom: value }] }).catch(function () {});
+    }
   }
 }
 
@@ -96,8 +110,9 @@ async function start(deviceId) {
   setupControls();
 }
 
-// Fills the camera dropdown (labels are exposed only after permission) and, if
-// the default wasn't already a back camera, switches to one.
+// Fills the camera dropdown (labels are exposed only after permission) and picks
+// the camera to use: the saved one if it's still present, otherwise a back
+// camera, otherwise whatever ZXing defaulted to.
 async function populateAndPreferBack() {
   var devices = await reader.listVideoInputDevices();
   el.scanSource.innerHTML = "";
@@ -109,11 +124,13 @@ async function populateAndPreferBack() {
   });
   el.scanSourceRow.hidden = devices.length < 2;
 
+  var savedId = ls(LS_DEVICE);
+  var saved = savedId && devices.filter(function (d) { return d.deviceId === savedId; })[0];
   var back = devices.filter(function (d) {
     return /back|rear|traseira|tras|environment/i.test(d.label || "");
   })[0];
-  var pick = (back && back.deviceId) || selectedDeviceId ||
-             (devices[0] && devices[0].deviceId) || null;
+  var pick = (saved && saved.deviceId) || (back && back.deviceId) ||
+             selectedDeviceId || (devices[0] && devices[0].deviceId) || null;
 
   el.scanSource.value = pick || "";
   if (pick && pick !== selectedDeviceId) await start(pick);
@@ -177,10 +194,12 @@ export function initScan() {
 
   el.scanSource.addEventListener("change", function () {
     lastText = "";
+    lsSet(LS_DEVICE, el.scanSource.value);   // remember the chosen camera
     start(el.scanSource.value).catch(showError);
   });
 
   el.scanZoom.addEventListener("input", function () {
+    lsSet(LS_ZOOM, String(el.scanZoom.value));   // remember the chosen zoom
     if (track && track.applyConstraints) {
       track.applyConstraints({ advanced: [{ zoom: Number(el.scanZoom.value) }] }).catch(function () {});
     }
