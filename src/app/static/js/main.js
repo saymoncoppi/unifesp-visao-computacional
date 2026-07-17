@@ -2,10 +2,12 @@ import { el } from "./dom.js";
 import { state, ls } from "./state.js";
 import { LANGUAGES, THEMES } from "./translations.js";
 import { applyTheme, applyLanguage, applyInspector, initModelLabel } from "./preferences.js";
-import { initHtmx } from "./composer.js";
+import { initHtmx, stampUnstamped } from "./composer.js";
 import { initAttach } from "./attach.js";
 import { initMenu } from "./menu.js";
 import { initQuota } from "./quota.js";
+import { initScan } from "./scan.js";
+import { initLightbox } from "./lightbox.js";
 
 // ===================================================== Initialization
 (function initState() {
@@ -35,3 +37,6 @@ initHtmx();
 initAttach();
 initMenu();
 initQuota();   // after initHtmx so the quota guard's beforeRequest runs second.
+initScan();    // wires the scan modal; used by "Camera" when CAMERA_USE_ZXING is on
+initLightbox();
+stampUnstamped();   // stamp the static greeting with the current time

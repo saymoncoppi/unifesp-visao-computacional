@@ -21,6 +21,10 @@ tmp/
 **/tmp/
 .DS_Store
 
+# ---- Certificados TLS de desenvolvimento (self-signed, NUNCA versionar) ----
+src/config/certs/
+*.pem
+
 # ---- Artefatos de build LaTeX ----
 *.aux
 *.bbl

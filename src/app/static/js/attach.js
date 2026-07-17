@@ -1,14 +1,16 @@
 import { el } from "./dom.js";
 import { setImageFile, resetComposer } from "./composer.js";
+import { openScan, closeScan } from "./scan.js";
 
 // ===================================================== Attach ("+") menu + capture
-// WhatsApp-like attach button: opens a small popover with two options.
+// WhatsApp-like attach button: opens a small popover with three options.
 //   - "Fotos"  -> opens the image explorer (the hidden #image input)
-//   - "Câmera" -> opens the live camera (getUserMedia); falls back to the
-//                 native capture input when getUserMedia is unavailable/denied.
-// The chosen/captured image is shown in a preview modal with Cancel / Analyze.
+//   - "Câmera" -> opens the device's native camera app to take a photo (the
+//                 #camera-input with capture="environment"); with the .env opt-in
+//                 CAMERA_USE_ZXING=true it routes through the ZXing scanner instead
+//   - "Scan"   -> always the live ZXing barcode scanner (scan.js)
+// A taken/selected photo is shown in a preview modal with Cancel / Analyze.
 
-let cameraStream = null;   // active MediaStream while the camera modal is open
 let previewUrl = null;     // object URL currently shown in the preview modal
 
 // ------------------------------------------------------------- attach menu
@@ -41,53 +43,11 @@ function closePreview() {
   revokePreview();
 }
 
-// ------------------------------------------------------------- camera modal
-function stopCamera() {
-  if (cameraStream) {
-    cameraStream.getTracks().forEach(function (track) { track.stop(); });
-    cameraStream = null;
-  }
-  el.cameraVideo.srcObject = null;
-}
-function closeCamera() {
-  stopCamera();
-  el.cameraModal.hidden = true;
-}
-
-async function openCamera() {
-  el.cameraError.hidden = true;
-  // No live-camera API (older browser / insecure context): use the native
-  // capture input, which opens the camera app on mobile.
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    el.cameraInput.click();
-    return;
-  }
-  try {
-    cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" }
-    });
-    el.cameraVideo.srcObject = cameraStream;
-    el.cameraModal.hidden = false;
-  } catch (e) {
-    // Permission denied or no device: fall back to the native capture input.
-    el.cameraInput.click();
-  }
-}
-
-function capturePhoto() {
-  var v = el.cameraVideo;
-  var w = v.videoWidth, h = v.videoHeight;
-  if (!w || !h) return;   // stream not ready yet
-  var canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  canvas.getContext("2d").drawImage(v, 0, 0, w, h);
-  canvas.toBlob(function (blob) {
-    if (!blob) return;
-    var file = new File([blob], "camera-" + Date.now() + ".png", { type: "image/png" });
-    closeCamera();
-    openPreview(file);
-  }, "image/png");
+// Opens the device's native camera app to take a photo. The #camera-input has
+// capture="environment", so mobile browsers launch the (back) camera directly;
+// the resulting photo lands in the input's change handler -> preview.
+function openCamera() {
+  el.cameraInput.click();
 }
 
 // ------------------------------------------------------------- wiring
@@ -103,7 +63,14 @@ export function initAttach() {
     var kind = item.getAttribute("data-attach");
     closeAttachMenu();
     if (kind === "photos") el.input.click();
-    else if (kind === "camera") openCamera();
+    else if (kind === "camera") {
+      // Default: native capture (openCamera). Only the explicit .env opt-in
+      // CAMERA_USE_ZXING=true routes the "Camera" option through the ZXing
+      // scanner instead. "Scan" (below) always uses ZXing regardless.
+      var useZxing = !!(window.INSPECTOR_CONFIG && window.INSPECTOR_CONFIG.cameraUseZxing === true);
+      if (useZxing) openScan(); else openCamera();
+    }
+    else if (kind === "scan") openScan();   // always the ZXing scanner
   });
   document.addEventListener("click", function (e) {
     if (!el.attachMenu.hidden && !el.attach.contains(e.target)) closeAttachMenu();
@@ -112,7 +79,7 @@ export function initAttach() {
     if (e.key !== "Escape") return;
     if (!el.attachMenu.hidden) { closeAttachMenu(); el.attachButton.focus(); }
     else if (!el.previewModal.hidden) { closePreview(); resetComposer(); }
-    else if (!el.cameraModal.hidden) { closeCamera(); }
+    else if (!el.scanModal.hidden) { closeScan(); }
   });
 
   // File selected in the explorer -> preview
@@ -134,12 +101,5 @@ export function initAttach() {
   });
   el.previewModal.addEventListener("click", function (e) {
     if (e.target === el.previewModal) { closePreview(); resetComposer(); }  // backdrop = cancel
-  });
-
-  // Camera modal actions
-  el.cameraCapture.addEventListener("click", capturePhoto);
-  el.cameraCancel.addEventListener("click", closeCamera);
-  el.cameraModal.addEventListener("click", function (e) {
-    if (e.target === el.cameraModal) closeCamera();  // backdrop = cancel
   });
 }

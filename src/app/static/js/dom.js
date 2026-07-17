@@ -23,10 +23,21 @@ export const el = {
   previewImg: document.getElementById("preview-img"),
   previewCancel: document.getElementById("preview-cancel"),
   previewAnalyze: document.getElementById("preview-analyze"),
-  // Camera modal
-  cameraModal: document.getElementById("camera-modal"),
-  cameraVideo: document.getElementById("camera-video"),
-  cameraError: document.getElementById("camera-error"),
-  cameraCapture: document.getElementById("camera-capture"),
-  cameraCancel: document.getElementById("camera-cancel")
+  // Scan modal (ZXing barcode)
+  scanModal: document.getElementById("scan-modal"),
+  scanVideo: document.getElementById("scan-video"),
+  scanHint: document.getElementById("scan-hint"),
+  scanSourceRow: document.getElementById("scan-source-row"),
+  scanSource: document.getElementById("scan-source"),
+  scanZoomRow: document.getElementById("scan-zoom-row"),
+  scanZoom: document.getElementById("scan-zoom"),
+  scanResultRow: document.getElementById("scan-result-row"),
+  scanResult: document.getElementById("scan-result"),
+  scanError: document.getElementById("scan-error"),
+  scanCopy: document.getElementById("scan-copy"),
+  scanClose: document.getElementById("scan-close"),
+  // Lightbox (click a chat image)
+  lightboxModal: document.getElementById("lightbox-modal"),
+  lightboxImg: document.getElementById("lightbox-img"),
+  lightboxClose: document.getElementById("lightbox-close")
 };

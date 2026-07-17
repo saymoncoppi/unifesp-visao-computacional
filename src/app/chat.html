@@ -10,11 +10,22 @@
        falls back to empty values. -->
   <script>
     (function () {
-      var raw = { activeModel: "__ACTIVE_MODEL__", hasGemini: "__HAS_GEMINI__" };
+      var raw = {
+        activeModel: "__ACTIVE_MODEL__",
+        hasGemini: "__HAS_GEMINI__",
+        cameraUseZxing: "__CAMERA_USE_ZXING__"
+      };
       // If the markers were not substituted by the server, normalize to empty.
       var model = raw.activeModel === "__ACTIVE_" + "MODEL__" ? "" : raw.activeModel;
       var hasGemini = raw.hasGemini === "true";
-      window.INSPECTOR_CONFIG = { activeModel: model, hasGemini: hasGemini };
+      // Whether the "Camera" option scans a barcode with ZXing (opt-in) or uses
+      // the native capture -> analyze flow (default). Only an explicit "true"
+      // from the server enables it, so an unsubstituted marker / cached page
+      // safely falls back to the native camera.
+      var cameraUseZxing = raw.cameraUseZxing === "true";
+      window.INSPECTOR_CONFIG = {
+        activeModel: model, hasGemini: hasGemini, cameraUseZxing: cameraUseZxing
+      };
     })();
   </script>
   <link rel="stylesheet" href="/static/css/style.css" />
@@ -150,6 +161,19 @@
             </span>
             <span class="attach-item-label" data-i18n="attach_camera">Câmera</span>
           </button>
+          <button type="button" class="attach-item" data-attach="scan" role="menuitem">
+            <span class="attach-icon attach-icon-scan" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+                   stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 7V6a2 2 0 0 1 2-2h1" />
+                <path d="M4 17v1a2 2 0 0 0 2 2h1" />
+                <path d="M17 4h1a2 2 0 0 1 2 2v1" />
+                <path d="M17 20h1a2 2 0 0 0 2-2v-1" />
+                <path d="M5 12h14" />
+              </svg>
+            </span>
+            <span class="attach-item-label" data-i18n="attach_scan">Scan</span>
+          </button>
         </div>
       </div>
 
@@ -181,22 +205,46 @@
     </div>
   </div>
 
-  <!-- Camera modal: live capture via getUserMedia. -->
-  <div class="modal-overlay" id="camera-modal" role="dialog" aria-modal="true"
-       data-i18n-aria="camera_title" aria-label="Tirar foto" hidden>
+  <!-- Scan modal: live barcode decoding via ZXing. -->
+  <div class="modal-overlay" id="scan-modal" role="dialog" aria-modal="true"
+       data-i18n-aria="scan_title" aria-label="Scan" hidden>
     <div class="modal">
-      <h2 class="modal-title" data-i18n="camera_title">Tirar foto</h2>
-      <div class="modal-body">
-        <video class="modal-camera" id="camera-video" playsinline autoplay muted></video>
-        <p class="modal-error" id="camera-error" data-i18n="camera_error" hidden>Não foi possível acessar a câmera.</p>
+      <h2 class="modal-title" data-i18n="scan_title">Scan</h2>
+      <div class="modal-body modal-body-scan">
+        <video class="modal-camera" id="scan-video" playsinline autoplay muted></video>
+        <p class="scan-hint" id="scan-hint" data-i18n="scan_hint">Aponte a câmera para o código.</p>
+        <div class="scan-controls">
+          <div class="scan-field" id="scan-source-row" hidden>
+            <label class="scan-field-label" for="scan-source" data-i18n="scan_camera">Câmera</label>
+            <select id="scan-source" class="scan-select"></select>
+          </div>
+          <div class="scan-field" id="scan-zoom-row" hidden>
+            <label class="scan-field-label" for="scan-zoom" data-i18n="scan_zoom">Zoom</label>
+            <input type="range" id="scan-zoom" class="scan-range" min="1" max="5" step="0.1" value="1" />
+          </div>
+        </div>
+        <div class="scan-result" id="scan-result-row" hidden>
+          <label class="scan-result-label" for="scan-result" data-i18n="scan_result_label">Código lido</label>
+          <input type="text" id="scan-result" class="scan-result-input" readonly />
+        </div>
+        <p class="modal-error" id="scan-error" data-i18n="scan_error" hidden>Não foi possível acessar a câmera.</p>
       </div>
       <div class="modal-actions">
-        <button type="button" class="btn btn-outline" id="camera-cancel" data-i18n="cancel">Cancelar</button>
-        <button type="button" class="btn btn-primary" id="camera-capture" data-i18n="camera_capture">Capturar</button>
+        <button type="button" class="btn btn-outline" id="scan-copy" data-i18n="scan_copy" hidden>Copiar</button>
+        <button type="button" class="btn btn-primary" id="scan-close" data-i18n="scan_close">Fechar</button>
       </div>
     </div>
   </div>
 
+  <!-- Lightbox: shows a chat image at full size when clicked. -->
+  <div class="modal-overlay" id="lightbox-modal" role="dialog" aria-modal="true"
+       data-i18n-aria="image_view_alt" aria-label="Imagem" hidden>
+    <button type="button" class="lightbox-close" id="lightbox-close"
+            data-i18n-aria="cancel" aria-label="Fechar">&times;</button>
+    <img class="lightbox-img" id="lightbox-img" alt="" data-i18n-alt="image_view_alt" />
+  </div>
+
+  <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
   <script src="/static/js/htmx.min.js"></script>
   <script type="module" src="/static/js/main.js"></script>
 </body>

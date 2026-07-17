@@ -28,6 +28,18 @@ chdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # -> the s
 
 bind = "0.0.0.0:8000"   # reachable from other machines on the LAN, like Django 0.0.0.0:8000
 worker_class = "uvicorn.workers.UvicornWorker"   # ASGI worker for FastAPI
+
+# Optional TLS/HTTPS. The camera-based Scan feature uses getUserMedia, which the
+# browser only allows in a "secure context" (localhost OR https). To test the
+# camera from a phone over the LAN you therefore need HTTPS. When SSL_CERTFILE
+# and SSL_KEYFILE are set in the environment, the UvicornWorker serves over TLS;
+# otherwise the server stays plain HTTP. run_server.sh --ssl wires these up with
+# a self-signed certificate.
+_ssl_cert = os.environ.get("SSL_CERTFILE")
+_ssl_key = os.environ.get("SSL_KEYFILE")
+if _ssl_cert and _ssl_key:
+    certfile = _ssl_cert   # passed through to uvicorn as ssl_certfile
+    keyfile = _ssl_key     # passed through to uvicorn as ssl_keyfile
 workers = 1     # keep the in-memory free-tier RPM counter (config/inspector/ratelimit.py) globally correct; the Gemini free key (5 req/min) is the bottleneck, not CPU
 threads = 4     # I/O concurrency for the LLM/network calls
 timeout = 30

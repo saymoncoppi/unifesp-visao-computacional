@@ -7,6 +7,33 @@ export function scrollBottom() {
   el.main.scrollTop = el.main.scrollHeight;
 }
 
+// ===================================================== Message timestamps
+// Small muted "HH:MM" placed above each bubble (WhatsApp-like). Added on the
+// client so it stays consistent across greeting, sent images, scanned codes,
+// and server-rendered report cards.
+function nowLabel() {
+  var d = new Date();
+  var hh = String(d.getHours()).padStart(2, "0");
+  var mm = String(d.getMinutes()).padStart(2, "0");
+  return hh + ":" + mm;
+}
+
+// Prepends a .msg-time to a message row (no-op if it already has one).
+export function stampTime(msgEl) {
+  if (!msgEl || msgEl.querySelector(":scope > .msg-time")) return;
+  var span = document.createElement("span");
+  span.className = "msg-time";
+  span.textContent = nowLabel();
+  msgEl.insertBefore(span, msgEl.firstChild);
+}
+
+// Stamps every message row that doesn't have a time yet (e.g. the greeting and
+// server-appended report cards).
+export function stampUnstamped() {
+  var rows = el.chat.querySelectorAll(".msg");
+  for (var i = 0; i < rows.length; i++) stampTime(rows[i]);
+}
+
 // ===================================================== Selected-file plumbing
 // The htmx form always submits the file held by the #image input. The photo
 // path sets it natively; the camera path (captured Blob) sets it here so both
@@ -54,13 +81,15 @@ export function initHtmx() {
       bubble.appendChild(img);
       row.appendChild(bubble);
       el.chat.appendChild(row);
+      stampTime(row);
       scrollBottom();
     };
     reader.readAsDataURL(f);
   });
 
-  // After the response arrives and is appended, scroll to the bottom.
+  // After the response arrives and is appended, stamp it and scroll down.
   document.body.addEventListener("htmx:afterSwap", function () {
+    stampUnstamped();
     scrollBottom();
   });
 

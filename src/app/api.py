@@ -79,6 +79,8 @@ def index() -> HTMLResponse:
         )
     page = page.replace("__ACTIVE_MODEL__", _active_model_js()).replace(
         "__HAS_GEMINI__", "true" if settings.has_gemini() else "false"
+    ).replace(
+        "__CAMERA_USE_ZXING__", "true" if settings.CAMERA_USE_ZXING else "false"
     )
     return HTMLResponse(page)
 

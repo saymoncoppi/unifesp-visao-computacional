@@ -172,6 +172,24 @@ GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")   # if empty -> rule-based fallback
 
 # --------------------------------------------------------------------------
+# Web UI
+# --------------------------------------------------------------------------
+def _env_bool(name: str, default: bool) -> bool:
+    """Parse a boolean environment variable ("1/true/yes/on" -> True)."""
+    raw = os.environ.get(name)
+    if raw is None or raw.strip() == "":
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+# CAMERA_USE_ZXING: controls what the "+" menu's "Camera" option does.
+#   false (default) -> native capture: take a still photo and send it to the
+#                      print-quality analysis pipeline (the original behavior).
+#   true            -> opt in to route "Camera" through the live ZXing scanner
+#                      instead. The separate "Scan" option always uses ZXing.
+CAMERA_USE_ZXING = _env_bool("CAMERA_USE_ZXING", False)
+
+# --------------------------------------------------------------------------
 # Visual arbiter (multimodal tie-breaker for confusable CNN class pairs)
 # --------------------------------------------------------------------------
 # ARBITER_MARGIN: max probability gap between the CNN's top-2 classes for the
