@@ -2,38 +2,30 @@ import { el } from "./dom.js";
 import { state } from "./state.js";
 import { t } from "./i18n.js";
 
-// ===================================================== Scrolling / preview
+// ===================================================== Scrolling
 export function scrollBottom() {
   el.main.scrollTop = el.main.scrollHeight;
 }
 
-export function resetFileName() {
-  el.fileName.setAttribute("data-i18n", "file_none");
-  el.fileName.textContent = t("file_none");
-}
-export function showFileName(name) {
-  el.fileName.removeAttribute("data-i18n");   // prevents translation from overwriting the name
-  el.fileName.textContent = name;
+// ===================================================== Selected-file plumbing
+// The htmx form always submits the file held by the #image input. The photo
+// path sets it natively; the camera path (captured Blob) sets it here so both
+// flows share the same submission path.
+export function setImageFile(file) {
+  try {
+    var dt = new DataTransfer();
+    if (file) dt.items.add(file);
+    el.input.files = dt.files;
+  } catch (e) {
+    // Very old browsers without DataTransfer: the photo-pick path already
+    // sets #image natively; only the camera path would be affected.
+  }
 }
 
-export function initFileInput() {
-  el.input.addEventListener("change", function () {
-    var f = el.input.files && el.input.files[0];
-    if (!f) {
-      el.thumb.classList.remove("show");
-      resetFileName();
-      el.submit.disabled = true;
-      return;
-    }
-    showFileName(f.name);
-    el.submit.disabled = false;
-    var reader = new FileReader();
-    reader.onload = function (e) {
-      el.thumb.src = e.target.result;
-      el.thumb.classList.add("show");
-    };
-    reader.readAsDataURL(f);
-  });
+// Clears the composer inputs (both file inputs) after an analysis or on cancel.
+export function resetComposer() {
+  el.form.reset();      // clears #image and #camera-input
+  setImageFile(null);   // guarantees #image is empty even if reset() no-ops
 }
 
 export function initHtmx() {
@@ -75,11 +67,7 @@ export function initHtmx() {
   // Clears the composer when the request finishes (success or error).
   document.body.addEventListener("htmx:afterRequest", function (evt) {
     if (evt.target !== el.form) return;
-    el.form.reset();
-    el.thumb.classList.remove("show");
-    el.thumb.removeAttribute("src");
-    resetFileName();
-    el.submit.disabled = true;
+    resetComposer();
     scrollBottom();
   });
 }

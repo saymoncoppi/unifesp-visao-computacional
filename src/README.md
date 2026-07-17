@@ -103,9 +103,19 @@ python -m app.cli minha_etiqueta.jpg --adk       # via grafo ADK (requer Gemini)
 
 **4) Chat web (enviar imagem → laudo)**
 ```bash
-uvicorn app.api:app --reload
+# Desenvolvimento (auto-reload, só na máquina local) — rode a partir de src/:
+uv run uvicorn app.api:app --reload
 # abra http://localhost:8000  → envie a foto da etiqueta
+
+# Rede/produção (acessível de outras máquinas, estilo Django 0.0.0.0:8000) — rode a partir de src/:
+uv run gunicorn -c config/gunicorn.conf.py app.api:app
+# depois acesse http://<sua-ip-na-rede>:8000 a partir de outras máquinas
 ```
+
+O modo de rede usa **gunicorn** (já incluído em `requirements.txt`/`pyproject.toml`)
+com worker Uvicorn e `workers=1`: um único processo mantém o contador de cota
+(`config/inspector/ratelimit.py`, Gemini free = 5 req/min) globalmente correto.
+A configuração está em `config/gunicorn.conf.py`.
 
 **5) Chat nativo do ADK (opcional)**
 ```bash

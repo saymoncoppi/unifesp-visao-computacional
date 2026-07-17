@@ -25,9 +25,11 @@ python-dotenv            # loads .env (GOOGLE_API_KEY)
 # --- API / web chat ---
 fastapi
 uvicorn[standard]
+gunicorn                 # production/LAN server (config/gunicorn.conf.py, UvicornWorker)
 python-multipart         # image upload in FastAPI
 
-# --- Synthetic dataset generation (optional; used by config/generate_dataset.py) ---
-segno
-python-barcode
-pystrich
+# --- Dataset generation / tooling (optional) ---
+segno                    # QR codes (config/generate_dataset.py)
+python-barcode           # 1D symbologies (config/generate_dataset.py)
+pystrich                 # DataMatrix (config/generate_dataset.py)
+roboflow                 # download real barcode datasets (config/download_roboflow.py)

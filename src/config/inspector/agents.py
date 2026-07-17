@@ -8,11 +8,14 @@ Builds the label-inspector agent graph:
     │  LlmAgent defect       (tool: classify_defect)            │
     └─────────────────────────────────────────────────────────┘
                               │
-                    LlmAgent diagnosis   (tool: search_zebra_docs)
+                    LlmAgent visual_arbiter (tool: inspect_image_visually)
+                              │   ← may CORRECT the CNN class (state defect_data)
+                    LlmAgent diagnosis      (tool: search_zebra_docs)
                               │
-                    LlmAgent report      (consolidates into JSON)
+                    LlmAgent report         (consolidates into JSON)
 
-The root ``SequentialAgent`` executes: [parallel] → [diagnosis] → [report].
+The root ``SequentialAgent`` executes:
+    [parallel] → [visual_arbiter] → [diagnosis] → [report].
 
 Every import of ``google.adk`` / ``google.genai`` is LAZY (done inside the
 functions), so the module imports fine even without the ADK installed and
@@ -22,12 +25,15 @@ from __future__ import annotations
 
 import inspect
 import json
+import uuid
 
-from config.inspector import settings
+from config.inspector import settings, vision, diagnosis as diagnosis_mod
+from config.inspector.report import build_report
 from config.inspector.tools import (
     classify_defect,
     decode_code,
     estimate_indicators,
+    inspect_image_visually,
     search_zebra_docs,
 )
 
@@ -38,6 +44,57 @@ MODEL = settings.GEMINI_MODEL
 _APP_NAME = "label_inspector"
 _USER_ID = "user"
 _SESSION_ID = "session"
+
+# Lean single-agent graph (visual arbiter only), cached for the optimized
+# analyze_via_adk hot path. Built on demand; None until first use / if ADK
+# is unavailable.
+_arbiter_root = None
+
+# Visual arbiter agent — one source of truth, reused by the full graph
+# (build_root_agent, for `adk web`) and by the lean arbiter-only graph.
+_ARBITER_DESC = (
+    "Visually arbitrates a confusable CNN class pair, correcting the defect "
+    "class when warranted."
+)
+_ARBITER_INSTRUCTION = (
+    "You are the VISUAL ARBITER for confusable print-defect classes. "
+    "The user provides the PATH of a label image. The CNN has already "
+    "classified the defect; its result — class and per-class "
+    "probabilities — is in the state:\n"
+    "- CNN defect: {defect_data?}\n"
+    "- Quality indicators: {indicators_data?}\n\n"
+    "Call the `inspect_image_visually` tool passing: image_path = the "
+    "exact image path from the user message; candidate_classes = the "
+    "list with the TWO highest-probability class keys taken from the "
+    "CNN probabilities above; indicators = the quality-indicators "
+    "object above. The tool decides ON ITS OWN whether arbitration is "
+    "warranted (only for a confusable near-tie pair). If it returns "
+    "null, keep the CNN class UNCHANGED and state that the original "
+    "classification stands. If it returns a defect object, report the "
+    "corrected class and the visual evidence it cites. Never invent a "
+    "class the tool did not return."
+)
+
+
+def _new_visual_arbiter():
+    """Build the visual-arbiter ``LlmAgent`` (tool: ``inspect_image_visually``).
+
+    Also injects ``ToolContext`` into the tools module so the ADK can resolve
+    the tool annotations at declaration time (idempotent — safe to call from
+    both graph builders). Requires google-adk (lazy import).
+    """
+    from google.adk.agents import LlmAgent
+    from google.adk.tools import ToolContext as _ToolContext
+    import config.inspector.tools as _tools_mod
+    _tools_mod.ToolContext = _ToolContext
+    return LlmAgent(
+        name="visual_arbiter",
+        model=MODEL,
+        description=_ARBITER_DESC,
+        instruction=_ARBITER_INSTRUCTION,
+        tools=[inspect_image_visually],
+        output_key="arbitration",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -69,10 +126,23 @@ def build_root_agent():
     """
     try:
         from google.adk.agents import LlmAgent, ParallelAgent, SequentialAgent
+        from google.adk.tools import ToolContext as _ToolContext
     except ImportError as exc:
         raise ImportError(
             "google-adk is not installed. Install it with: pip install google-adk"
         ) from exc
+
+    # The tool functions annotate their injected argument as ``ToolContext |
+    # None`` but keep the import under ``TYPE_CHECKING`` (so the direct pipeline
+    # needs no google-adk). When the ADK builds each tool's declaration it calls
+    # ``typing.get_type_hints`` on the function, which evaluates that annotation
+    # in the TOOL MODULE's globals — where ``ToolContext`` would otherwise be
+    # undefined, raising ``NameError`` and forcing every ADK run to fall back to
+    # the direct pipeline. Inject the real symbol into the tools module now, at
+    # graph-build time (ADK is guaranteed installed here), before constructing
+    # any LlmAgent that registers a tool.
+    import config.inspector.tools as _tools_mod
+    _tools_mod.ToolContext = _ToolContext
 
     # --- Perception specialists (run in parallel) ---------------------------
     reading_agent = LlmAgent(
@@ -126,7 +196,14 @@ def build_root_agent():
         sub_agents=[reading_agent, indicators_agent, defect_agent],
     )
 
-    # --- Diagnosis (consumes the state from the three specialists) ----------
+    # --- Visual arbiter (may CORRECT the CNN class on a confusable pair) -----
+    # Runs AFTER the parallel perception (the CNN's `defect_data` must already
+    # be in state) and BEFORE diagnosis, so the diagnosis reasons over the
+    # possibly-corrected class. The `inspect_image_visually` tool applies its
+    # own cheap gate and, on override, overwrites state["defect_data"].
+    visual_arbiter_agent = _new_visual_arbiter()
+
+    # --- Diagnosis (consumes the state from the specialists + arbiter) ------
     diagnosis_agent = LlmAgent(
         name="diagnosis_specialist",
         model=MODEL,
@@ -136,7 +213,8 @@ def build_root_agent():
             "the evidence already collected:\n"
             "- Code reading: {reading?}\n"
             "- Quality indicators: {indicators?}\n"
-            "- Classified defect: {defect?}\n\n"
+            "- Classified defect (possibly CORRECTED by the visual arbiter — "
+            "always use this as the authoritative defect class): {defect_data?}\n\n"
             "Build a short description of the symptoms (defect class + "
             "anomalous indicators) and call the `search_zebra_docs` tool "
             "passing that description. Based on what the tool returns, report: "
@@ -158,7 +236,7 @@ def build_root_agent():
             "the evidence:\n"
             "- Reading: {reading?}\n"
             "- Indicators: {indicators?}\n"
-            "- Defect: {defect?}\n"
+            "- Defect (possibly corrected by the visual arbiter): {defect_data?}\n"
             "- Diagnosis: {diagnosis?}\n\n"
             "Produce a SINGLE valid JSON object, with no text before or after "
             "and no code fences (```), containing exactly these keys: "
@@ -175,7 +253,7 @@ def build_root_agent():
 
     root = SequentialAgent(
         name="label_inspector_root",
-        sub_agents=[parallel_analysis, diagnosis_agent, report_agent],
+        sub_agents=[parallel_analysis, visual_arbiter_agent, diagnosis_agent, report_agent],
     )
     return root
 
@@ -183,73 +261,218 @@ def build_root_agent():
 # ---------------------------------------------------------------------------
 # Graph execution via Runner.
 # ---------------------------------------------------------------------------
-async def analyze_via_adk(image_path: str) -> dict:
-    """Run the label analysis THROUGH the ADK graph and return the report (dict).
+def _detect_barcode(image_path: str) -> tuple[dict, bool]:
+    """Read the label and decide whether a barcode is present (ADK short-circuit).
 
-    Creates a ``Runner`` with ``InMemorySessionService``, sends the image path
-    as the user message, runs the root graph and returns the consolidated
-    report (JSON emitted by the report agent, converted to a ``dict``).
+    Mirrors the presence check of ``tools.analyze_image`` (decode + OCR, then
+    ``vision.has_barcode`` on grayscale) so the ADK path can skip the whole
+    agent graph when there is nothing to inspect — saving CNN work and paid
+    Gemini calls, exactly like the direct pipeline.
 
     Params:
-        image_path: filesystem path of the label image to analyze.
+        image_path: filesystem path of the label image.
 
     Returns:
-        A dict with the report-shaped keys produced by the report agent (see
-        ``_text_to_report`` for the fallback shape when parsing fails).
+        ``(reading, code_detected)`` — ``reading`` is the ``decode_code`` dict
+        (or ``{}`` on failure); ``code_detected`` is ``True`` when the code is
+        readable or ``vision.has_barcode`` detects a code region.
 
-    Side effects:
-        Instantiates an in-memory ADK session and runs the full agent graph,
-        which performs network calls to the Gemini API through the ADK
-        runner.
-
-    Failure modes:
-        Raises ``ImportError`` with a clear message if the ADK / Gemini SDK
-        are not available (the direct ``tools.analyze_image`` pipeline keeps
-        working in that case).
+    Side effects / failure modes:
+        Never raises; any error degrades to ``({}, False)`` / a best-effort
+        partial reading. No Google import is triggered on this path.
     """
+    reading: dict = {}
     try:
-        from google.adk.runners import Runner
-        from google.adk.sessions import InMemorySessionService
-        from google.genai import types
-    except ImportError as exc:
-        raise ImportError(
-            "ADK/Gemini are unavailable for agent-based execution. "
-            "Install them with: pip install google-adk google-genai "
-            "(or use the direct pipeline tools.analyze_image)."
-        ) from exc
+        reading = decode_code(image_path)
+    except Exception:
+        reading = {}
 
-    root_agent_local = build_root_agent()
+    code_detected = bool(isinstance(reading, dict) and reading.get("readable") is True)
+    if not code_detected:
+        try:
+            image = vision.load_image(image_path)
+            gray = vision.to_gray(image)
+            code_detected = bool(vision.has_barcode(gray)[0])
+        except Exception:
+            pass
+    return (reading if isinstance(reading, dict) else {}), code_detected
 
+
+def _diagnosis_from_report_text(final_text: str) -> dict:
+    """Extract the diagnosis PROSE fields from the report agent's JSON output.
+
+    The perception state (``reading_data``/``indicators_data``/``defect_data``)
+    is deterministic tool output, but the diagnosis narrative
+    (probable cause / correction / rationale / source) is LLM prose. The
+    report-consolidator agent already emits it as JSON; here we parse that
+    JSON and reshape it into the dict shape ``report.build_report`` expects
+    (``rationale``/``method`` keys), so the deterministic report keeps the
+    authoritative structured state AND the LLM's grounded narrative.
+
+    Params:
+        final_text: raw text emitted by the report-consolidating LlmAgent.
+
+    Returns:
+        ``{"probable_cause", "corrective_action", "rationale", "source",
+        "method"}`` — empty strings for whatever the agent did not provide.
+
+    Side effects / failure modes:
+        None; delegates parsing to ``_text_to_report`` which never raises.
+    """
+    parsed = _text_to_report(final_text)
+    if not isinstance(parsed, dict):
+        parsed = {}
+    return {
+        "probable_cause": parsed.get("probable_cause", "") or "",
+        "corrective_action": parsed.get("corrective_action", "") or "",
+        "rationale": parsed.get("reasoning", "") or "",
+        "source": parsed.get("source", "") or "",
+        "method": parsed.get("diagnosis_method", "") or "gemini",
+    }
+
+
+def _build_arbiter_root():
+    """Build the lean single-agent graph (visual arbiter only) for the hot path."""
+    from google.adk.agents import SequentialAgent
+    return SequentialAgent(
+        name="label_inspector_arbiter",
+        sub_agents=[_new_visual_arbiter()],
+    )
+
+
+def _arbiter_gate(defect: dict) -> bool:
+    """Python-side gate deciding whether the visual arbiter is worth invoking.
+
+    Fires only when the CNN's top-2 classes are a configured confusable pair
+    (``settings.ARBITER_PAIRS``) AND it is a near-tie (gap within
+    ``ARBITER_MARGIN``) or low-confidence (top-1 below ``ARBITER_MIN_CONFIDENCE``).
+    Doing this in Python — before any LLM call — means the (paid) arbiter runs
+    only on the rare ambiguous cases, keeping the common path Gemini-free.
+    """
+    probs = (defect or {}).get("probs") or {}
+    if len(probs) < 2:
+        return False
+    top = sorted(probs.items(), key=lambda kv: kv[1], reverse=True)
+    (c1, p1), (c2, p2) = top[0], top[1]
+    if frozenset({c1, c2}) not in settings.ARBITER_PAIRS:
+        return False
+    return (p1 - p2) <= settings.ARBITER_MARGIN or p1 < settings.ARBITER_MIN_CONFIDENCE
+
+
+async def _run_visual_arbiter(image_path: str, defect: dict, indicators: dict) -> dict:
+    """Run ONLY the visual arbiter through the ADK on a seeded session.
+
+    Perception is already done; we seed the session state with ``defect_data``
+    and ``indicators_data`` and let the arbiter agent + its multimodal tool
+    possibly overwrite ``defect_data``. Returns the (possibly corrected) defect
+    dict; the caller wraps this in try/except so any failure keeps the CNN class.
+    """
+    from google.adk.runners import Runner
+    from google.adk.sessions import InMemorySessionService
+    from google.genai import types
+
+    global _arbiter_root
+    if _arbiter_root is None:
+        _arbiter_root = _build_arbiter_root()
+
+    session_id = uuid.uuid4().hex
     session_service = InMemorySessionService()
-    # create_session is async in recent ADK versions and sync in older
-    # ones — we handle both cases.
     creation = session_service.create_session(
-        app_name=_APP_NAME, user_id=_USER_ID, session_id=_SESSION_ID
+        app_name=_APP_NAME, user_id=_USER_ID, session_id=session_id,
+        state={"defect_data": dict(defect), "indicators_data": dict(indicators or {})},
     )
     if inspect.isawaitable(creation):
         await creation
 
-    runner = Runner(
-        agent=root_agent_local,
-        app_name=_APP_NAME,
-        session_service=session_service,
-    )
-
-    message = types.Content(
-        role="user",
-        parts=[types.Part(text=image_path)],
-    )
-
-    final_text = ""
-    async for event in runner.run_async(
-        user_id=_USER_ID, session_id=_SESSION_ID, new_message=message
+    runner = Runner(agent=_arbiter_root, app_name=_APP_NAME, session_service=session_service)
+    message = types.Content(role="user", parts=[types.Part(text=image_path)])
+    async for _event in runner.run_async(
+        user_id=_USER_ID, session_id=session_id, new_message=message
     ):
-        if event.is_final_response() and event.content and event.content.parts:
-            parts = [p.text for p in event.content.parts if getattr(p, "text", None)]
-            if parts:
-                final_text = "".join(parts)
+        pass
 
-    return _text_to_report(final_text)
+    getter = session_service.get_session(
+        app_name=_APP_NAME, user_id=_USER_ID, session_id=session_id
+    )
+    session = await getter if inspect.isawaitable(getter) else getter
+    new_defect = dict(getattr(session, "state", None) or {}).get("defect_data")
+    return new_defect if isinstance(new_defect, dict) else defect
+
+
+async def analyze_via_adk(image_path: str,
+                          language: str = settings.DEFAULT_LANGUAGE) -> dict:
+    """Run the label analysis for the ADK ("Auto") path and return the report.
+
+    Optimized, free-tier-friendly orchestration:
+      1. no-barcode short-circuit (no CNN, no Gemini);
+      2. DETERMINISTIC perception — decode + indicators + CNN, zero Gemini calls;
+      3. the visual arbiter (the one stage that needs multimodal reasoning) runs
+         THROUGH the ADK, but only when the Python gate (``_arbiter_gate``) fires
+         on a confusable near-tie pair — so most analyses cost 0 arbiter calls;
+      4. diagnosis via ``diagnosis.diagnose`` — one grounded Gemini call with a
+         deterministic rule-based fallback;
+      5. deterministic report assembly via ``report.build_report``.
+
+    This keeps the ADK genuinely orchestrating the arbitration (the article's
+    multi-agent contribution) while cutting per-analysis Gemini calls from ~6
+    (one LlmAgent per stage) to ~1–2, fitting a free-tier quota. The full agent
+    graph (``build_root_agent`` / module ``root_agent``) is kept for ``adk web``.
+
+    Params:
+        image_path: filesystem path of the label image to analyze.
+        language: report language ("pt-BR" or "en-US").
+
+    Returns:
+        A dict following the 14-key report contract (``report.Report``).
+
+    Failure modes:
+        Never raises. Without a barcode it returns a minimal report; if the ADK
+        arbiter is unavailable/fails the CNN class is kept; diagnosis degrades to
+        rules when Gemini is unavailable. All google imports stay LAZY.
+    """
+    language = settings.normalize_language(language)
+
+    # 1) Short-circuit: no barcode -> minimal report, no CNN, no Gemini. -----
+    reading, code_detected = _detect_barcode(image_path)
+    if not code_detected:
+        return build_report(
+            reading=reading, indicators={}, defect={}, diagnosis={},
+            code_detected=False,
+            errors=["No barcode detected in the image."],
+        ).to_dict()
+
+    # 2) Deterministic perception (zero Gemini calls). -----------------------
+    try:
+        indicators = estimate_indicators(image_path)
+    except Exception:
+        indicators = {}
+    defect = classify_defect(image_path)
+    if not isinstance(defect, dict):
+        defect = {}
+
+    # 3) Visual arbiter (ADK) — only for a confusable near-tie pair. ---------
+    if settings.has_gemini() and _arbiter_gate(defect):
+        try:
+            defect = await _run_visual_arbiter(image_path, defect, indicators)
+        except Exception:
+            pass  # any ADK/Gemini failure -> keep the CNN class
+
+    # 4) Diagnosis: one grounded Gemini call, deterministic rules fallback. --
+    diagnosis = diagnosis_mod.diagnose(
+        defect, reading, indicators,
+        use_gemini=settings.has_gemini(), language=language,
+    )
+
+    # 5) Deterministic report assembly. --------------------------------------
+    errors: list[str] = []
+    for label, payload in (("reading", reading), ("defect", defect)):
+        if isinstance(payload, dict) and payload.get("error"):
+            errors.append(f"{label}: {payload['error']}")
+
+    return build_report(
+        reading=reading, indicators=indicators, defect=defect,
+        diagnosis=diagnosis, code_detected=True, errors=errors,
+    ).to_dict()
 
 
 def _text_to_report(text: str) -> dict:

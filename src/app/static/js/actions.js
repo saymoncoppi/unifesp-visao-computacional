@@ -1,6 +1,6 @@
 import { el } from "./dom.js";
 import { t } from "./i18n.js";
-import { scrollBottom, resetFileName } from "./composer.js";
+import { scrollBottom, resetComposer } from "./composer.js";
 
 // ===================================================== Menu actions
 export function exportToPdf() {
@@ -33,15 +33,11 @@ export function clearChat() {
   row.appendChild(bub);
   el.chat.appendChild(row);
   // Resets the composer.
-  el.form.reset();
-  el.thumb.classList.remove("show");
-  el.thumb.removeAttribute("src");
-  resetFileName();
-  el.submit.disabled = true;
+  resetComposer();
   scrollBottom();
 }
 
 export function runAction(action) {
   if (action === "export-pdf") exportToPdf();
-  else if (action === "limpar") clearChat();
+  else if (action === "clear") clearChat();
 }

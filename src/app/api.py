@@ -64,7 +64,7 @@ def index() -> HTMLResponse:
     """Serve the chat interface (self-contained HTML).
 
     Injects the active LLM model into the page (for the "Inspector" selector)
-    by replacing the ``__MODELO_ATIVO__`` and ``__TEM_GEMINI__`` placeholders.
+    by replacing the ``__ACTIVE_MODEL__`` and ``__HAS_GEMINI__`` placeholders.
 
     Returns:
         HTMLResponse with the rendered chat page, or a 500 error page if
@@ -77,8 +77,8 @@ def index() -> HTMLResponse:
             f"<h1>Interface unavailable</h1><p>{exc}</p>",
             status_code=500,
         )
-    page = page.replace("__MODELO_ATIVO__", _active_model_js()).replace(
-        "__TEM_GEMINI__", "true" if settings.has_gemini() else "false"
+    page = page.replace("__ACTIVE_MODEL__", _active_model_js()).replace(
+        "__HAS_GEMINI__", "true" if settings.has_gemini() else "false"
     )
     return HTMLResponse(page)
 
@@ -87,6 +87,29 @@ def index() -> HTMLResponse:
 def health() -> dict:
     """Health check endpoint for the service."""
     return {"status": "ok"}
+
+
+@app.get("/quota")
+def quota() -> JSONResponse:
+    """Current Gemini free-tier quota state, for the footer counter.
+
+    Returns a JSON snapshot of the rolling requests-per-minute window plus the
+    active model name. The client polls this on load and after each analysis
+    and counts ``reset_in`` down locally, so this endpoint is hit rarely (never
+    per-second). When no key is configured, ``enabled`` is ``false`` and the
+    footer status stays hidden.
+
+    Returns:
+        JSONResponse with ``enabled``, ``model``, ``limit``, ``used``,
+        ``remaining``, ``reset_in`` (seconds) and ``blocked``.
+    """
+    from config.inspector import ratelimit
+
+    if not settings.has_gemini():
+        return JSONResponse({"enabled": False})
+    snap = ratelimit.snapshot()
+    snap.update(enabled=True, model=_active_model_js() or settings.GEMINI_MODEL)
+    return JSONResponse(snap)
 
 
 @app.post("/analyze")
@@ -163,6 +186,8 @@ _LABELS = {
         "ind_sharpness": "Nitidez",
         "defect": "Defeito",
         "confidence": "Confiança:",
+        "visual_evidence": "Evidência visual",
+        "visual_review": "revisão visual",
         "cause": "Causa provável",
         "correction": "Correção sugerida",
         "source": "Fonte:",
@@ -185,6 +210,8 @@ _LABELS = {
         "ind_sharpness": "Sharpness",
         "defect": "Defect",
         "confidence": "Confidence:",
+        "visual_evidence": "Visual evidence",
+        "visual_review": "visual review",
         "cause": "Probable cause",
         "correction": "Suggested correction",
         "source": "Source:",
@@ -261,7 +288,7 @@ def _report_card_html(report: dict, language: str = settings.DEFAULT_LANGUAGE) -
     language = settings.normalize_language(language)
     parts: list[str] = []
     parts.append('<div class="msg msg-bot">')
-    parts.append('<img class="avatar" src="/static/img/logo.svg" alt="" />')
+    parts.append('<div class="avatar" aria-hidden="true">IE</div>')
     parts.append('<div class="card report">')
 
     # -- Card header + readability badge -----------------------------------
@@ -353,10 +380,32 @@ def _report_card_html(report: dict, language: str = settings.DEFAULT_LANGUAGE) -
         f'{_esc(_label(language, "defect"))}</div>',
         f'<div class="defect-name">{_esc(name)}</div>',
     ]
+    # Visual arbitration seal: the CNN class was overridden by the visual
+    # arbiter. Show "CNN: <original> (<prob>%) -> visual review: <final>".
+    if defect.get("arbitrated") is True and defect.get("original_class"):
+        orig_key = defect.get("original_class")
+        orig_name = settings.class_display_name(orig_key, language)
+        orig_probs = defect.get("probs") or {}
+        orig_prob = orig_probs.get(orig_key)
+        prob_txt = _pct(orig_prob) if isinstance(orig_prob, (int, float)) else "—"
+        def_html.append(
+            '<div class="defect-conf defect-arbitration">'
+            f'CNN: {_esc(orig_name)} ({_esc(prob_txt)}) → '
+            f'{_esc(_label(language, "visual_review"))}: {_esc(name)}'
+            "</div>"
+        )
     if isinstance(defect.get("confidence"), (int, float)):
         def_html.append(
             f'<div class="defect-conf">{_esc(_label(language, "confidence"))} '
             f'{_pct(defect.get("confidence"))}</div>'
+        )
+    # Visual evidence text produced by the visual arbiter (ADK path only).
+    visual_evidence = defect.get("visual_evidence")
+    if visual_evidence:
+        def_html.append(
+            '<div class="section-label sub-label">'
+            f'{_esc(_label(language, "visual_evidence"))}</div>'
+            f'<div class="section-body">{_esc(visual_evidence)}</div>'
         )
     def_html.append("</div>")
     parts.append("".join(def_html))
@@ -408,7 +457,7 @@ def _error_card_html(message: str) -> str:
     """Build an error bubble (HTML fragment) for analysis failures."""
     return (
         '<div class="msg msg-bot">'
-        '<img class="avatar" src="/static/img/logo.svg" alt="" />'
+        '<div class="avatar" aria-hidden="true">IE</div>'
         f'<div class="bubble is-error">⚠️ {_esc(message)}</div>'
         "</div>"
     )
@@ -430,16 +479,16 @@ async def analyze_htmx(
         image: Uploaded image (multipart/form-data field `image`).
         language: Report language (pt-BR/en-US).
         inspector: Engine selector -- ``"kb"`` forces the Zebra knowledge base
-            (rules); ``"llm"`` and ``"auto"`` prefer Gemini when available,
-            falling back to the rules otherwise (``"auto"`` is only offered
-            in the UI when an LLM is configured).
+            (rules); ``"llm"`` runs the direct pipeline with Gemini; ``"auto"``
+            runs the multi-agent (ADK) graph with visual arbitration when an
+            LLM is configured, falling back to the direct pipeline on any ADK
+            failure (and to plain Gemini when no LLM is configured).
 
     Returns:
         HTMLResponse with the report card fragment, or an error card fragment
         with HTTP 500 on failure.
     """
     language = settings.normalize_language(language)
-    use_gemini = inspector != "kb"
     suffix = Path(image.filename or "").suffix or ".png"
     temp_path = None
     try:
@@ -448,7 +497,23 @@ async def analyze_htmx(
             tmp.write(image_bytes)
             temp_path = tmp.name
 
-        report = analyze_image(temp_path, use_gemini=use_gemini, language=language)
+        if inspector == "auto" and settings.has_gemini():
+            # Multi-agent path (ADK) with visual arbitration. On any ADK
+            # failure, degrade to the direct Gemini pipeline so the user still
+            # gets a report.
+            try:
+                from config.inspector.agents import analyze_via_adk
+
+                report = await analyze_via_adk(temp_path)
+            except Exception as exc:  # noqa: BLE001 - deliberate fallback
+                report = analyze_image(temp_path, use_gemini=True, language=language)
+                report.setdefault("errors", []).append(
+                    f"ADK unavailable ({exc}); used the direct pipeline instead."
+                )
+        else:
+            # "llm" -> direct pipeline with Gemini; "kb" -> rules only.
+            use_gemini = inspector != "kb"
+            report = analyze_image(temp_path, use_gemini=use_gemini, language=language)
         return HTMLResponse(_report_card_html(report, language))
     except Exception as exc:  # noqa: BLE001 - do not leak the stacktrace to the client
         return HTMLResponse(

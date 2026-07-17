@@ -8,7 +8,7 @@ PPG em Ciência da Computação, ICT/UNIFESP.
 
 ## Estrutura do repositório
 
-- `artigo-latex/` — artigo científico (abnTeX2): `artigo.tex`, `referencias.bib`, `figuras/`, `artigo.pdf`.
+- `Research/` — artigo científico (abnTeX2): `diagnostico-de-defeitos-de-impressao-em-etiquetas-de-codigos-de-barras.tex`, `referencias.bib`, `figuras/`, `diagnostico-de-defeitos-de-impressao-em-etiquetas-de-codigos-de-barras.pdf`.
 - `src/` — implementação em Python:
   - `app/` — API FastAPI (`api.py`) + interface de chat (`chat.html`).
   - `inspetor/` — pipeline: visão (`visao.py`), CNN (`rede.py`/`treino.py`), diagnóstico
@@ -22,9 +22,19 @@ PPG em Ciência da Computação, ICT/UNIFESP.
 
 ```bash
 cd src
-uv sync                                   # cria o ambiente (.venv) e instala as dependências
-.venv/bin/uvicorn app.api:app --reload    # sobe a API + chat em http://127.0.0.1:8000
+uv sync                                          # cria o ambiente (.venv) e instala as dependências (inclui gunicorn)
+
+# Desenvolvimento (auto-reload, só na máquina local):
+uv run uvicorn app.api:app --reload              # sobe a API + chat em http://127.0.0.1:8000
+
+# Rede/produção (acessível de outras máquinas da rede, estilo Django 0.0.0.0:8000):
+uv run gunicorn -c config/gunicorn.conf.py app.api:app
+# depois acesse http://<sua-ip-na-rede>:8000 a partir de outras máquinas
 ```
+
+O modo de rede usa **gunicorn** (já incluído nas dependências) com worker Uvicorn e
+`workers=1` — isso mantém o contador de cota do Gemini (5 req/min) correto em um único
+processo. Veja `src/config/gunicorn.conf.py`.
 
 Para o diagnóstico via **Gemini**, defina `GOOGLE_API_KEY` em `src/.env`
 (veja `src/.env.example` e `src/CONFIGURAR_GEMINI.md`). Sem a chave, o sistema usa

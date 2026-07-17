@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 
-from config.inspector import settings, kb
+from config.inspector import settings, kb, ratelimit
 
 
 def diagnose(defect: dict, reading: dict, indicators: dict,
@@ -50,12 +50,52 @@ def diagnose(defect: dict, reading: dict, indicators: dict,
     defect_class = defect.get("class")
     language = settings.normalize_language(language)
 
+    # Defect-free label: there is nothing to diagnose. Short-circuit BEFORE the
+    # LLM/rules so we neither invent a cause for a clean label nor spend a Gemini
+    # call. (Applies after the visual arbiter, so an arbitrated "no_defect" also
+    # yields a coherent report.)
+    if defect_class == settings.NO_DEFECT_CLASS:
+        return _no_defect_diagnosis(language)
+
     if use_gemini and settings.has_gemini():
         result = _diagnose_with_gemini(defect_class, reading, indicators, language)
         if result is not None:
             return result
 
     return _diagnose_by_rules(defect_class, indicators, language)
+
+
+def _no_defect_diagnosis(language: str = settings.DEFAULT_LANGUAGE) -> dict:
+    """Diagnosis payload for a defect-free label (no cause, no correction).
+
+    Args:
+        language: Language of the returned text (``"pt-BR"`` or ``"en-US"``).
+
+    Returns:
+        A dict with the same keys as the other diagnosis paths
+        (``probable_cause``, ``corrective_action``, ``rationale``, ``source``,
+        ``method``), stating that no defect was found and no action is needed.
+        ``method`` is ``"rules"`` (the result is deterministic, no LLM call).
+    """
+    if settings.normalize_language(language) == "en-US":
+        return {
+            "probable_cause": "No defect detected.",
+            "corrective_action": "No corrective action required — the print "
+                                 "quality is within acceptable parameters.",
+            "rationale": "The classifier (and the visual arbiter, when it ran) "
+                         "identified the label as defect-free.",
+            "source": "",
+            "method": "rules",
+        }
+    return {
+        "probable_cause": "Nenhum defeito detectado.",
+        "corrective_action": "Nenhuma ação corretiva necessária — a qualidade "
+                             "de impressão está dentro dos parâmetros aceitáveis.",
+        "rationale": "O classificador (e o árbitro visual, quando atuou) "
+                     "identificou a etiqueta como sem defeito.",
+        "source": "",
+        "method": "rules",
+    }
 
 
 def _diagnose_with_gemini(defect_class: str | None, reading: dict,
@@ -108,6 +148,7 @@ def _diagnose_with_gemini(defect_class: str | None, reading: dict,
         )
 
         client = genai.Client()
+        ratelimit.record()   # count the attempt toward the RPM window.
         response = client.models.generate_content(
             model=settings.GEMINI_MODEL,
             contents=prompt,
@@ -132,8 +173,9 @@ def _diagnose_with_gemini(defect_class: str | None, reading: dict,
             "source": source,
             "method": "gemini",
         }
-    except Exception:
+    except Exception as exc:
         # Any error (missing lib, network, quota, invalid JSON) -> fallback.
+        ratelimit.observe_exception(exc)   # fold a 429's retryDelay into the quota state.
         return None
 
 

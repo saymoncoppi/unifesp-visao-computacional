@@ -12,12 +12,12 @@ export function initMenu() {
     if (el.menuPanel.hidden) openMenu(); else closeMenu();
   });
   el.menuPanel.addEventListener("click", function (evt) {
-    var item = evt.target.closest("[data-idioma],[data-tema],[data-inspector],[data-acao]");
+    var item = evt.target.closest("[data-language],[data-theme],[data-inspector],[data-action]");
     if (!item) return;
-    if (item.hasAttribute("data-idioma")) applyLanguage(item.getAttribute("data-idioma"));
-    else if (item.hasAttribute("data-tema")) applyTheme(item.getAttribute("data-tema"));
+    if (item.hasAttribute("data-language")) applyLanguage(item.getAttribute("data-language"));
+    else if (item.hasAttribute("data-theme")) applyTheme(item.getAttribute("data-theme"));
     else if (item.hasAttribute("data-inspector")) applyInspector(item.getAttribute("data-inspector"));
-    else if (item.hasAttribute("data-acao")) runAction(item.getAttribute("data-acao"));
+    else if (item.hasAttribute("data-action")) runAction(item.getAttribute("data-action"));
     closeMenu();
   });
   document.addEventListener("click", function (e) {

@@ -1,0 +1,16 @@
+[project]
+name = "lab03-granulometria"
+version = "0.1.0"
+description = "Granulometria morfologica sobre a base KTH-TIPS (Visao Computacional, UNIFESP)"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "numpy",
+    "scipy",
+    "scikit-image",
+    "opencv-python-headless",
+    "matplotlib",
+    "pandas",
+]
+
+[tool.uv]
+package = false

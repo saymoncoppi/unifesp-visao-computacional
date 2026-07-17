@@ -24,10 +24,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]                 # .../src
 PROJECT_ROOT = ROOT.parent                                  # .../repo root
 
-# Load variables from a .env file (e.g. GOOGLE_API_KEY), if present.
+# Load variables from a .env file (e.g. GOOGLE_API_KEY), if present. We look in
+# both the repo root and src/ so the key is found regardless of where the file
+# lives; an already-set environment variable always wins (override=False).
 try:
     from dotenv import load_dotenv
-    load_dotenv(ROOT / ".env")
+    for _env_path in (PROJECT_ROOT / ".env", ROOT / ".env"):
+        load_dotenv(_env_path, override=False)
 except Exception:
     pass
 
@@ -49,7 +52,14 @@ CLASSES = [
     "light_print",
     "uneven_pressure",
     "dirty_printhead",
+    "smear",
+    "cutoff",
+    "registration_shift",
 ]
+
+# The "defect-free" class key (used to short-circuit the diagnosis: a label with
+# no defect has no probable cause / corrective action to report).
+NO_DEFECT_CLASS = "no_defect"
 
 CLASS_LABELS_PT = {
     "no_defect": "Sem defeito",
@@ -59,6 +69,9 @@ CLASS_LABELS_PT = {
     "light_print": "Impressão clara (darkness baixo)",
     "uneven_pressure": "Pressão desigual da cabeça",
     "dirty_printhead": "Cabeça de impressão suja (voids)",
+    "smear": "Borrão (smear)",
+    "cutoff": "Impressão cortada (cutoff)",
+    "registration_shift": "Perda de registro (deslocamento)",
 }
 
 # Display names in English (same taxonomy as CLASSES).
@@ -70,6 +83,9 @@ CLASS_LABELS_EN = {
     "light_print": "Light print (low darkness)",
     "uneven_pressure": "Uneven printhead pressure",
     "dirty_printhead": "Dirty printhead (voids)",
+    "smear": "Smear (dragged ink)",
+    "cutoff": "Cutoff (truncated print)",
+    "registration_shift": "Registration shift",
 }
 
 # --------------------------------------------------------------------------
@@ -133,6 +149,20 @@ STD = (0.229, 0.224, 0.225)
 # --------------------------------------------------------------------------
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")   # if empty -> rule-based fallback
+
+# --------------------------------------------------------------------------
+# Visual arbiter (multimodal tie-breaker for confusable CNN class pairs)
+# --------------------------------------------------------------------------
+# ARBITER_MARGIN: max probability gap between the CNN's top-2 classes for the
+#   pair to be considered "confusable" (i.e. a near-tie worth arbitrating).
+# ARBITER_MIN_CONFIDENCE: top-1 confidence below which arbitration is also
+#   triggered even if the top-2 gap is wide.
+# ARBITER_PAIRS: the set of frozenset class-key pairs eligible for visual
+#   arbitration. The gate only calls the (paid) multimodal API when the CNN's
+#   top-2 forms one of these pairs AND is a near-tie / low-confidence case.
+ARBITER_MARGIN = float(os.environ.get("ARBITER_MARGIN", "0.15"))
+ARBITER_MIN_CONFIDENCE = float(os.environ.get("ARBITER_MIN_CONFIDENCE", "0.70"))
+ARBITER_PAIRS = frozenset({frozenset({"no_defect", "damaged_printhead_element"})})
 
 
 def has_gemini() -> bool:

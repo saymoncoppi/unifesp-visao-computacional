@@ -15,43 +15,65 @@ assinatura visual descrita na documentação Zebra ZT411/ZT421 (*troubleshooting
 qualidade de impressão) — é o dataset que treina o "agente de defeitos físicos".
 
 ```bash
-python config/generate_dataset.py --out config/datasets/dataset_sintetico --per-class 90 --seed 42
+# só sintético (comportamento clássico, agora com defeitos realistas)
+python config/generate_dataset.py --out config/datasets/dataset_sintetico --per-class 200 --seed 42
+
+# misturando bases REAIS (BarBeR/Roboflow) para reduzir o domain gap
+python config/generate_dataset.py --per-class 400 \
+    --bases-dir config/datasets/real_bases --real-fraction 0.5
 ```
 
 Argumentos:
 
 | Flag | Padrão | Descrição |
 | --- | --- | --- |
-| `--out` | `dataset` | Pasta de saída do dataset. |
-| `--per-class` | `90` | Imagens por classe. |
+| `--out` | `dataset_sintetico` | Pasta de saída do dataset. |
+| `--per-class` | `200` | Imagens por classe. |
 | `--seed` | `42` | Semente aleatória (reprodutibilidade). |
 | `--only-1d` | *(desligado)* | Ignora QR/DataMatrix (só simbologias 1D). |
+| `--bases-dir` | *(nenhum)* | Pasta de códigos **reais limpos** usados como base (subpasta = simbologia). |
+| `--real-fraction` | `0.5` | Fração de amostras sorteadas de bases reais (quando houver). |
+| `--severity` | *(aleatório)* | Fixa uma severidade (`low`/`medium`/`high`). |
 
 **Saída** gerada:
 
 ```
 <out>/
 ├── images/<split>/<class>/<symbology>_<idx>.png
-├── labels.csv           # filename, split, class, symbology, payload, params
+├── labels.csv           # filename, split, classe, simbologia, payload, params, source, severity, is_scannable
 └── previews/<class>.png # montagem para o artigo
 ```
 
-- **Classes** (7): `no_defect`, `damaged_printhead_element`, `wrinkled_ribbon`,
-  `burnt_spot`, `light_print`, `uneven_pressure`, `dirty_printhead`.
+Colunas novas do `labels.csv` (as antigas continuam iguais, então o loader não quebra):
+`source` (`synthetic`|`real`), `severity` (`none`|`low`|`medium`|`high`), `is_scannable` (`yes`|`no`).
+
+- **Classes** (10): `no_defect`, `damaged_printhead_element`, `wrinkled_ribbon`,
+  `burnt_spot`, `light_print`, `uneven_pressure`, `dirty_printhead`, `smear`,
+  `cutoff`, `registration_shift`. Cada defeito é calibrado contra as fotos reais
+  em `outros-arquivos/imgs_zebra/`.
 - **Simbologias**: 1D (`code128`, `code39`, `ean13`, `ean8`, `itf`) e
   2D (`qr`, `datamatrix`).
 
-O caminho padrão esperado pelo treino é `config/datasets/dataset_sintetico/` (configurável
-pela variável de ambiente `DATASET_DIR`).
+> **Atenção — a taxonomia mudou de 7 → 10 classes.** O checkpoint antigo
+> `config/models/classificador_defeitos.pt` (cabeça de 7 saídas) fica
+> **incompatível**: é preciso **regerar o dataset e re-treinar** antes de usar o
+> app/rodar os experimentos. `settings.CLASSES` e `generate_dataset.CLASSES`
+> precisam permanecer idênticos e na mesma ordem.
 
-## Datasets externos (Roboflow)
+## Bases reais (BarBeR / Roboflow)
 
-Para treinar/avaliar com **imagens reais** de códigos de barras danificados, o
-Roboflow Universe reúne vários datasets públicos. Busque por códigos de barras
-com dano/qualidade de impressão:
+Aplicar os defeitos sintéticos sobre **barcodes reais limpos** é o que reduz o
+*domain gap* sintético→real (a principal crítica ao dataset atual). Coloque os
+recortes limpos em `config/datasets/real_bases/<simbologia>/*.png` e use
+`--bases-dir`.
 
-- **https://universe.roboflow.com/search?q=barcode+damage**
-
-Após baixar, ajuste o layout para o formato esperado (`images/<split>/<class>/...`
-+ `labels.csv`) ou aponte `DATASET_DIR` para a pasta do dataset externo antes de
-[treinar a CNN](/treinamento/).
+- **BarBeR** (ditto.ing.unimore.it/barber): ~8.748 imagens reais, 18 simbologias
+  (1D+2D). **Só têm anotação de localização — não têm rótulo de defeito**, então
+  servem como *bases limpas* a corromper, não como treino de defeito pronto.
+  Exige registro e **citação obrigatória** (ICPR 2024 + EAAI 2025). O código é
+  AGPL-3.0 (não linkar no app) e o dataset agrega ~12 datasets com licença
+  própria — **não redistribuir as imagens dentro do app**; usar só em pesquisa.
+- **Roboflow Universe** (universe.roboflow.com/search?q=class:barcode): baixar via
+  `download_roboflow.py`. Licença **por projeto** — anotar cada uma. Use projetos
+  limpos como base e um projeto com defeitos reais como **conjunto de teste**
+  (experimento de generalização), nunca de treino direto.

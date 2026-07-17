@@ -16,10 +16,12 @@ dependencies = [
     "python-dotenv",
     "fastapi",
     "uvicorn[standard]",
+    "gunicorn",
     "python-multipart",
     "segno",
     "python-barcode",
     "pystrich",
+    "roboflow",
 ]
 
 [dependency-groups]

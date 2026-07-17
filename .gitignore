@@ -34,4 +34,17 @@ tmp/
 
 # ---- Zips gerados (derivados do próprio repositório) ----
 /src.zip
-/artigo-overleaf.zip
+/diagnostico-de-defeitos-de-impressao-em-etiquetas-de-codigos-de-barras-overleaf.zip
+
+# ---- Datasets de terceiros (NÃO redistribuir: licença por-fonte Roboflow/BarBeR) ----
+src/config/datasets/real_bases/
+src/config/datasets/roboflow_raw/
+src/config/datasets/roboflow_test/
+
+# ---- Modelos-piloto (descartáveis; reproduzíveis pelo gerador+treino) ----
+src/config/models/*_pilot*.pt
+src/config/models/*pilot*.pt
+
+# ---- Downloads parciais (ex.: BarBeR em andamento) ----
+*.crdownload
+*.part

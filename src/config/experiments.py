@@ -22,11 +22,17 @@ Reproducibly runs the rigor experiments requested by the article's evaluation:
             baseline, over the fixed test set, to check statistical
             significance.
 
-Experiment E3 (multi-agent ADK vs. monolithic) is NOT run here: the
-orchestrated path depends on a ``GOOGLE_API_KEY`` (Gemini), which is absent
-in the evaluation environment. Classification is identical on both paths
-(same CNN tool); the orchestration comparison is recorded as a
-limitation/future work.
+  E3      - multi-agent ADK (multimodal visual arbiter) vs. monolithic
+            CNN, on the fixed test set. Compares the CNN-pure argmax
+            against the final class produced by the ADK graph
+            (``report["defect"]["class"]``), whose visual arbiter may
+            CORRECT the CNN on the confusable pair
+            ``no_defect`` <-> ``damaged_printhead_element``. Reports the
+            confusion restricted to that pair for each path plus McNemar's
+            test between them. This experiment runs its ADK path ONLY when
+            a ``GOOGLE_API_KEY``/``GEMINI_API_KEY`` is configured
+            (``settings.has_gemini()``); otherwise it is recorded as a
+            limitation/future work and NO Google import or API call happens.
 
 Usage:
     python -m config.experiments [--epochs N] [--lr LR] [--batch B]
@@ -434,6 +440,169 @@ def stratified_folds(rows, k, seed):
 
 
 # ---------------------------------------------------------------------------
+# E3 -- multi-agent ADK (multimodal arbiter) vs. monolithic CNN
+# ---------------------------------------------------------------------------
+# The confusable pair the visual arbiter is allowed to correct. Kept local so
+# this module never requires the (optional) ``settings.ARBITER_PAIRS`` config
+# and runs identically with or without Google installed.
+E3_CONFUSABLE_PAIR = ("no_defect", "damaged_printhead_element")
+
+
+def _accuracy(y_true, y_pred) -> float:
+    """Plain accuracy tolerant of unresolved (-1) predictions.
+
+    Uses direct equality so an unresolved ADK prediction (encoded as -1)
+    is always counted as wrong, avoiding the negative-index wrap-around a
+    confusion-matrix based count would suffer.
+
+    Args:
+        y_true: Ground-truth integer labels.
+        y_pred: Predicted integer labels (may contain -1 for unresolved).
+
+    Returns:
+        Accuracy rounded to 4 decimals (0.0 for an empty input).
+    """
+    n = len(y_true)
+    if not n:
+        return 0.0
+    correct = sum(1 for t, p in zip(y_true, y_pred) if t == p)
+    return round(correct / n, 4)
+
+
+def _pair_confusion(y_true, y_pred, pair_idx):
+    """Confusion restricted to the confusable pair.
+
+    Considers only samples whose *true* label is one of the two pair
+    classes; predictions are bucketed into the two pair classes or
+    ``"other"`` (any label outside the pair, including an unresolved -1).
+
+    Args:
+        y_true: Ground-truth integer labels (full test set).
+        y_pred: Predicted integer labels, aligned with ``y_true`` (-1 marks
+            an unresolved prediction).
+        pair_idx: The two class indices forming the confusable pair.
+
+    Returns:
+        A nested dict ``{true_class: {pred_bucket: count}}`` where
+        ``true_class`` ranges over the two pair class names and
+        ``pred_bucket`` over the two names plus ``"other"``.
+    """
+    a, b = pair_idx
+    name_a, name_b = settings.CLASSES[a], settings.CLASSES[b]
+    cols = [name_a, name_b, "other"]
+    M = {name_a: {c: 0 for c in cols}, name_b: {c: 0 for c in cols}}
+    for t, p in zip(y_true, y_pred):
+        if t not in (a, b):
+            continue
+        col = settings.CLASSES[p] if p in (a, b) else "other"
+        M[settings.CLASSES[t]][col] += 1
+    return M
+
+
+def run_e3(test_rows, cnn_true, cnn_pred, dataset_dir, out_dir, results):
+    """Run experiment E3: ADK multimodal arbiter vs. monolithic CNN.
+
+    Evaluates both paths on the SAME fixed test set:
+
+      (a) CNN-pure: the argmax predictions already computed for the proposed
+          MobileNetV3-Small on the fixed split (reused as-is).
+      (b) ADK multimodal: the final class from ``report["defect"]["class"]``
+          returned by ``config.inspector.agents.analyze_via_adk``, whose
+          visual arbiter may CORRECT the CNN on the confusable pair.
+
+    The ADK path runs ONLY when ``settings.has_gemini()`` is True. Otherwise
+    the experiment is recorded as a skipped limitation and NO Google import
+    or API call is made. The import of ``analyze_via_adk`` is lazy, inside
+    the ``has_gemini()`` branch, so the "no Google" runtime never touches it.
+
+    Args:
+        test_rows: Test-split CSV row dicts, in the SAME order as
+            ``cnn_true``/``cnn_pred`` (the fixed-split test loader is
+            deterministic -- ``shuffle=False``).
+        cnn_true: Ground-truth integer labels for the test set (path a).
+        cnn_pred: CNN-pure predicted integer labels for the test set.
+        dataset_dir: Directory the ``filename`` values are relative to.
+        out_dir: Directory to write incremental ``resultados.json`` into.
+        results: Running results dict; mutated in place under ``"e3"``.
+
+    Returns:
+        The ``results["e3"]`` sub-dict that was written.
+    """
+    class_to_index = {c: i for i, c in enumerate(settings.CLASSES)}
+    pair_idx = (class_to_index[E3_CONFUSABLE_PAIR[0]],
+                class_to_index[E3_CONFUSABLE_PAIR[1]])
+
+    if not settings.has_gemini():
+        results["e3"] = {
+            "status": "skipped",
+            "reason": (
+                "No GOOGLE_API_KEY/GEMINI_API_KEY configured: the ADK "
+                "multimodal path is unavailable, so E3 (multi-agent vs. "
+                "monolithic) is recorded as a limitation/future work. No "
+                "Google import or API call is made."
+            ),
+            "confusable_pair": list(E3_CONFUSABLE_PAIR),
+        }
+        (out_dir / "resultados.json").write_text(
+            json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
+        return results["e3"]
+
+    # ADK path -- lazy imports so the "no Google" runtime never touches them.
+    import asyncio
+
+    from config.inspector.agents import analyze_via_adk
+
+    dataset_dir = Path(dataset_dir)
+    adk_pred = []
+    adk_errors = 0
+    for i, row in enumerate(test_rows):
+        image_path = str(dataset_dir / row["filename"])
+        print(f"[e3] ADK {i + 1}/{len(test_rows)}: {row['filename']} ...", flush=True)
+        try:
+            report = asyncio.run(analyze_via_adk(image_path))
+            chosen = (report.get("defect") or {}).get("class")
+            adk_pred.append(class_to_index.get(chosen, -1))
+        except Exception as exc:  # noqa: BLE001 -- one bad image must not abort E3
+            adk_errors += 1
+            adk_pred.append(-1)
+            print(f"[e3] ADK failed on {row['filename']}: {exc}", flush=True)
+
+    # McNemar restricted to the confusable pair: only the labels whose
+    # ground truth is one of the two pair classes count, matching the article's
+    # protocol (the arbiter only ever changes predictions inside this pair, so
+    # ADK errors on out-of-pair images must not inflate the discordant counts).
+    pair_set = set(pair_idx)
+    pair_positions = [i for i, t in enumerate(cnn_true) if t in pair_set]
+    mc = mcnemar(
+        [cnn_true[i] for i in pair_positions],
+        [cnn_pred[i] for i in pair_positions],
+        [adk_pred[i] for i in pair_positions],
+    )
+    results["e3"] = {
+        "status": "completed",
+        "confusable_pair": list(E3_CONFUSABLE_PAIR),
+        "n_test": len(test_rows),
+        "n_pair": len(pair_positions),
+        "adk_errors": adk_errors,
+        "cnn_pure": {
+            "accuracy": _accuracy(cnn_true, cnn_pred),
+            "confusion_pair": _pair_confusion(cnn_true, cnn_pred, pair_idx),
+        },
+        "adk_multimodal": {
+            "accuracy": _accuracy(cnn_true, adk_pred),
+            "confusion_pair": _pair_confusion(cnn_true, adk_pred, pair_idx),
+        },
+        "mcnemar_cnn_vs_adk": mc,
+    }
+    (out_dir / "resultados.json").write_text(
+        json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"[e3] done: CNN acc={results['e3']['cnn_pure']['accuracy']} "
+          f"ADK acc={results['e3']['adk_multimodal']['accuracy']} "
+          f"McNemar b={mc['b']} c={mc['c']} p={mc['p_value']}", flush=True)
+    return results["e3"]
+
+
+# ---------------------------------------------------------------------------
 # Experiment orchestration
 # ---------------------------------------------------------------------------
 def run(epochs, lr, batch, kfolds, seed, out_dir, quick=False, kfold_all=False):
@@ -482,6 +651,7 @@ def run(epochs, lr, batch, kfolds, seed, out_dir, quick=False, kfold_all=False):
         "fixed_split": {},
         "kfold": {},
         "mcnemar": {},
+        "e3": {},
     }
 
     # ---- E1 + baselines on the fixed split ----
@@ -511,6 +681,21 @@ def run(epochs, lr, batch, kfolds, seed, out_dir, quick=False, kfold_all=False):
             if label == "MobileNetV3-Small":
                 continue
             results["mcnemar"][f"MobileNetV3-Small vs {label}"] = mcnemar(yt, yp_ours, yp_base)
+
+    # ---- E3: ADK multimodal arbiter vs. monolithic CNN (fixed test set) ----
+    # Reuses the proposed model's CNN-pure predictions (path a) and, when a
+    # Gemini key is configured, evaluates the ADK multimodal path (path b) on
+    # the same ordered test set. Without a key it records E3 as a limitation.
+    if "MobileNetV3-Small" in predictions:
+        yt_e3, yp_e3 = predictions["MobileNetV3-Small"]
+        run_e3(test_rows, yt_e3, yp_e3, settings.DATASET_DIR, out_dir, results)
+    else:
+        results["e3"] = {
+            "status": "skipped",
+            "reason": ("proposed architecture (MobileNetV3-Small) was not "
+                       "trained in this run; E3 needs its CNN predictions."),
+            "confusable_pair": list(E3_CONFUSABLE_PAIR),
+        }
 
     # ---- E-KFOLD stratified ----
     # By default, k-fold validation only runs for the proposed architecture

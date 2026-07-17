@@ -2,8 +2,10 @@ import { el } from "./dom.js";
 import { state, ls } from "./state.js";
 import { LANGUAGES, THEMES } from "./translations.js";
 import { applyTheme, applyLanguage, applyInspector, initModelLabel } from "./preferences.js";
-import { initFileInput, initHtmx } from "./composer.js";
+import { initHtmx } from "./composer.js";
+import { initAttach } from "./attach.js";
 import { initMenu } from "./menu.js";
+import { initQuota } from "./quota.js";
 
 // ===================================================== Initialization
 (function initState() {
@@ -29,6 +31,7 @@ import { initMenu } from "./menu.js";
   applyInspector(state.inspector);   // marks the chosen inspector
 })();
 
-initFileInput();
 initHtmx();
+initAttach();
 initMenu();
+initQuota();   // after initHtmx so the quota guard's beforeRequest runs second.

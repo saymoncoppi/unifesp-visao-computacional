@@ -10,9 +10,9 @@
        falls back to empty values. -->
   <script>
     (function () {
-      var raw = { activeModel: "__MODELO_ATIVO__", hasGemini: "__TEM_GEMINI__" };
+      var raw = { activeModel: "__ACTIVE_MODEL__", hasGemini: "__HAS_GEMINI__" };
       // If the markers were not substituted by the server, normalize to empty.
-      var model = raw.activeModel === "__MODELO_" + "ATIVO__" ? "" : raw.activeModel;
+      var model = raw.activeModel === "__ACTIVE_" + "MODEL__" ? "" : raw.activeModel;
       var hasGemini = raw.hasGemini === "true";
       window.INSPECTOR_CONFIG = { activeModel: model, hasGemini: hasGemini };
     })();
@@ -30,40 +30,40 @@
       <div class="menu" id="menu">
         <button type="button" class="btn btn-icon" id="menu-button"
                 aria-haspopup="true" aria-expanded="false"
-                data-i18n-aria="menu_aria" data-i18n-title="menu_aria"
+                data-i18n-aria="menu_settings" data-i18n-title="menu_settings"
                 aria-label="Menu" title="Menu">
           <span class="menu-dots" aria-hidden="true"><span></span><span></span><span></span></span>
         </button>
         <div class="menu-panel" id="menu-panel" role="menu" hidden>
-          <!-- Idioma ------------------------------------------------------ -->
+          <!-- Language ---------------------------------------------------- -->
           <div class="menu-section">
-            <p class="menu-section-title" data-i18n="menu_idioma">Selecionar idioma</p>
-            <button type="button" class="menu-item" role="menuitemradio" data-idioma="pt-BR">
+            <p class="menu-section-title" data-i18n="menu_language">Selecionar idioma</p>
+            <button type="button" class="menu-item" role="menuitemradio" data-language="pt-BR">
               <span class="menu-item-label">Português Brasileiro</span>
               <span class="check" aria-hidden="true">&#10003;</span>
             </button>
-            <button type="button" class="menu-item" role="menuitemradio" data-idioma="en-US">
+            <button type="button" class="menu-item" role="menuitemradio" data-language="en-US">
               <span class="menu-item-label">English</span>
               <span class="check" aria-hidden="true">&#10003;</span>
             </button>
           </div>
-          <!-- Tema -------------------------------------------------------- -->
+          <!-- Theme ------------------------------------------------------- -->
           <div class="menu-section">
-            <p class="menu-section-title" data-i18n="menu_tema">Tema</p>
-            <button type="button" class="menu-item" role="menuitemradio" data-tema="light">
-              <span class="menu-item-label" data-i18n="tema_claro">Claro</span>
+            <p class="menu-section-title" data-i18n="menu_theme">Tema</p>
+            <button type="button" class="menu-item" role="menuitemradio" data-theme="light">
+              <span class="menu-item-label" data-i18n="theme_light">Claro</span>
               <span class="check" aria-hidden="true">&#10003;</span>
             </button>
-            <button type="button" class="menu-item" role="menuitemradio" data-tema="dark">
-              <span class="menu-item-label" data-i18n="tema_escuro">Escuro</span>
+            <button type="button" class="menu-item" role="menuitemradio" data-theme="dark">
+              <span class="menu-item-label" data-i18n="theme_dark">Escuro</span>
               <span class="check" aria-hidden="true">&#10003;</span>
             </button>
-            <button type="button" class="menu-item" role="menuitemradio" data-tema="auto">
-              <span class="menu-item-label" data-i18n="tema_auto">Auto</span>
+            <button type="button" class="menu-item" role="menuitemradio" data-theme="auto">
+              <span class="menu-item-label" data-i18n="theme_auto">Auto</span>
               <span class="check" aria-hidden="true">&#10003;</span>
             </button>
           </div>
-          <!-- Inspetor ---------------------------------------------------- -->
+          <!-- Inspector --------------------------------------------------- -->
           <div class="menu-section">
             <p class="menu-section-title" data-i18n="menu_inspector">Inspetor</p>
             <button type="button" class="menu-item" role="menuitemradio" data-inspector="llm">
@@ -78,20 +78,20 @@
             </button>
             <button type="button" class="menu-item" role="menuitemradio" data-inspector="auto"
                     id="inspector-auto" data-i18n-title="inspector_auto_title"
-                    title="Prefere o LLM; usa a KB Zebra como fallback.">
+                    title="Multiagente (ADK) com arbitragem visual; usa o pipeline direto como fallback.">
               <span class="menu-item-label">Auto</span>
-              <span class="menu-item-sub">LLM + KB</span>
+              <span class="menu-item-sub">Multiagente + visão</span>
               <span class="check" aria-hidden="true">&#10003;</span>
             </button>
           </div>
-          <!-- Ações ------------------------------------------------------- -->
+          <!-- Actions ----------------------------------------------------- -->
           <div class="menu-section">
-            <p class="menu-section-title" data-i18n="menu_acoes">Ações</p>
-            <button type="button" class="menu-item" data-acao="export-pdf">
-              <span class="menu-item-label" data-i18n="acao_export_pdf">Exportar em PDF</span>
+            <p class="menu-section-title" data-i18n="menu_actions">Ações</p>
+            <button type="button" class="menu-item" data-action="export-pdf">
+              <span class="menu-item-label" data-i18n="action_export_pdf">Exportar em PDF</span>
             </button>
-            <button type="button" class="menu-item menu-item-danger" data-acao="limpar">
-              <span class="menu-item-label" data-i18n="acao_limpar">Limpar</span>
+            <button type="button" class="menu-item menu-item-danger" data-action="clear">
+              <span class="menu-item-label" data-i18n="action_clear">Limpar</span>
             </button>
           </div>
         </div>
@@ -102,7 +102,7 @@
   <main id="main">
     <div id="chat">
       <div class="msg msg-bot">
-        <img class="avatar" src="/static/img/logo.svg" alt="" />
+        <div class="avatar" aria-hidden="true">IE</div>
         <div class="bubble" data-i18n-html="greeting">
           Olá! Selecione a imagem de uma etiqueta de código de barras e clique em
           <strong>Analisar</strong>. Vou decodificar o código, avaliar a qualidade da
@@ -119,18 +119,83 @@
           hx-swap="beforeend"
           hx-encoding="multipart/form-data"
           autocomplete="off">
-      <label class="file-label">
-        <span aria-hidden="true">📷</span> <span data-i18n="choose_image">Escolher imagem</span>
-        <input type="file" id="image" name="image" accept="image/*" required />
-      </label>
-      <img class="thumb" id="thumb" alt="Pré-visualização" data-i18n-alt="preview_alt" />
-      <span class="file-name" id="file-name" data-i18n="file_none">Nenhum arquivo selecionado</span>
+      <div class="attach" id="attach">
+        <button type="button" class="attach-button" id="attach-button"
+                aria-haspopup="true" aria-expanded="false"
+                data-i18n-aria="attach_aria" data-i18n-title="attach_aria"
+                aria-label="Anexar" title="Anexar">
+          <svg class="attach-plus" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor"
+                  stroke-width="2.2" stroke-linecap="round" />
+          </svg>
+        </button>
+        <div class="attach-menu" id="attach-menu" role="menu" hidden>
+          <button type="button" class="attach-item" data-attach="photos" role="menuitem">
+            <span class="attach-icon attach-icon-photos" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm-1 12 5-5 3 3 4-4 4 4"
+                      fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                <circle cx="9" cy="9" r="1.6" fill="currentColor" />
+              </svg>
+            </span>
+            <span class="attach-item-label" data-i18n="attach_photos">Fotos</span>
+          </button>
+          <button type="button" class="attach-item" data-attach="camera" role="menuitem">
+            <span class="attach-icon attach-icon-camera" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                <path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"
+                      fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                <circle cx="12" cy="13" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8" />
+              </svg>
+            </span>
+            <span class="attach-item-label" data-i18n="attach_camera">Câmera</span>
+          </button>
+        </div>
+      </div>
+
+      <span class="quota-inline" id="quota-inline" role="status" aria-live="polite" hidden></span>
+
       <span class="htmx-indicator" id="indicator">
         <span class="spinner" aria-hidden="true"></span> <span data-i18n="analyzing">analisando…</span>
       </span>
-      <button type="submit" class="btn btn-primary" id="submit" data-i18n="analyze" disabled>Analisar</button>
+
+      <!-- Submission source (photos) + camera fallback + hidden submitter. -->
+      <input type="file" id="image" name="image" accept="image/*" class="hidden-input" />
+      <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden-input" />
+      <button type="submit" class="hidden-input" id="submit" tabindex="-1" aria-hidden="true"></button>
     </form>
   </footer>
+
+  <!-- Preview modal: shows the chosen/captured image with Cancel / Analyze. -->
+  <div class="modal-overlay" id="preview-modal" role="dialog" aria-modal="true"
+       data-i18n-aria="preview_title" aria-label="Pré-visualização" hidden>
+    <div class="modal">
+      <h2 class="modal-title" data-i18n="preview_title">Pré-visualização</h2>
+      <div class="modal-body">
+        <img class="modal-preview-img" id="preview-img" alt="" data-i18n-alt="preview_alt" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" id="preview-cancel" data-i18n="cancel">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="preview-analyze" data-i18n="analyze">Analisar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Camera modal: live capture via getUserMedia. -->
+  <div class="modal-overlay" id="camera-modal" role="dialog" aria-modal="true"
+       data-i18n-aria="camera_title" aria-label="Tirar foto" hidden>
+    <div class="modal">
+      <h2 class="modal-title" data-i18n="camera_title">Tirar foto</h2>
+      <div class="modal-body">
+        <video class="modal-camera" id="camera-video" playsinline autoplay muted></video>
+        <p class="modal-error" id="camera-error" data-i18n="camera_error" hidden>Não foi possível acessar a câmera.</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" id="camera-cancel" data-i18n="cancel">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="camera-capture" data-i18n="camera_capture">Capturar</button>
+      </div>
+    </div>
+  </div>
 
   <script src="/static/js/htmx.min.js"></script>
   <script type="module" src="/static/js/main.js"></script>

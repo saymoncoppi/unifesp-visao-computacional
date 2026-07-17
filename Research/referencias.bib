@@ -1,0 +1,367 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% referencias.bib — bibliografia do artigo (padrão abnTeX2 / ABNT NBR 6023)
+%
+% Todas as entradas foram verificadas em fontes oficiais (catálogos ISO, Pearson,
+% Springer, Google, IEEE, Frontiers, Google Patents, Zebra).
+%
+% DUAS DECISÕES EDITORIAIS PENDENTES (marcadas com "VERIFICAR" abaixo):
+%   1) ISO/IEC 15415: a edição VIGENTE é 2024. Se o seu texto se refere à
+%      metodologia da edição de 2011, troque year e url.
+%   2) fff2024thermal: a chave tem "thermal", mas o artigo usa imagens ópticas
+%      (não térmicas). O nome da chave é só um rótulo interno — não afeta o texto.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% ---------------------------------------------------------------------------
+% Livros
+% ---------------------------------------------------------------------------
+@book{gonzalez2018,
+  author    = {Gonzalez, Rafael C. and Woods, Richard E.},
+  title     = {Digital Image Processing},
+  edition   = {4},
+  year      = {2018},
+  publisher = {Pearson},
+  address   = {New York},
+  note      = {ISBN 978-0-13-335672-4}
+}
+
+@book{szeliski2022,
+  author    = {Szeliski, Richard},
+  title     = {Computer Vision: Algorithms and Applications},
+  edition   = {2},
+  year      = {2022},
+  publisher = {Springer},
+  address   = {Cham},
+  note      = {ISBN 978-3-030-34371-2}
+}
+
+% ---------------------------------------------------------------------------
+% Agent Development Kit (ADK) — Google
+% ---------------------------------------------------------------------------
+@misc{google_adk_blog,
+  author       = {{Google}},
+  title        = {Agent Development Kit: making it easy to build multi-agent applications},
+  year         = {2025},
+  howpublished = {Google Developers Blog},
+  url          = {https://developers.googleblog.com/en/agent-development-kit-easy-to-build-multi-agent-applications/},
+  urlaccessdate = {13 jul. 2026},
+  note         = {Anúncio de lançamento do ADK no Google Cloud NEXT 2025}
+}
+
+@misc{adk_docs,
+  author       = {{Google}},
+  title        = {Agent Development Kit (ADK): documentation},
+  year         = {2025},
+  organization = {Google},
+  url          = {https://google.github.io/adk-docs/},
+  urlaccessdate = {13 jul. 2026}
+}
+
+% ---------------------------------------------------------------------------
+% Normas técnicas (ISO/IEC)
+% ---------------------------------------------------------------------------
+@misc{iso15416,
+  author       = {{ISO/IEC}},
+  title        = {ISO/IEC 15416:2016: automatic identification and data capture techniques: bar code print quality test specification: linear symbols},
+  year         = {2016},
+  address      = {Geneva},
+  publisher    = {International Organization for Standardization},
+  url          = {https://www.iso.org/standard/65577.html},
+  urlaccessdate = {13 jul. 2026}
+}
+
+@misc{iso15415,
+  author       = {{ISO/IEC}},
+  title        = {ISO/IEC 15415:2024: automatic identification and data capture techniques: bar code symbol print quality test specification: two-dimensional symbols},
+  year         = {2024},
+  address      = {Geneva},
+  publisher    = {International Organization for Standardization},
+  url          = {https://www.iso.org/standard/76876.html},
+  urlaccessdate = {13 jul. 2026},
+  note         = {VERIFICAR: edição vigente (2024) substitui a de 2011. Se citar a metodologia de 2011, ajuste ano e URL}
+}
+
+@misc{iso29158,
+  author       = {{ISO/IEC}},
+  title        = {ISO/IEC 29158:2020: information technology: automatic identification and data capture techniques: direct part mark (DPM) quality guideline},
+  year         = {2020},
+  address      = {Geneva},
+  publisher    = {International Organization for Standardization},
+  url          = {https://www.iso.org/standard/69411.html},
+  urlaccessdate = {13 jul. 2026}
+}
+
+@misc{iso15426,
+  author       = {{ISO/IEC}},
+  title        = {ISO/IEC 15426-1:2006: information technology: automatic identification and data capture techniques: bar code verifier conformance specification: part 1: linear symbols},
+  year         = {2006},
+  address      = {Geneva},
+  publisher    = {International Organization for Standardization},
+  url          = {https://www.iso.org/standard/43643.html},
+  urlaccessdate = {13 jul. 2026}
+}
+
+% ---------------------------------------------------------------------------
+% Documentação técnica do fabricante (Zebra)
+% ---------------------------------------------------------------------------
+@manual{zebra_printquality,
+  author       = {{Zebra Technologies}},
+  title        = {ZT411/ZT421 industrial printer user guide},
+  organization = {Zebra Technologies},
+  year         = {2024},
+  note         = {Documento P1106464. Inclui operação, manutenção e resolução de problemas de qualidade de impressão},
+  url          = {https://www.zebra.com/content/dam/support-dam/en/documentation/unrestricted/guide/product/zt411-zt421-ug-en.pdf},
+  urlaccessdate = {13 jul. 2026}
+}
+
+@misc{zebra_kb_printquality,
+  author       = {{Zebra Technologies}},
+  title        = {ZM and ZT Series: resolving print quality issues},
+  organization = {Zebra Technologies},
+  year         = {2024},
+  howpublished = {Zebra Support -- Base de Conhecimento},
+  url          = {https://support.zebra.com/pt-BR/article/ZM-and-ZT-Series-Resolving-Print-Quality-Issues},
+  urlaccessdate = {13 jul. 2026}
+}
+
+@manual{zebra_maintenance,
+  author       = {{Zebra Technologies}},
+  title        = {ZT411/ZT421 industrial printer maintenance manual},
+  organization = {Zebra Technologies},
+  year         = {2024},
+  url          = {https://laserpros.com/img/manuals/zebra-manuals/zebra-zt411-zt421-industrial-printer-maintenance-manual.pdf},
+  urlaccessdate = {13 jul. 2026}
+}
+
+% ---------------------------------------------------------------------------
+% Artigos e surveys (inspeção industrial / aprendizado profundo)
+% ---------------------------------------------------------------------------
+@article{frontiers2025anomaly,
+  author  = {Shukla, Vinita and Shukla, Amit and Prakash S. K., Surya and Shukla, Shraddha},
+  title   = {A systematic survey: role of deep learning-based image anomaly detection in industrial inspection contexts},
+  journal = {Frontiers in Robotics and AI},
+  volume  = {12},
+  pages   = {1554196},
+  year    = {2025},
+  note    = {DOI 10.3389/frobt.2025.1554196},
+  url     = {https://www.frontiersin.org/articles/10.3389/frobt.2025.1554196/full},
+  urlaccessdate = {13 jul. 2026}
+}
+
+@article{survey2022unsupervised,
+  author  = {Tao, Xian and Gong, Xinyi and Zhang, Xin and Yan, Shaohua and Adak, Chandranath},
+  title   = {Deep learning for unsupervised anomaly localization in industrial images: a survey},
+  journal = {IEEE Transactions on Instrumentation and Measurement},
+  volume  = {71},
+  pages   = {1--21},
+  year    = {2022},
+  note    = {Art. no. 5018021. DOI 10.1109/TIM.2022.3196436}
+}
+
+@article{fabric2021cnn,
+  author  = {Jun, Xiang and Wang, Jingan and Zhou, Jian and Meng, Shuo and Pan, Ruru and Gao, Weidong},
+  title   = {Fabric defect detection based on a deep convolutional neural network using a two-stage strategy},
+  journal = {Textile Research Journal},
+  volume  = {91},
+  number  = {1-2},
+  pages   = {130--142},
+  year    = {2021},
+  note    = {DOI 10.1177/0040517520935984}
+}
+
+@article{fff2024thermal,
+  author  = {Avro, Sakib S. and Rahman, S. M. Atikur and Tseng, Tzu-Liang and Rahman, Md Fashiar},
+  title   = {A deep learning framework for automated anomaly detection and localization in fused filament fabrication},
+  journal = {Manufacturing Letters},
+  volume  = {41},
+  pages   = {1526--1534},
+  year    = {2024},
+  note    = {DOI 10.1016/j.mfglet.2024.09.179. Anomalias em FFF por transferência de aprendizado (VGG/ResNet + YOLO)}
+}
+
+@article{duan2025barcode,
+  author  = {Duan, G. and Zhang, S. and Shang, Y. and Shao, Y. and Han, Y.},
+  title   = {Research on a Multi-Type Barcode Defect Detection Model Based on Machine Vision},
+  journal = {Applied Sciences},
+  volume  = {15},
+  number  = {15},
+  pages   = {8176},
+  year    = {2025},
+  note    = {DOI 10.3390/app15158176. Y8-LiBARNet: YOLOv8n + ResNet50-ViT sobre o BarBeR},
+  url     = {https://doi.org/10.3390/app15158176},
+  urlaccessdate = {16 jul. 2026}
+}
+
+% ---------------------------------------------------------------------------
+% BarBeR (benchmark de códigos de barras) e Roboflow --- fontes das imagens-base
+% limpas usadas como substrato para a geração sintética de defeitos (Trilha B).
+% ---------------------------------------------------------------------------
+@inproceedings{2024ICPR_barber,
+  author    = {Vezzali, Enrico and Bolelli, Federico and Santi, Stefano and Grana, Costantino},
+  title     = {{BarBeR: A Barcode Benchmarking Repository}},
+  booktitle = {2024 27th International Conference on Pattern Recognition (ICPR)},
+  publisher = {Springer},
+  pages     = {1--1},
+  year      = {2024},
+  month     = {Dec},
+  note      = {Kolkata, India. Repositório público de imagens reais de códigos de barras (\textit{benchmark} de localização/detecção)}
+}
+
+@article{2025EAAI,
+  author  = {Vezzali, Enrico and Bolelli, Federico and Santi, Stefano and Grana, Costantino},
+  title   = {State-of-the-art review and benchmarking of barcode localization methods},
+  journal = {Engineering Applications of Artificial Intelligence},
+  year    = {2025},
+  month   = {Feb},
+  note    = {DOI 10.1016/j.engappai.2025.110259},
+  url     = {https://doi.org/10.1016/j.engappai.2025.110259},
+  urlaccessdate = {17 jul. 2026}
+}
+
+@misc{roboflow_barcode,
+  author       = {{Roboflow Universe}},
+  title        = {Barcode detection datasets (Roboflow Universe)},
+  organization = {Roboflow},
+  year         = {2024},
+  url          = {https://universe.roboflow.com/search?q=barcode-detection-tvdug},
+  urlaccessdate = {17 jul. 2026},
+  note         = {Bases públicas de imagens de códigos de barras; cada projeto sob sua própria licença (majoritariamente \textit{Creative Commons} CC BY 4.0, verificada por projeto). Projeto utilizado: o-xfs34/barcode-detection-tvdug (v1)}
+}
+
+% ---------------------------------------------------------------------------
+% Aprendizado profundo: arquiteturas e transferência de aprendizado
+% ---------------------------------------------------------------------------
+@inproceedings{howard2019mobilenetv3,
+  author    = {Howard, Andrew and Sandler, Mark and Chu, Grace and Chen, Liang-Chieh and Chen, Bo and Tan, Mingxing and Wang, Weijun and Zhu, Yukun and Pang, Ruoming and Vasudevan, Vijay and Le, Quoc V. and Adam, Hartwig},
+  title     = {Searching for {MobileNetV3}},
+  booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+  pages     = {1314--1324},
+  year      = {2019},
+  note      = {arXiv:1905.02244. DOI 10.1109/ICCV.2019.00140},
+  url       = {https://arxiv.org/abs/1905.02244},
+  urlaccessdate = {15 jul. 2026}
+}
+
+@inproceedings{yosinski2014transferable,
+  author    = {Yosinski, Jason and Clune, Jeff and Bengio, Yoshua and Lipson, Hod},
+  title     = {How transferable are features in deep neural networks?},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {27},
+  pages     = {3320--3328},
+  year      = {2014},
+  note      = {arXiv:1411.1792},
+  url       = {https://arxiv.org/abs/1411.1792},
+  urlaccessdate = {15 jul. 2026}
+}
+
+@inproceedings{tan2019efficientnet,
+  author    = {Tan, Mingxing and Le, Quoc V.},
+  title     = {{EfficientNet}: Rethinking model scaling for convolutional neural networks},
+  booktitle = {Proceedings of the 36th International Conference on Machine Learning (ICML)},
+  pages     = {6105--6114},
+  year      = {2019},
+  note      = {arXiv:1905.11946},
+  url       = {https://arxiv.org/abs/1905.11946},
+  urlaccessdate = {15 jul. 2026}
+}
+
+@inproceedings{he2016resnet,
+  author    = {He, Kaiming and Zhang, Xiangyu and Ren, Shaoqing and Sun, Jian},
+  title     = {Deep residual learning for image recognition},
+  booktitle = {Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {770--778},
+  year      = {2016},
+  note      = {arXiv:1512.03385. DOI 10.1109/CVPR.2016.90},
+  url       = {https://arxiv.org/abs/1512.03385},
+  urlaccessdate = {15 jul. 2026}
+}
+
+@article{shorten2019augmentation,
+  author  = {Shorten, Connor and Khoshgoftaar, Taghi M.},
+  title   = {A survey on image data augmentation for deep learning},
+  journal = {Journal of Big Data},
+  volume  = {6},
+  number  = {1},
+  pages   = {60},
+  year    = {2019},
+  note    = {DOI 10.1186/s40537-019-0197-0},
+  url     = {https://doi.org/10.1186/s40537-019-0197-0},
+  urlaccessdate = {15 jul. 2026}
+}
+
+@article{dietterich1998tests,
+  author  = {Dietterich, Thomas G.},
+  title   = {Approximate statistical tests for comparing supervised classification learning algorithms},
+  journal = {Neural Computation},
+  volume  = {10},
+  number  = {7},
+  pages   = {1895--1923},
+  year    = {1998},
+  note    = {DOI 10.1162/089976698300017197}
+}
+
+% ---------------------------------------------------------------------------
+% Patente
+% ---------------------------------------------------------------------------
+@misc{patent9826106,
+  author       = {Ackley, H. Sprague},
+  title        = {System and method for detecting barcode printing errors},
+  year         = {2017},
+  howpublished = {U.S. Patent 9,826,106 B2},
+  organization = {Hand Held Products, Inc.},
+  url          = {https://patents.google.com/patent/US9826106B2/en},
+  urlaccessdate = {13 jul. 2026},
+  note         = {Concedida em 21 nov. 2017; prioridade 30 dez. 2014}
+}
+
+% ---------------------------------------------------------------------------
+% Universo dos códigos de barras (Seção 2.1): simbologias, padrões e mercados
+% ---------------------------------------------------------------------------
+@misc{seagull,
+  author       = {{Seagull Scientific}},
+  title        = {BarTender barcode guide: introduction, symbologies and standards},
+  organization = {Seagull Scientific},
+  year         = {2024},
+  url          = {https://barcodeguide.seagullscientific.com/Content/Introduction.htm},
+  urlaccessdate = {16 jul. 2026},
+  note         = {Guia técnico do software BarTender: anatomia, tabela de simbologias e normas de simbologia/aplicação}
+}
+
+@misc{gs1br,
+  author       = {{GS1 Brasil}},
+  title        = {Como o código de barras pode ajudar o seu negócio},
+  organization = {GS1 Brasil --- Associação Brasileira de Automação},
+  year         = {2024},
+  url          = {https://www.gs1br.org/como-codigo-pode-ajudar},
+  urlaccessdate = {16 jul. 2026},
+  note         = {Papel do GTIN e da padronização GS1 na cadeia de valor}
+}
+
+@misc{aim_layman,
+  author       = {{AIM Inc.}},
+  title        = {The layman's guide to ANSI, CEN and ISO/IEC linear bar code print quality documents},
+  organization = {Association for Automatic Identification and Mobility (AIM)},
+  year         = {2012},
+  url          = {https://files.omron.eu/downloads/latest/manual/en/the_layman_s_guide_to_ansi,_cen_and_iso_iec_linear_bar_code_print_quality_documents_users_manual_en.pdf},
+  urlaccessdate = {16 jul. 2026},
+  note         = {Documento TSC-04-028:2012. Histórico dos organismos e da metodologia ANSI X3.182 (1990) $\rightarrow$ EN 1635 (1995) $\rightarrow$ ISO/IEC 15416 (2000)}
+}
+
+@manual{zebra_barcoding101,
+  author       = {{Zebra Technologies}},
+  title        = {Barcoding 101: what you need to know},
+  organization = {Zebra Technologies},
+  year         = {2013},
+  url          = {https://www.zebra.com/us/en/resource-library/barcoding-101.html},
+  urlaccessdate = {16 jul. 2026},
+  note         = {White paper P1044542. Benefícios operacionais da automação por código de barras (acurácia de dados)}
+}
+
+@misc{zebra_industries,
+  author       = {{Zebra Technologies}},
+  title        = {Industries served by Zebra},
+  organization = {Zebra Technologies},
+  year         = {2024},
+  url          = {https://www.zebra.com/us/en/industry.html},
+  urlaccessdate = {16 jul. 2026},
+  note         = {Verticais de aplicação de etiquetagem e leitura de código de barras}
+}

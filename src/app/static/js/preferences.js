@@ -17,22 +17,22 @@ export function applyTheme(v) {
   if (v === "light" || v === "dark") el.root.setAttribute("data-theme", v);
   else el.root.removeAttribute("data-theme");   // "auto" -> follows the system
   lsSet("theme", v);
-  markSelected("tema", v);
+  markSelected("theme", v);
 }
 
 export function applyLanguage(v) {
   state.language = v;
   lsSet("language", v);
   applyI18n(v);
-  markSelected("idioma", v);
-  // If no file is selected, the default label is reapplied by applyI18n;
-  // once a file is chosen, data-i18n is removed (see showFileName).
+  markSelected("language", v);
 }
 
 export function applyInspector(v) {
   state.inspector = v;
   lsSet("inspector", v);
   markSelected("inspector", v);
+  // Let the footer quota counter react (hidden for KB, shown for llm/auto).
+  document.dispatchEvent(new CustomEvent("inspector-change"));
 }
 
 export function initModelLabel() {

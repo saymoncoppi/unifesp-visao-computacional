@@ -346,8 +346,13 @@ main {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  display: block;
-  object-fit: contain;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
   flex: 0 0 auto;
   margin-top: 2px;
 }
@@ -475,6 +480,24 @@ main {
 /* Defect */
 .defect-name { font-weight: 600; font-size: 15px; }
 .defect-conf { color: var(--muted-foreground); font-size: 13px; margin-top: 2px; }
+/* Visual-arbiter badge: CNN class -> visual review (multi-agent path only) */
+.defect-arbitration {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--muted, rgba(127, 127, 127, 0.1));
+  color: var(--card-foreground);
+  font-size: 12px;
+  font-weight: 500;
+}
+/* Nested label for the "Visual evidence" sub-section */
+.sub-label {
+  font-size: 10px;
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
 
 /* Card footer / source */
 .card-footer {
@@ -523,43 +546,181 @@ footer {
   flex-wrap: wrap;
 }
 
-.file-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 14px;
-  border: 1px solid var(--border);
-  border-radius: calc(var(--radius) - 0.15rem);
-  background: var(--background);
-  color: var(--foreground);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  box-shadow: var(--shadow-sm);
-  transition: background-color .15s ease, border-color .15s ease;
+/* Hidden inputs / submitter (kept in the DOM for the htmx form). */
+.hidden-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  border: 0;
 }
-.file-label:hover { background: var(--accent); }
-.file-label input { display: none; }
 
-.thumb {
-  width: 38px;
-  height: 38px;
-  border-radius: calc(var(--radius) - 0.25rem);
-  border: 1px solid var(--border);
-  object-fit: cover;
-  display: none;
+/* Attach ("+") button — WhatsApp-like round hover. */
+.attach {
+  position: relative;
   flex: 0 0 auto;
 }
-.thumb.show { display: block; }
-
-.file-name {
-  font-size: 13px;
+.attach-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
   color: var(--muted-foreground);
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease, transform .15s ease;
+}
+.attach-button:hover { background: var(--accent); color: var(--foreground); }
+.attach-button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.attach-button[aria-expanded="true"] {
+  background: var(--accent);
+  color: var(--foreground);
+}
+.attach-button[aria-expanded="true"] .attach-plus { transform: rotate(45deg); }
+.attach-plus { transition: transform .18s ease; }
+
+/* Attach popover (opens upward, above the composer). */
+.attach-menu {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 0;
+  min-width: 210px;
+  padding: 8px;
+  background: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  z-index: 40;
+  animation: attach-pop .12s ease;
+}
+.attach-menu[hidden] { display: none; }
+@keyframes attach-pop {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.attach-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 10px;
+  border: none;
+  border-radius: calc(var(--radius) - 0.25rem);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+}
+.attach-item:hover { background: var(--accent); }
+.attach-item:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.attach-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: #fff;
+  flex: 0 0 auto;
+}
+.attach-icon-photos { background: hsl(217 91% 60%); }   /* blue  — Photos */
+.attach-icon-camera { background: hsl(330 81% 60%); }   /* pink  — Camera */
+
+/* Inline quota status (fills the remaining space, right-aligned, muted). */
+.quota-inline {
   flex: 1 1 120px;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-align: right;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------------
+   Modal system (image preview + live camera)
+--------------------------------------------------------------------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: hsl(240 10% 3.9% / 0.55);
+  backdrop-filter: saturate(120%) blur(2px);
+  animation: overlay-in .12s ease;
+}
+.modal-overlay[hidden] { display: none; }
+@keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  width: 100%;
+  max-width: 480px;
+  background: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  padding: 18px;
+  animation: modal-in .14s ease;
+}
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.modal-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.modal-preview-img,
+.modal-camera {
+  max-width: 100%;
+  max-height: 60vh;
+  border-radius: calc(var(--radius) - 0.2rem);
+  border: 1px solid var(--border);
+  object-fit: contain;
+}
+.modal-camera {
+  width: 100%;
+  background: #000;
+}
+.modal-error {
+  font-size: 14px;
+  color: var(--destructive);
+  text-align: center;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 /* Loading indicator (htmx) */
