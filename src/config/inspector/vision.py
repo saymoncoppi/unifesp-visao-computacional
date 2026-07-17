@@ -22,8 +22,11 @@ from __future__ import annotations
 def _register_local_libzbar():
     import os
     import ctypes.util
-    base = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                        ".native-libs")
+    # vision.py lives at src/config/inspector/, and .native-libs is at the src
+    # root, so we go up THREE levels (inspector -> config -> src).
+    base = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        ".native-libs")
     lib = os.path.join(base, "libzbar.so.0")
     if not os.path.exists(lib):
         return
@@ -112,56 +115,173 @@ def to_gray(img):
 # ---------------------------------------------------------------------------
 # Code region segmentation
 # ---------------------------------------------------------------------------
+def _code_stripiness(region, cv2, np) -> float:
+    """Confidence in [0, 1] that ``region`` is a periodic bar/module pattern.
+
+    A barcode/2D-code is periodic (many black<->white transitions per row or
+    column); flat clutter (a metal clip, a hand, a desk) is not. This gate lets
+    :func:`segment_code` reject high-gradient but non-striped regions.
+    """
+    try:
+        region = np.asarray(region)
+        if region.ndim != 2 or region.size == 0:
+            return 0.0
+        h, w = region.shape[:2]
+        if h < 8 or w < 16:
+            return 0.0
+        if region.dtype != np.uint8:
+            region = cv2.normalize(region, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        _, b = cv2.threshold(region, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        b = (b > 0).astype(np.int16)
+
+        def axis_conf(binary):
+            tr = np.abs(np.diff(binary, axis=1)).sum(axis=1)
+            med = float(np.median(tr))
+            striped = float(np.mean(tr >= 6))
+            return striped * min(1.0, med / 12.0)
+
+        return max(0.0, min(1.0, max(axis_conf(b), axis_conf(b.T))))
+    except Exception:
+        return 0.0
+
+
 def segment_code(gray):
-    """Detect the barcode region in the grayscale image.
+    """Detect the barcode / 2D-code region via gradient density + periodicity.
 
-    Strategy: gradient (Scharr = Sobel x - Sobel y) -> convertScaleAbs ->
-    blur -> Otsu threshold -> morphology (close + erode + dilate) ->
-    largest contour -> boundingRect.
+    Builds a 1D map (horizontal-gradient dominance ``|Sobelx|-|Sobely|``) and a
+    2D map (``min(|Sobelx|,|Sobely|)``), closes each into candidate blobs, then
+    ranks every candidate by stripiness x gradient energy x fill x size. The
+    periodicity gate (:func:`_code_stripiness`) rejects non-code clutter (metal
+    clips, hands, backgrounds) that fooled the previous largest-contour method.
 
-    Returns (gray_roi, (x, y, w, h)) when a region is found, or
-    (gray, None) if nothing is located or a library is missing.
+    Returns (gray_roi, (x, y, w, h)) when a region is found, or (gray, None) if
+    nothing plausible is located or a library is missing. Never raises.
     """
     try:
         import cv2
+        import numpy as np
     except Exception:
         return gray, None
-
     try:
-        # Scharr-style gradient (ksize=-1 on Sobel) and horizontal-vertical
-        # difference: highlights the barcode's vertical bars.
-        grad_x = cv2.Sobel(gray, ddepth=cv2.CV_32F, dx=1, dy=0, ksize=-1)
-        grad_y = cv2.Sobel(gray, ddepth=cv2.CV_32F, dx=0, dy=1, ksize=-1)
-        gradient = cv2.subtract(grad_x, grad_y)
-        gradient = cv2.convertScaleAbs(gradient)
-
-        # Smooths to merge the bars into a single blob.
-        blurred = cv2.blur(gradient, (9, 9))
-        _, threshold = cv2.threshold(blurred, 0, 255,
-                                     cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-        # Morphology: closes gaps between bars and cleans up noise.
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (21, 7))
-        closed = cv2.morphologyEx(threshold, cv2.MORPH_CLOSE, kernel)
-        closed = cv2.erode(closed, None, iterations=4)
-        closed = cv2.dilate(closed, None, iterations=4)
-
-        # Largest contour = candidate for the code region.
-        found = cv2.findContours(closed.copy(), cv2.RETR_EXTERNAL,
-                                 cv2.CHAIN_APPROX_SIMPLE)
-        contours = found[0] if len(found) == 2 else found[1]
-        if not contours:
+        g = np.asarray(gray)
+        if g.ndim != 2 or g.size == 0:
             return gray, None
+        if g.dtype != np.uint8:
+            g = cv2.normalize(g, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        H, W = g.shape[:2]
+        scale = 1.0
+        long_side = max(H, W)
+        if long_side > 640:
+            scale = 640.0 / long_side
+            work = cv2.resize(g, (max(1, int(round(W * scale))), max(1, int(round(H * scale)))),
+                              interpolation=cv2.INTER_AREA)
+        else:
+            work = g
+        wh, ww = work.shape[:2]
+        area_img = float(wh * ww)
+        work_s = cv2.GaussianBlur(work, (3, 3), 0)
+        gx = cv2.Sobel(work_s, cv2.CV_32F, 1, 0, ksize=3)
+        gy = cv2.Sobel(work_s, cv2.CV_32F, 0, 1, ksize=3)
+        ax, ay = np.abs(gx), np.abs(gy)
+        resp_1d = cv2.convertScaleAbs(cv2.subtract(ax, ay))
+        resp_2d = cv2.convertScaleAbs(cv2.min(ax, ay) * 2.0)
+        cands = []
 
-        largest = max(contours, key=cv2.contourArea)
-        x, y, w, h = cv2.boundingRect(largest)
+        def collect(resp, kernel_wh, min_ar):
+            blurred = cv2.blur(resp, (9, 9))
+            _, th = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, kernel_wh)
+            closed = cv2.morphologyEx(th, cv2.MORPH_CLOSE, kernel, iterations=2)
+            closed = cv2.erode(closed, None, iterations=2)
+            closed = cv2.dilate(closed, None, iterations=2)
+            found = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            contours = found[0] if len(found) == 2 else found[1]
+            integ = cv2.integral(resp.astype(np.float32))
+            for c in contours:
+                x, y, w, h = cv2.boundingRect(c)
+                if w < 12 or h < 12:
+                    continue
+                box_area = float(w * h)
+                frac = box_area / area_img
+                if frac < 0.0012:
+                    continue
+                fill = cv2.contourArea(c) / box_area
+                if fill < 0.35:
+                    continue
+                ar = w / float(h)
+                if not (min_ar <= ar <= 1.0 / min_ar):
+                    continue
+                s = (integ[y + h, x + w] - integ[y, x + w] - integ[y + h, x] + integ[y, x])
+                mean_energy = float(s / box_area) / 255.0
+                strip = _code_stripiness(work[y:y + h, x:x + w], cv2, np)
+                if strip < 0.12:
+                    continue
+                size_factor = min(1.0, frac / 0.04)
+                score = (0.15 + strip) * (0.4 + 0.6 * mean_energy) * fill * size_factor
+                cands.append((score, (x, y, w, h)))
+
+        collect(resp_1d, (21, 7), 0.12)
+        collect(resp_2d, (11, 11), 0.5)
+        if not cands:
+            return gray, None
+        cands.sort(key=lambda t: t[0], reverse=True)
+        x, y, w, h = cands[0][1]
+        if scale != 1.0:
+            inv = 1.0 / scale
+            x = int(round(x * inv)); y = int(round(y * inv))
+            w = int(round(w * inv)); h = int(round(h * inv))
+        mx = int(round(w * 0.04)) + 2
+        my = int(round(h * 0.06)) + 2
+        x0 = max(0, x - mx); y0 = max(0, y - my)
+        x1 = min(W, x + w + mx); y1 = min(H, y + h + my)
+        w = x1 - x0; h = y1 - y0
         if w <= 0 or h <= 0:
             return gray, None
-
-        roi = gray[y:y + h, x:x + w]
-        return roi, (int(x), int(y), int(w), int(h))
+        roi = g[y0:y1, x0:x1]
+        if getattr(roi, "size", 0) == 0:
+            return gray, None
+        return roi, (int(x0), int(y0), int(w), int(h))
     except Exception:
         return gray, None
+
+
+def _fit_canvas_pil(im, size, bg, fill):
+    """Scale ``im`` to fill ``size`` (preserving aspect), centered on ``bg``.
+
+    Mirrors ``generate_dataset._fit_canvas`` EXACTLY (same 560x260 canvas,
+    fill=0.92, BILINEAR) so inference sees the same distribution as training.
+    """
+    from PIL import Image
+    im = im.convert("L")
+    w, h = size
+    iw, ih = im.size
+    if iw == 0 or ih == 0:
+        return Image.new("L", size, bg)
+    scale = min(w / iw, h / ih) * fill
+    nw, nh = max(1, int(round(iw * scale))), max(1, int(round(ih * scale)))
+    im = im.resize((nw, nh), Image.BILINEAR)
+    cv = Image.new("L", size, bg)
+    cv.paste(im, ((w - nw) // 2, (h - nh) // 2))
+    return cv
+
+
+def prepare_for_cnn(path_or_img, roi=None):
+    """Crop the code region and apply the training fit-to-fill; PIL "L" or None.
+
+    Reuses ``roi`` (a bbox/ndarray already segmented upstream) when given, else
+    segments on demand via :func:`segment_code`. Returns ``None`` on any failure
+    so callers degrade to the raw image instead of breaking.
+    """
+    try:
+        import numpy as np
+        from PIL import Image
+        from config.inspector import settings
+        gray = to_gray(_to_ndarray(path_or_img))
+        crop = _region(gray, roi) if roi is not None else segment_code(gray)[0]
+        pil = Image.fromarray(np.asarray(crop).astype("uint8"), "L")
+        return _fit_canvas_pil(pil, settings.CNN_CANVAS, 255, settings.CNN_CANVAS_FILL)
+    except Exception:
+        return None
 
 
 # ---------------------------------------------------------------------------

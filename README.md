@@ -16,7 +16,7 @@ PPG em Ciência da Computação, ICT/UNIFESP.
   - `docs/` — documentação (página única `index.html` + `markdown/`).
   - `datasets/`, `modelos/` — dataset sintético e modelo treinado.
   - `tests/` — testes (pytest).
-- `outros-arquivos/` — materiais de referência.
+  - `config/data/` — base de conhecimento Zebra (`kb_zebra.json`) e fotos de referência dos defeitos (`imgs_zebra/`).
 
 ## Como rodar
 

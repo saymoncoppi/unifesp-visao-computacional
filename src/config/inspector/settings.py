@@ -44,6 +44,11 @@ MODEL_PATH = Path(os.environ.get("MODEL_PATH", MODELS_DIR / "classificador_defei
 # Defect classes (same taxonomy as generate_dataset.py)
 # ORDER defines the index used by the CNN — do not reorder without retraining.
 # --------------------------------------------------------------------------
+# NOTE: restored to the v1 7-class taxonomy for the app (the 10-class v2 model,
+# trained on 13k real-based images, collapsed to `registration_shift` on real
+# photos because the added positional classes act as a sink). The v2 model is
+# preserved in scratchpad; to switch back, restore the 10-class list + the v2
+# model and keep it in sync with generate_dataset.CLASSES.
 CLASSES = [
     "no_defect",
     "damaged_printhead_element",
@@ -52,9 +57,6 @@ CLASSES = [
     "light_print",
     "uneven_pressure",
     "dirty_printhead",
-    "smear",
-    "cutoff",
-    "registration_shift",
 ]
 
 # The "defect-free" class key (used to short-circuit the diagnosis: a label with
@@ -143,6 +145,14 @@ BACKBONE = "mobilenet_v3_small"     # lightweight backbone (transfer learning)
 IMG_SIZE = 224                      # CNN input size
 MEAN = (0.485, 0.456, 0.406)        # ImageNet normalization
 STD = (0.229, 0.224, 0.225)
+
+# Inference must mirror the TRAINING preprocessing: every base was placed on a
+# fit-to-fill canvas (generate_dataset._fit_canvas) before the 224px resize.
+# The classifier expects the code to FILL the frame, so at inference we segment
+# the code and re-apply the same canvas (vision.prepare_for_cnn). Keep these in
+# sync with generate_dataset.CANVAS / _fit_canvas(fill=...).
+CNN_CANVAS = (560, 260)             # mirrors generate_dataset.CANVAS
+CNN_CANVAS_FILL = 0.92              # mirrors _fit_canvas(fill=...)
 
 # --------------------------------------------------------------------------
 # LLM / ADK

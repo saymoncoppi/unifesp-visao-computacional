@@ -50,7 +50,7 @@ Colunas novas do `labels.csv` (as antigas continuam iguais, então o loader não
 - **Classes** (10): `no_defect`, `damaged_printhead_element`, `wrinkled_ribbon`,
   `burnt_spot`, `light_print`, `uneven_pressure`, `dirty_printhead`, `smear`,
   `cutoff`, `registration_shift`. Cada defeito é calibrado contra as fotos reais
-  em `outros-arquivos/imgs_zebra/`.
+  em `config/data/imgs_zebra/`.
 - **Simbologias**: 1D (`code128`, `code39`, `ean13`, `ean8`, `itf`) e
   2D (`qr`, `datamatrix`).
 

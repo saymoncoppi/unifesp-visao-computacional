@@ -7,7 +7,7 @@ printing defects (1D and 2D symbologies).
 This is the OFFICIAL dataset generator for the inspection pipeline. It builds a
 balanced, labeled dataset in which every defect reproduces the visual signature
 documented in the Zebra print-quality troubleshooting manuals and cross-checked
-against the real reference photos in ``outros-arquivos/imgs_zebra/``.
+against the real reference photos in ``src/config/data/imgs_zebra/``.
 
 Two families of *base* (clean) images are supported and can be mixed:
 
@@ -78,6 +78,11 @@ CANVAS = (560, 260)
 # The first 7 keep their historical index; smear/cutoff/registration_shift
 # are the expansion (each backed by a real Zebra reference photo/figure).
 # ----------------------------------------------------------------------
+# Active taxonomy = the v1 7-class set. The positional defects (cutoff,
+# registration_shift) were removed because at inference on real photos they act
+# as a "sink" (any code not filling the frame -> registration_shift). Their
+# defect functions stay in DEFECTS below so the 10-class set can be restored by
+# re-adding the keys here. Keep in sync with settings.CLASSES.
 CLASSES = [
     "no_defect",
     "damaged_printhead_element",  # vertical white lines (dead heating element)
@@ -86,9 +91,7 @@ CLASSES = [
     "light_print",                # low darkness -> global faded, mottled
     "uneven_pressure",            # lateral density gradient (one side fades)
     "dirty_printhead",            # voids -> pinpoint white gaps in the bars
-    "smear",                      # NEW: multiple dragged diagonal smudges
-    "cutoff",                     # NEW: straight-edge truncation to white
-    "registration_shift",         # NEW: content translated / misregistered
+    # "smear", "cutoff", "registration_shift"  # v2-only (positional sink) — off
 ]
 
 # 1D symbologies (python-barcode) and 2D symbologies (segno / pystrich)
@@ -100,11 +103,11 @@ SEVERITIES = ["low", "medium", "high"]
 # Numeric intensity per severity level, used to scale each defect.
 SEV_K = {"low": 0.35, "medium": 0.65, "high": 1.0}
 
-# Classes that must NOT be drawn from real crops. A random real barcode crop is
-# not guaranteed to be defect-free, so using one as a "no_defect" sample would
-# mislabel a genuinely defective code as clean and poison the control class.
-# These classes always use synthetic (guaranteed-clean) bases.
-SYNTHETIC_ONLY_CLASSES = {"no_defect"}
+# The control class must not be drawn from arbitrary real crops (a random real
+# barcode is not guaranteed defect-free -> label noise). It uses VERIFIED-clean
+# real bases when a --clean-bases-dir is given (e.g. pyzbar-decodable BarBeR
+# crops), otherwise falls back to synthetic (guaranteed-clean) bases.
+CONTROL_CLASSES = {"no_defect"}
 
 
 # ----------------------------------------------------------------------
@@ -572,6 +575,61 @@ def make_base(syms, real_bases, real_fraction):
     return _fit_canvas(base), sym, payload, "synthetic"
 
 
+def render_base(base_path, syms):
+    """Render a clean base from a real image path, or synthesize one if None.
+
+    Returns ``(image, symbology, payload, source)``.
+    """
+    if base_path is not None:
+        base, sym = load_real_clean(base_path)
+        return base, sym, base_path.stem, "real"
+    sym = random.choice(syms)
+    base, payload = gen_clean(sym)
+    return _fit_canvas(base), sym, payload, "synthetic"
+
+
+def build_plan(args, real_bases, clean_bases):
+    """Plan every sample to render as ``{class: [base_path or None, ...]}``.
+
+    Two sizing modes:
+
+    * default -- ``--per-class`` samples per class, each base drawn randomly
+      (with replacement) from the pool at ``--real-fraction`` (synthetic
+      otherwise). Bases may be reused or never used.
+    * ``--exhaustive`` -- EVERY real base is used exactly once (one defect per
+      image), distributed round-robin across the 9 defect classes; the
+      ``no_defect`` control class is balanced to the same count, cycling the
+      verified-clean pool. Optionally ``--synthetic-per-class`` synthetic
+      samples are added on top of every class. This maximizes how many of the
+      downloaded raw images actually reach the model.
+    """
+    defect_classes = [c for c in CLASSES if c not in CONTROL_CLASSES]
+    plan = {c: [] for c in CLASSES}
+
+    if args.exhaustive and real_bases:
+        bases = list(real_bases)
+        random.shuffle(bases)
+        for i, p in enumerate(bases):
+            plan[defect_classes[i % len(defect_classes)]].append(p)
+        target = max(len(plan[c]) for c in defect_classes)
+        clean = list(clean_bases)
+        random.shuffle(clean)
+        for c in CONTROL_CLASSES:
+            for j in range(target):
+                plan[c].append(clean[j % len(clean)] if clean else None)
+        for c in CLASSES:
+            plan[c].extend([None] * args.synthetic_per_class)
+        return plan
+
+    for cls in CLASSES:
+        pool = clean_bases if cls in CONTROL_CLASSES else real_bases
+        frac = args.real_fraction if pool else 0.0
+        for _ in range(args.per_class):
+            use_real = pool and random.random() < frac
+            plan[cls].append(random.choice(pool) if use_real else None)
+    return plan
+
+
 def main():
     """Generate the full dataset from command-line arguments (see module docs)."""
     ap = argparse.ArgumentParser(description="Unified barcode-defect dataset generator")
@@ -583,8 +641,17 @@ def main():
                     help="directory of clean REAL barcode images to use as bases")
     ap.add_argument("--real-fraction", type=float, default=0.5,
                     help="fraction of samples drawn from real bases (if available)")
+    ap.add_argument("--clean-bases-dir", default=None,
+                    help="verified-clean REAL bases for the no_defect control class "
+                         "(e.g. pyzbar-decodable BarBeR crops); falls back to synthetic")
     ap.add_argument("--severity", choices=SEVERITIES, default=None,
                     help="fix a single severity (default: random per sample)")
+    ap.add_argument("--exhaustive", action="store_true",
+                    help="use EVERY real base once (one defect per image), balanced "
+                         "across the 9 defect classes; no_defect balanced from the "
+                         "clean pool. Ignores --per-class for sizing.")
+    ap.add_argument("--synthetic-per-class", type=int, default=0,
+                    help="in --exhaustive, add this many synthetic samples per class")
     args = ap.parse_args()
 
     random.seed(args.seed)
@@ -596,20 +663,28 @@ def main():
         print(f"Real bases found in '{args.bases_dir}': {len(real_bases)}")
         if not real_bases:
             print("  (none usable -> falling back to synthetic-only)")
+    clean_bases = load_real_bases(args.clean_bases_dir)
+    if args.clean_bases_dir:
+        print(f"Verified-clean bases for no_defect: {len(clean_bases)}"
+              f"{' (none -> synthetic)' if not clean_bases else ''}")
+
+    plan = build_plan(args, real_bases, clean_bases)
+    if args.exhaustive:
+        print(f"Exhaustive mode: {sum(len(v) for v in plan.values())} samples "
+              f"({len(plan[CLASSES[1]])}/defect class)")
 
     rows = []
-    for cls in CLASSES:
-        # the control class never uses (possibly-dirty) real crops
-        cls_real_fraction = 0.0 if cls in SYNTHETIC_ONLY_CLASSES else args.real_fraction
-        for i in range(args.per_class):
-            base, sym, payload, source = make_base(syms, real_bases, cls_real_fraction)
+    for cls, items in plan.items():
+        n = len(items)
+        for i, base_path in enumerate(items):
+            base, sym, payload, source = render_base(base_path, syms)
             sev = _pick_severity(args.severity) if cls != "no_defect" else "none"
             img, params = DEFECTS[cls](base, sev if sev != "none" else "low")
             img = augment_capture(img)
-            split = split_of(i, args.per_class)
+            split = split_of(i, n)
             d = os.path.join(args.out, "images", split, cls)
             os.makedirs(d, exist_ok=True)
-            fname = f"{sym}_{i:04d}.png"
+            fname = f"{sym}_{i:05d}.png"
             img.save(os.path.join(d, fname))
             rows.append({
                 "filename": f"images/{split}/{cls}/{fname}", "split": split,

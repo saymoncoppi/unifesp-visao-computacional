@@ -147,7 +147,7 @@ def load_model(path=settings.MODEL_PATH, device=None):
     return model
 
 
-def predict(path_or_img, model=None, device=None) -> dict:
+def predict(path_or_img, model=None, device=None, roi=None, fit=False) -> dict:
     """Classify the defect of a label image.
 
     Accepts a path (str/Path), a ``numpy.ndarray`` or a PIL image. Applies the
@@ -197,6 +197,23 @@ def predict(path_or_img, model=None, device=None) -> dict:
         else:
             import numpy as np
             image = Image.fromarray(np.asarray(path_or_img)).convert("RGB")
+
+        # Optional (fit=True): segment the code + fit-to-fill canvas to mirror the
+        # training preprocessing. This removes the "small code on background ->
+        # registration_shift" artifact on raw photos, BUT it DESTROYS positional
+        # defects (cutoff / registration_shift depend on the code's position and
+        # extent in the frame) and drops in-distribution accuracy 96.5% -> 69%.
+        # So it is OFF by default; the real fix for raw-photo robustness is
+        # training-side framing augmentation, not inference-time cropping.
+        # Any failure here silently degrades to the raw image -- never raises.
+        if fit:
+            try:
+                from config.inspector import vision
+                prepared = vision.prepare_for_cnn(path_or_img, roi=roi)
+                if prepared is not None:
+                    image = prepared.convert("RGB")
+            except Exception:
+                pass
 
         tensor = build_transforms(False)(image).unsqueeze(0).to(disp)
         with torch.no_grad():

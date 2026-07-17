@@ -13,7 +13,7 @@ trabalho à crítica de *domain gap* sintético→real e de baixa quantidade/rea
 Reconstruímos o gerador com três eixos simultâneos:
 
 1. **Realismo** — cada defeito calibrado contra as fotos reais Zebra
-   (`outros-arquivos/imgs_zebra/`).
+   (`src/config/data/imgs_zebra/`).
 2. **Bases reais** — os defeitos passam a ser aplicados também sobre **códigos de
    barras reais** (recortes do Roboflow; BarBeR a seguir), reduzindo o domain gap.
 3. **Taxonomia expandida** — de 7 para **10 classes**, incluindo defeitos com
@@ -75,11 +75,16 @@ imagens limpas como defeito (40% de `no_defect` → `damaged`); em v3, ao "limpa
 classe de controle, ele passa a **perder** defeitos (16 amostras `damaged` reais
 previstas como `no_defect`).
 
-**Conclusão:** essa é uma fronteira **irredutível para a CNN monolítica** — ela não
-é eliminada, apenas deslocada, por mudanças no dado de treino. É exatamente o par
-para o qual o **árbitro visual multimodal do E3** foi projetado (ver
-`ARBITER_PAIRS` em `settings.py`). A matriz de confusão do piloto é, portanto, a
-**justificativa empírica** do E3 — que deixa de ser um placeholder abstrato.
+**Conclusão do piloto:** com **dados em pequena escala**, essa fronteira parecia
+**irredutível para a CNN** — o erro não some, só se desloca conforme o balanço.
+É o par para o qual o **árbitro visual multimodal do E3** foi projetado
+(`ARBITER_PAIRS` em `settings.py`).
+
+> ⚠️ **Esta conclusão é REVISADA pela seção 7.** O dataset definitivo (13.360
+> imagens reais) mostra que **escalar dado real resolve o par** (erro cai de 40%
+> para ~1,5%). A justificativa do E3 passa de "necessário" para "refinamento
+> marginal sobre o resíduo". Não usar a matriz do piloto, isolada, como prova de
+> que a CNN "não consegue".
 
 ## 5. Limitações desta bateria (a declarar no texto)
 
@@ -103,3 +108,52 @@ para o qual o **árbitro visual multimodal do E3** foi projetado (ver
 3. Re-executar **E1 / E-BASE / E-KFOLD** (taxonomia 10 classes) + **E4** (domain gap,
    sintético→real) + **E3** (árbitro no par confundível, agora com evidência).
 4. Atualizar tabelas e Discussão do artigo com a progressão acima.
+
+## 7. Resultado DEFINITIVO (13.360 imagens reais, modo exaustivo)
+
+Dataset gerado com `generate_dataset.py --exhaustive`: **cada uma das 12.024 bases
+reais** (Roboflow 2.196 + BarBeR 9.828 crops) vira um caso de defeito, distribuído
+round-robin entre as 9 classes de defeito; `no_defect` (1.336) sai do pool
+**verificado como decodificável** (`pyzbar`) do BarBeR. Total **13.360 imagens,
+100% base real** (defeito sintético sobre textura real), balanceado 1.336/classe,
+split 9.350/2.000/2.010. Treino: MobileNetV3-Small, 40 épocas, lr 5e-4, batch 32,
+fine-tuning completo.
+
+**Métricas (teste, in-distribution):** acurácia global **0,957** (val 0,951).
+
+| Classe | v3 (piloto) | **definitivo** |
+|---|---|---|
+| no_defect | 0,750 | **0,881** |
+| damaged_printhead_element | 0,683 | **0,950** |
+| wrinkled_ribbon | 0,750 | 0,935 |
+| burnt_spot | — | 1,000 |
+| light_print | — | 0,995 |
+| uneven_pressure | — | 0,990 |
+| dirty_printhead | — | 0,975 |
+| smear | — | 0,985 |
+| cutoff | 0,800 | 0,891 |
+| registration_shift | — | 0,965 |
+| **Global** | **0,870** | **0,957** |
+
+**A fronteira confundível se resolve com escala de dado real:**
+
+| `no_defect` (real) previsto como | v2 | v3 | **definitivo** |
+|---|---|---|---|
+| → damaged_printhead_element | 40,0% | 6,7% | **1,5%** |
+| → no_defect (correto) | 35,0% | 75,0% | **88,1%** |
+
+E `damaged_printhead` → `no_defect` = **0,5%** (o modelo praticamente não perde mais
+o defeito).
+
+**Reenquadramento do E3 (honesto).** A hipótese do piloto — "a CNN não consegue
+separar o par, logo o árbitro é necessário" — **não se sustenta** no definitivo: com
+volume/variabilidade real, a CNN separa o par sozinha (~95%/88%). A contribuição
+correta do E3 é **refinamento multimodal sobre o resíduo** de casos de baixa
+confiança (o `no_defect` ainda é a classe mais fraca, 0,88, com erros pulverizados
+no cluster de linhas finas: wrinkled 5%, cutoff 4%). O argumento forte do trabalho
+passa a ser a **progressão empírica** (dado sintético pequeno → dado real em escala)
+e a **redução medida** do par confundível, não uma necessidade categórica do árbitro.
+
+**Ressalva central (não omitir no texto):** 0,957 é **in-distribution** (bases reais
++ defeito sintético, mesmo gerador). **Não** é evidência de desempenho em defeito
+real — isso é o que o **E4** mede. O número alto não substitui o E4.
