@@ -131,20 +131,22 @@ export async function openScan() {
 
   if (typeof ZXing === "undefined") { showError(); el.scanModal.hidden = false; return; }
 
-  // Hints:
-  //  - TRY_HARDER: spend more effort per frame — decisive for small / low-
-  //    contrast codes held up to a phone camera.
-  //  - POSSIBLE_FORMATS: an explicit, broad symbology list. Leaving it fully
-  //    unrestricted routes through a reader that logs a noisy (harmless)
-  //    "non-ReaderException"; naming the formats keeps coverage while avoiding
-  //    that path. Add/remove formats here as needed.
+  // POSSIBLE_FORMATS names the symbologies to read. Two reasons NOT to use the
+  // fully-unrestricted mode or TRY_HARDER here:
+  //  1. TRY_HARDER moves the 1D reader to the END of the reader chain. If an
+  //     earlier 2D reader (e.g. DataMatrix) throws the known zxing-js
+  //     "non-ReaderException", it aborts the whole frame before the 1D reader
+  //     runs — so EAN/UPC/Code128 never get a chance. Without it, 1D readers run
+  //     first and read immediately.
+  //  2. PDF417/Aztec are the usual sources of that exception and aren't needed
+  //     here, so they're left out.
+  // 1D formats first (fast, common), then the 2D ones.
   var F = ZXing.BarcodeFormat;
   var hints = new Map();
-  hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
   hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-    F.DATA_MATRIX, F.QR_CODE, F.AZTEC, F.PDF_417,
-    F.CODE_128, F.CODE_39, F.CODE_93, F.CODABAR,
-    F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.ITF
+    F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E,
+    F.CODE_128, F.CODE_39, F.CODE_93, F.ITF, F.CODABAR,
+    F.QR_CODE, F.DATA_MATRIX
   ]);
   reader = new ZXing.BrowserMultiFormatReader(hints);
 
