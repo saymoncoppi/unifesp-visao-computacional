@@ -471,6 +471,21 @@ def decode(path_or_img) -> dict:
     # 1) pyzbar (requires the package and the native libzbar lib)
     try:
         from pyzbar import pyzbar
+        # Restrict the enabled symbologies. Left unrestricted, ZBar also runs its
+        # PDF417 decoder, whose C implementation floods stderr with harmless
+        # "decoder/pdf417.c: Assertion failed" warnings on non-PDF417 images
+        # (e.g. a plain EAN-13). None of the labels here use PDF417, so we
+        # whitelist the ones we actually expect; this also speeds decoding up.
+        try:
+            from pyzbar.pyzbar import ZBarSymbol
+            zbar_symbols = [
+                ZBarSymbol.EAN13, ZBarSymbol.EAN8, ZBarSymbol.UPCA, ZBarSymbol.UPCE,
+                ZBarSymbol.CODE128, ZBarSymbol.CODE39, ZBarSymbol.CODE93,
+                ZBarSymbol.CODABAR, ZBarSymbol.I25, ZBarSymbol.QRCODE,
+                ZBarSymbol.DATABAR, ZBarSymbol.DATABAR_EXP,
+            ]
+        except Exception:
+            zbar_symbols = None   # older pyzbar: fall back to all symbologies
         images = [gray]
         try:
             import cv2
@@ -481,7 +496,7 @@ def decode(path_or_img) -> dict:
             pass
         for image in images:
             try:
-                found = pyzbar.decode(image)
+                found = pyzbar.decode(image, symbols=zbar_symbols)
             except Exception as exc:
                 warnings.append(f"pyzbar/zbar unavailable: {exc}")
                 found = []
