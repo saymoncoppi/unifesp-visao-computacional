@@ -831,7 +831,7 @@ Detecção via leitura (patente) & Parcial & Parcial & Parcial & Não\\
 {\footnotesize Fonte: elaboração própria (2026).}
 \end{table}
 
-\subsection{Comparação explícita com o estado da arte}\label{sec-sota}
+\subsection{Comparação explícita com \textit{Research on a Multi-Type Barcode Defect Detection Model Based on Machine Vision}}\label{sec-sota}
 
 Recentemente, Duan et al.~\cite{duan2025barcode} propuseram um sistema de
 detecção de defeitos em códigos de barras baseado em uma arquitetura em dois
@@ -893,6 +893,27 @@ desempenho parece inferior, mas a comparação direta seria injusta, pois as
 imagens reais \textit{versus} classificar a \emph{causa} física sobre um conjunto
 sintético.
 
+\noindent\textbf{Onde este trabalho é mais forte.} A maior oportunidade está no
+escopo. \textbf{(i) Problema distinto:} enquanto o trabalho de referência
+responde ``\emph{existe} defeito?'', este responde ``\emph{qual} defeito é este?''
+e, além disso, ``\emph{qual componente} da impressora provavelmente o causou?''
+--- passo que simplesmente não existe no trabalho comparado.
+\textbf{(ii) Diagnóstico de causa-raiz:} este é o principal diferencial. A
+solução mapeia imagem $\rightarrow$ classe do defeito $\rightarrow$ documentação
+Zebra $\rightarrow$ causa provável $\rightarrow$ ação corretiva
+(Figura~\ref{fig-causaraiz}), aproximando-se de um sistema especialista apoiado
+por IA; o trabalho de Duan et al.\ encerra-se na classificação.
+\textbf{(iii) Orquestração multiagente:} não há, naquele trabalho, equivalente ao
+\textit{pipeline} de agentes especializados (leitura $\rightarrow$ indicadores
+$\rightarrow$ CNN $\rightarrow$ RAG $\rightarrow$ laudo) da
+Figura~\ref{fig-arquitetura}, que converte um classificador em um sistema de
+apoio à decisão. \textbf{(iv) Interpretabilidade e custo:} o sistema explica por que
+detectou o defeito, qual documento sustentou a conclusão, qual componente trocar
+e qual ajuste fazer --- informação de valor industrial direto --- e o faz em
+\textbf{CPU comum, sem GPU}, ao passo que o trabalho de referência recorre a uma
+GPU dedicada (RTX 4060); a viabilidade em hardware modesto é, por si só, um
+diferencial para o cenário de baixo custo visado aqui.
+
 \begin{figure}[htb]
 \centering
 \caption{Contraste entre os \textit{pipelines}: Duan et al.\ (dois estágios) e este trabalho}
@@ -947,27 +968,6 @@ injusta: as tarefas (\emph{presença} \textit{vs.} \emph{causa} do defeito), os
 conjuntos (real \textit{vs.} sintético) e o \textit{hardware} (GPU \textit{vs.}
 CPU) diferem; os valores apenas situam a ordem de grandeza.}
 \end{table}
-
-\noindent\textbf{Onde este trabalho é mais forte.} A maior oportunidade está no
-escopo. \textbf{(i) Problema distinto:} enquanto o trabalho de referência
-responde ``\emph{existe} defeito?'', este responde ``\emph{qual} defeito é este?''
-e, além disso, ``\emph{qual componente} da impressora provavelmente o causou?''
---- passo que simplesmente não existe no trabalho comparado.
-\textbf{(ii) Diagnóstico de causa-raiz:} este é o principal diferencial. A
-solução mapeia imagem $\rightarrow$ classe do defeito $\rightarrow$ documentação
-Zebra $\rightarrow$ causa provável $\rightarrow$ ação corretiva
-(Figura~\ref{fig-causaraiz}), aproximando-se de um sistema especialista apoiado
-por IA; o trabalho de Duan et al.\ encerra-se na classificação.
-\textbf{(iii) Orquestração multiagente:} não há, naquele trabalho, equivalente ao
-\textit{pipeline} de agentes especializados (leitura $\rightarrow$ indicadores
-$\rightarrow$ CNN $\rightarrow$ RAG $\rightarrow$ laudo) da
-Figura~\ref{fig-arquitetura}, que converte um classificador em um sistema de
-apoio à decisão. \textbf{(iv) Interpretabilidade e custo:} o sistema explica por que
-detectou o defeito, qual documento sustentou a conclusão, qual componente trocar
-e qual ajuste fazer --- informação de valor industrial direto --- e o faz em
-\textbf{CPU comum, sem GPU}, ao passo que o trabalho de referência recorre a uma
-GPU dedicada (RTX 4060); a viabilidade em hardware modesto é, por si só, um
-diferencial para o cenário de baixo custo visado aqui.
 
 \begin{figure}[htb]
 \centering
@@ -1111,7 +1111,7 @@ documentação Zebra \cite{zebra_printquality}, conforme a Tabela~\ref{tab-trilh
 As imagens dessas bases entram \textbf{exclusivamente como códigos-base limpos}
 (substrato) sobre os quais o gerador injeta os defeitos; \textbf{nenhum rótulo de
 defeito é herdado} dessas fontes.
-Um gerador de referência foi implementado (\texttt{gerar\_dataset.py}) e produz as
+Um gerador de referência foi implementado (\texttt{generate\_dataset.py}) e produz as
 sete classes de forma balanceada, com divisão automática em treino/validação/teste
 (70/15/15) e parâmetros de defeito amostrados aleatoriamente em faixas definidas.
 A Figura~\ref{fig-dataset} ilustra amostras das classes geradas.
@@ -1148,7 +1148,7 @@ Sem defeito & (código limpo) & Classe de controle\\
 \includegraphics[width=0.95\textwidth]{figuras/dataset_preview.png}
 
 \vspace{2pt}
-{\footnotesize Fonte: elaboração própria (2026), gerada por \texttt{gerar\_dataset.py}.}
+{\footnotesize Fonte: elaboração própria (2026), gerada por \texttt{generate\_dataset.py}.}
 \end{figure}
 
 Essa abordagem é reprodutível, balanceável e livre de restrições autorais, e é
@@ -1236,7 +1236,7 @@ cenários que se propõe a cobrir.
 empregadas exercitam, de ponta a ponta, o pipeline clássico de Visão Computacional
 visto na disciplina, culminando em uma CNN. A Tabela~\ref{tab-disciplina} mapeia
 cada tópico ao ponto concreto em que foi aplicado na solução --- todos verificáveis
-no módulo \texttt{inspetor.visao} e na CNN (\texttt{inspetor.rede}).
+no módulo \texttt{inspector.vision} e na CNN (\texttt{inspector.network}).
 
 \begin{table}[htb]
 \centering
@@ -1453,18 +1453,18 @@ Cada especialista é definido como um agente do ADK, e as rotinas de visão
 computacional (OpenCV, \texttt{pyzbar} e a CNN em PyTorch) são expostas como
 \textbf{ferramentas} (funções Python) que o ADK encapsula automaticamente. Quatro
 ferramentas correspondem às quatro análises da Figura~\ref{fig-arquitetura}:
-\texttt{decodificar\_codigo} (OpenCV\,$+$\,\texttt{pyzbar}),
-\texttt{estimar\_indicadores} (contraste/uniformidade/nitidez),
-\texttt{classificar\_defeito} (CNN MobileNetV3-Small) e
-\texttt{buscar\_documentacao\_zebra} (recuperação sobre a base de conhecimento). O
+\texttt{decode\_code} (OpenCV\,$+$\,\texttt{pyzbar}),
+\texttt{estimate\_indicators} (contraste/uniformidade/nitidez),
+\texttt{classify\_defect} (CNN MobileNetV3-Small) e
+\texttt{search\_zebra\_docs} (recuperação sobre a base de conhecimento). O
 agente raiz é um \texttt{SequentialAgent} que executa um \texttt{ParallelAgent} (as
 três análises independentes), seguido do agente de diagnóstico e do agente de laudo;
 a comunicação usa o estado compartilhado da sessão --- cada agente grava seu
 resultado em uma \texttt{output\_key} lida pelos seguintes.
 
-O código é organizado no pacote \texttt{inspetor} (módulos \texttt{visao},
-\texttt{rede}, \texttt{kb}, \texttt{diagnostico}, \texttt{ferramentas} e
-\texttt{agentes}) e na camada \texttt{app} (CLI, API FastAPI e chat web). Por
+O código é organizado no pacote \texttt{inspector} (módulos \texttt{vision},
+\texttt{network}, \texttt{kb}, \texttt{diagnosis}, \texttt{tools} e
+\texttt{agents}) e na camada \texttt{app} (CLI, API FastAPI e chat web). Por
 robustez, o sistema oferece dois caminhos: um \textbf{pipeline direto} (chamadas de
 função encadeadas, que funciona mesmo sem chave do Gemini, recorrendo às regras da
 base Zebra) e o \textbf{pipeline orquestrado} pelo ADK. Ambos compartilham as mesmas
@@ -1483,18 +1483,18 @@ esquema do laudo em JSON.
 
 \begin{lstlisting}[language={},caption={Esquema do laudo devolvido pela API (JSON)},label=lst-laudo]
 {
-  "legivel": true,
-  "codigo_detectado": true,
-  "simbologia": "CODE128",
-  "conteudo": "CB123",
-  "indicadores": { "contraste": 0.82, "uniformidade": 0.74, "nitidez": 0.60 },
-  "defeito": { "classe": "ribbon_enrugado", "classe_pt": "Ribbon enrugado",
-               "confianca": 0.91 },
-  "causa_provavel": "Carregamento/tensao incorretos do ribbon (enrugamento)",
-  "correcao_sugerida": "Verificar tensao, alinhamento e percurso do ribbon",
-  "fonte": "Zebra Technologies (2024)",
-  "via_diagnostico": "regras",
-  "confianca_geral": 0.91
+  "readable": true,
+  "code_detected": true,
+  "symbology": "CODE128",
+  "content": "CB123",
+  "indicators": { "contrast": 0.82, "uniformity": 0.74, "sharpness": 0.60 },
+  "defect": { "class": "wrinkled_ribbon", "class_label": "Ribbon enrugado",
+              "confidence": 0.91 },
+  "probable_cause": "Carregamento/tensao incorretos do ribbon (enrugamento)",
+  "corrective_action": "Verificar tensao, alinhamento e percurso do ribbon",
+  "source": "Zebra Technologies (2024)",
+  "diagnosis_method": "rules",
+  "overall_confidence": 0.91
 }
 \end{lstlisting}
 
@@ -1562,7 +1562,7 @@ dobras sobre as 630 imagens, reportando média e desvio. A significância das
 diferenças entre a nossa CNN e cada \textit{baseline} é aferida pelo teste de
 \textbf{McNemar} (binomial exato) no conjunto de teste \cite{dietterich1998tests}.
 Para reprodutibilidade, todas as sementes são fixadas; o harness completo está no
-repositório (\texttt{experimentos.py}). Um quarto experimento, \textbf{(E3)},
+repositório (\texttt{experiments.py}). Um quarto experimento, \textbf{(E3)},
 mede o ganho da \textbf{arbitragem visual multimodal} habilitada pela decomposição
 multiagente (CNN-pura \textit{versus} pós-arbitragem no par confundível); por
 depender de uma chave do modelo LLM (Gemini), ausente no ambiente de avaliação,
@@ -1676,17 +1676,30 @@ visualmente confundível \emph{sem defeito} $\leftrightarrow$ \emph{cabeça quei
 É um recurso que o \textit{baseline} monolítico não possui.
 
 \noindent\textbf{Experimento E3 (CNN-pura \textit{versus} pós-arbitragem).} Para
-quantificar esse ganho, compara-se a classificação \textbf{CNN-pura}
-(Tabela~\ref{tab-confusao}) com a classificação \textbf{pós-arbitragem} do agente
+quantificar esse ganho, compara-se a classificação \textbf{CNN-pura} (sobre o
+\textit{checkpoint} de escala em 5 épocas da Seção~\ref{sec-progressao}) com a
+classificação \textbf{pós-arbitragem} do agente
 multimodal, restringindo-se ao par confundível e aplicando o teste de
 \textbf{McNemar} (binomial exato) \cite{dietterich1998tests} sobre os
-acertos/erros das duas condições nas 30 etiquetas dessas duas classes (15
-\emph{sem defeito} $+$ 15 \emph{cabeça queimada}). Como o árbitro multimodal
-depende de uma chave de API do Gemini, ausente no ambiente de avaliação, os números
-de E3 ficam registrados como \textbf{[PLACEHOLDER --- a preencher quando houver
-chave Gemini]}: acurácia CNN-pura no par, acurácia pós-arbitragem, contagens
-discordantes $b/c$ e $p$-valor de McNemar. O protocolo, contudo, já está definido e
-é executável assim que a chave estiver disponível.
+acertos/erros das duas condições nas 60 etiquetas dessas duas classes (30
+\emph{sem defeito} $+$ 30 \emph{cabeça queimada}). A execução foi concluída, mas
+o resultado é \textbf{inconclusivo por confusão experimental}, e reportá-lo com
+franqueza importa mais do que omiti-lo. No par, a CNN-pura classifica \emph{sem
+defeito} como 2 corretas, 26 \emph{cabeça queimada} e 2 outras, e \emph{cabeça
+queimada} como 7 \emph{sem defeito} e 23 corretas, resultando em acurácia da
+região do par de 0,733; a pós-arbitragem cai para 0,538, com $b=18$, $c=18$ e
+$p=1,00$ no McNemar CNN \textit{versus} ADK. A leitura é que o árbitro apenas
+\textbf{deslocou o viés}: recuperou a revocação de \emph{sem defeito} (de
+$\approx$~0,07 para $\approx$~0,63), mas colapsou \emph{cabeça queimada} (apenas
+6/30), com ganho líquido nulo. A causa desse número, contudo, é externa ao
+mérito do árbitro: a chave Gemini disponível é de \textbf{camada gratuita}
+(\textit{free-tier}), limitada a $\approx$~5 requisições por minuto, o que dispara
+respostas HTTP~429 e degrada o caminho ADK multimodal completo; em validação
+isolada, fora do \textit{rate-limit}, o árbitro comporta-se como esperado.
+Portanto o resultado de E3 está \textbf{confundido pela limitação de taxa} e
+\textbf{não} constitui refutação da arbitragem --- permanece pendente uma
+reexecução com chave sem \textit{rate-limit}. O protocolo, definido e
+reexecutável, não muda: a lacuna é de infraestrutura de acesso, não de método.
 
 \noindent\textbf{Eixos qualitativos.} Independentemente de E3, o benefício da
 arquitetura multiagente também se manifesta em três eixos: (i)
@@ -1702,11 +1715,117 @@ Para uma comparação \emph{indireta} com o estado da arte
 \cite{duan2025barcode} (Seção~\ref{sec-sota}) e para atacar diretamente o
 \textit{domain gap}, define-se o protocolo: treinar o classificador no conjunto
 sintético (Seção~\ref{sec-dados}) e testá-lo sobre imagens reais do benchmark
-público \textbf{BarBeR}, reportando acurácia e Macro-F1 no domínio real, além da
-matriz de confusão por classe. Espera-se queda frente ao teste em distribuição;
-ainda assim, o experimento mede a robustez e aproxima a avaliação do estado da
-arte. Os números ficam como \textbf{[PLACEHOLDER --- a preencher após a execução
-sobre o BarBeR]}: acurácia, Macro-F1 e principais confusões.
+público \textbf{BarBeR} \cite{duan2025barcode}, reportando acurácia e Macro-F1 no
+domínio real, além da matriz de confusão por classe. Espera-se queda frente ao
+teste em distribuição; ainda assim, o experimento mede a robustez e aproxima a
+avaliação do estado da arte. Convém, porém, situar esse teste no quadro maior: a
+dificuldade do problema está concentrada quase exclusivamente na separação
+\emph{sem defeito} $\leftrightarrow$ \emph{cabeça queimada} (elemento da cabeça
+danificado), e a progressão empírica de escala de dados (Seção~\ref{sec-progressao})
+indica que, com bases maiores e mais realistas, essa fronteira tende a se
+estreitar. Nessa direção, cabe adicionar \textbf{exemplares melhores} de códigos
+de barras que representem justamente essas duas classes, o que é viável ampliando
+o \textbf{gerador de defeitos sintéticos} aplicado sobre bases reais
+(Seção~\ref{sec-dados}); tanto o conjunto de dados quanto os modelos propostos
+podem ser alimentados de forma progressiva e contínua. Cabem ainda novos
+experimentos comparando a acurácia entre \textbf{EfficientNet-B0} e
+\textbf{MobileNetV3-Small} --- esta última escolhida até aqui pelos resultados do
+treinamento atual (Seção~\ref{sec-comparacao}) ---, para consolidar a escolha de
+arquitetura sob o dado ampliado. A execução sobre o BarBeR fica, assim, como
+\textbf{passo planejado concreto}, cujos números (acurácia, Macro-F1 e principais
+confusões) serão reportados quando o teste de generalização for rodado.
+
+\subsection{Progressão empírica e a fronteira confundível: escala de dado real}\label{sec-progressao}
+
+A avaliação primária deste trabalho é o cenário de \textbf{sete classes / 630 imagens}
+(Seção~\ref{sec-resultados}), no qual a MobileNetV3-Small atinge 83,8\% de acurácia em
+40 épocas. Esta subseção é um \textbf{estudo de escala de dado complementar}: ela não
+substitui aquele resultado nem o experimento E4 (Seção~\ref{sec-baseline}), mas
+investiga se o único ponto fraco recorrente --- a confusão mútua entre \emph{sem
+defeito} e \emph{cabeça queimada} / elemento da cabeça danificado
+(Tabela~\ref{tab-confusao}) --- é uma \textbf{propriedade fundamental do modelo
+pequeno} ou um \textbf{artefato de dado escasso} que a ampliação da base real resolve.
+
+\noindent\textbf{Piloto de escala em 5 épocas.} Como sondagem inicial, treinou-se um
+\textit{checkpoint} deliberadamente subtreinado (\textbf{apenas 5 épocas}; 7 classes,
+980 imagens de treino, 210 de teste a 30 por classe, semente 42). Por ser de treino
+curto, esses números \textbf{não são comparáveis} aos de 40 épocas das
+Seções~\ref{sec-resultados} e~\ref{sec-comparacao} e servem apenas de diagnóstico. A
+MobileNetV3-Small obteve acurácia de 73,3\% e Macro-F1 de 0,727, com desempenho alto
+nas classes de assinatura distinta (ponto queimado 0,983; pressão desigual 0,938;
+impressão clara 0,929; cabeça suja 0,846; \textit{ribbon} enrugado 0,815), mas colapso
+em \emph{sem defeito} (P~0,222; R~0,067; F1~0,103 --- apenas 2 de 30 corretas, com 26
+das 30 atribuídas a \emph{cabeça queimada}) e baixo desempenho em \emph{cabeça
+queimada} (0,479). A validação cruzada de três dobras confirmou a estabilidade do
+patamar curto (0,736\,$\pm$\,0,010).
+
+\noindent\textbf{O sinal é aprendível --- não é limite do dado.} Sob o
+\emph{mesmo} dado e protocolo, ResNet18 alcançou 86,2\% (R de \emph{sem defeito} 0,40)
+e EfficientNet-B0 91,4\%, esta \textbf{recuperando} a classe \emph{sem defeito}
+(R~0,90; 27 de 30 corretas). Neste \textit{checkpoint} curto, o teste de McNemar
+(binomial exato) \cite{dietterich1998tests} chega a ser significativo contra a
+MobileNet (\textit{vs.} ResNet: $b{=}5$, $c{=}32$, $p\approx10^{-5}$; \textit{vs.}
+EfficientNet: $b{=}7$, $c{=}45$, $p\approx0$) --- resultado \textbf{esperado e
+consistente} com o subtreino de 5 épocas, e que \textbf{não contradiz} a ausência de
+significância observada em 40 épocas (Seção~\ref{sec-comparacao}). A leitura correta é
+sutil: com dado pequeno e treino curto, a fronteira do par \emph{parece} irredutível
+para a CNN pequena, mas o erro \textbf{não desaparece --- apenas troca de direção}
+conforme o balanceamento momentâneo do treino; e o fato de a EfficientNet recuperar
+\emph{sem defeito} no mesmo dado prova que \textbf{o sinal discriminante existe e é
+aprendível}. O gargalo, portanto, é de \textbf{quantidade e balanço de dado}, não de
+capacidade fundamental da arquitetura.
+
+\noindent\textbf{Escala de dado real dissolve a fronteira.} Confirmando essa hipótese,
+sucessivas ampliações da base real fazem a acurácia global evoluir de 0,750 (v1) para
+0,840 (v2), 0,870 (v3) e 0,957 na versão definitiva, enquanto o erro característico
+``\emph{sem defeito} real previsto como \emph{cabeça queimada}'' recua de 40,0\% (v2)
+para 6,7\% (v3) e 1,5\% (definitivo), e a taxa de acerto de \emph{sem defeito} sobe de
+35\% para 75\% e 88,1\% (Tabela~\ref{tab-progressao}). A versão definitiva foi treinada
+sobre \textbf{13.360 imagens de base 100\% real} (Roboflow, 2.196; \textit{crops} do
+BarBeR \cite{duan2025barcode}, 9.828; e 1.336 rótulos \emph{sem defeito} decodificáveis
+por \texttt{pyzbar}), balanceadas em 1.336 por classe, cobrindo \textbf{dez classes}
+(as sete da Seção~\ref{sec-dados} mais \emph{mancha}, \emph{corte} e \emph{deslocamento
+de registro}), com \textit{split} de 9.350 / 2.000 / 2.010 e MobileNetV3-Small em 40
+épocas. No teste, a acurácia global chega a 0,957 (validação 0,951), e o par antes
+crítico estabiliza: \emph{sem defeito} 0,881 e \emph{cabeça queimada} 0,950, com o erro
+inverso (\emph{cabeça queimada}$\rightarrow$\emph{sem defeito}) em apenas 0,5\%. As
+demais classes mantêm-se altas (ponto queimado 1,000; impressão clara 0,995; pressão
+desigual 0,990; mancha 0,985; cabeça suja 0,975; \textit{ribbon} enrugado 0,935;
+deslocamento de registro 0,965; corte 0,891).
+
+\begin{table}[htb]
+\centering
+\caption{Progressão da base real e resolução do par confundível \emph{sem defeito}
+$\leftrightarrow$ \emph{cabeça queimada} (MobileNetV3-Small)}
+\label{tab-progressao}
+\footnotesize
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Versão} & \textbf{Acurácia} & \textbf{\emph{Sem defeito}} & \textbf{\emph{Sem defeito} real}\\
+                & \textbf{global}   & \textbf{correto (\%)}       & \textbf{$\rightarrow$ \emph{cab. queimada} (\%)}\\
+\midrule
+v1          & 0,750 & ---   & ---\\
+v2          & 0,840 & 35,0  & 40,0\\
+v3          & 0,870 & 75,0  & 6,7\\
+Definitiva  & 0,957 & 88,1  & 1,5\\
+\bottomrule
+\end{tabular}
+
+\vspace{2pt}
+{\footnotesize Fonte: elaboração própria (2026).}
+\end{table}
+
+\noindent\textbf{Ressalvas.} Três pontos delimitam honestamente o alcance desses
+números. Primeiro, a acurácia de 0,957 é \textbf{em distribuição} --- base real com
+defeito sintetizado pelo \emph{mesmo} gerador --- e, portanto, \textbf{não constitui
+prova de desempenho sobre defeito real}: essa medida cabe ao experimento E4
+(Seção~\ref{sec-baseline}), que o número alto \textbf{não substitui}. Segundo, os
+modelos-piloto de 5 épocas não são versionados, mas são \textbf{reproduzíveis} pela
+mesma semente (42). Terceiro, reitera-se que a \textbf{avaliação primária} continua
+sendo o cenário de sete classes / 630 imagens (Seção~\ref{sec-resultados}); esta
+subseção é um estudo de escala complementar que explica \textbf{por que} a fronteira
+confundível é contornável --- ela é um artefato de dado escasso, dissolvido pela
+ampliação da base real, e não uma limitação intrínseca da MobileNetV3-Small.
 
 \subsection{Análise e discussão}
 
@@ -1721,8 +1840,9 @@ esse par confundível é submetido ao \textbf{árbitro visual multimodal} do age
 diagnóstico (Seção~\ref{sec-baseline}), de modo que o \textbf{laudo final é
 pós-arbitragem}. Ou seja, a mitigação --- antes apenas sugerida como pós-processamento
 --- está \textbf{implementada}: o agente inspeciona a imagem e pode reclassificar o par
-antes de emitir a causa (o ganho quantitativo é o experimento E3, cujos números
-dependem de chave Gemini --- Seção~\ref{sec-baseline}). Vale notar que a
+antes de emitir a causa (o ganho quantitativo é o experimento E3, que chegou a ser
+executado, mas ficou confundido pelo limite de taxa da chave Gemini de nível gratuito e
+aguarda reexecução --- Seção~\ref{sec-baseline}). Vale notar que a
 MobileNetV3-Small foi \emph{estatisticamente indistinguível} da EfficientNet-B0, mais
 pesada (Seção~\ref{sec-comparacao}), o que reforça sua adequação ao objetivo de baixo
 custo. Frente aos trabalhos da Seção~\ref{sec-relacionados}, que se detêm na detecção
@@ -1738,7 +1858,9 @@ Universe} citadas na Seção~\ref{sec-dados} --- e permanece em aberto. O treino
 defeitos apoia-se em dados sintéticos, com risco de \textit{domain gap}; a confusão
 entre ``sem defeito'' e ``cabeça queimada'' rebaixa o F1 dessas classes na CNN-pura
 ($\approx$0,56), mitigada no caminho ADK pelo árbitro visual multimodal, embora o
-ganho ainda careça de quantificação (experimento E3, Seção~\ref{sec-baseline});
+ganho ainda careça de quantificação --- o experimento E3 foi executado, mas seu número
+ficou confundido pelo limite de taxa da chave Gemini de nível gratuito (erros 429) e
+aguarda reexecução sem limite de taxa (Seção~\ref{sec-baseline});
 embora a validação cruzada indique estabilidade, o conjunto de teste é pequeno (105
 imagens), o que amplia os intervalos de confiança e explica a ausência de significância
 nas comparações entre arquiteturas; a decodificação usa a biblioteca ZBar, que o
@@ -1765,8 +1887,27 @@ cruzada e competitivo frente a arquiteturas de referência mais pesadas --- a um
 computacional muito menor. A principal fragilidade da CNN-pura é a confusão entre
 ``sem defeito'' e ``cabeça queimada'', cujas assinaturas visuais se assemelham ---
 mitigada, no caminho ADK, por um árbitro visual multimodal no agente de diagnóstico,
-recurso que a abordagem monolítica não tem (a quantificação do ganho fica pendente de
-chave de LLM).
+recurso que a abordagem monolítica não tem. O experimento E3 chegou a ser executado,
+mas ficou confundido pelo limite de taxa da chave Gemini de nível gratuito
+(erros 429), de modo que a quantificação do ganho permanece pendente de reexecução
+sem limite de taxa (Seção~\ref{sec-baseline}).
+
+\noindent\textbf{Escopo real da dificuldade e o papel do árbitro:} cabe uma
+ressalva honesta sobre a escolha arquitetural. Um treinamento específico da
+MobileNetV3-Small, em pequena escala e com poucas épocas, produziu, isoladamente,
+uma MobileNet inferior à ResNet18 e à EfficientNet-B0; tomado sozinho, esse
+experimento não sustenta a preferência pela MobileNet. Seu valor para a pesquisa é
+outro: ele reforça uma hipótese técnica robusta ao evidenciar que a dificuldade
+está concentrada \emph{quase exclusivamente} na separação entre ``sem defeito'' e
+``cabeça queimada'' (elemento da cabeça danificado). Todas as demais classes
+exibem desempenho alto e consistente, independentemente da arquitetura --- ou
+seja, o desafio não é a classificação geral de defeitos, e sim a distinção entre
+essas duas classes de assinatura visual muito semelhante. A progressão empírica de
+escala de dados (Seção~\ref{sec-progressao}) mostra, ainda, que \emph{escalar dado
+real} estreita essa fronteira: o erro do par cai de $\approx$40\% para
+$\approx$1,5\%. Isso reposiciona o árbitro visual multimodal como um
+\textbf{refinamento} sobre o resíduo dessa confusão, e não como uma necessidade
+categórica do sistema.
 
 \noindent\textbf{Principais contribuições entregues:} (i) o mapeamento
 sistematizado de defeitos visuais para causas físicas e ações corretivas, a partir
@@ -1779,9 +1920,10 @@ significância estatística.
 
 \noindent\textbf{Trabalhos futuros:} ampliar o conjunto de dados com defeitos
 \emph{reais} e quantificar o \textit{domain gap} sintético$\rightarrow$real;
-executar o experimento E3 (ganho da arbitragem visual multimodal sobre a CNN-pura no
+reexecutar o experimento E3 (ganho da arbitragem visual multimodal sobre a CNN-pura no
 par confundível) e a comparação quantitativa multiagente \textit{versus} monolítica na
-qualidade do diagnóstico, ambos com chave de LLM e causas de referência rotuladas;
+qualidade do diagnóstico, ambos com chave de LLM sem limite de taxa e causas de
+referência rotuladas;
 executar o experimento E4 (generalização sintético$\rightarrow$BarBeR) para
 comparação indireta com o estado da arte \cite{duan2025barcode};
 estender a símbolos 2D (Data Matrix/QR) via ISO/IEC 15415; aproximar os indicadores
