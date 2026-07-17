@@ -48,9 +48,20 @@ como mensagens de chat (legível/simbologia, defeito + confiança, causa, corre�
 
 ![Chat do Inspetor de Etiquetas exibindo um laudo completo](img/chat_inspetor.png)
 
-A página (`app/chat.html`) é autossuficiente (HTML + CSS + JS *vanilla*, sem CDN) e
-envia a imagem via **htmx** para `POST /analyze-htmx`, inserindo o cartão do laudo
-na conversa. Detalhes dos endpoints em [API HTTP](/api/).
+A página (`app/chat.html`) é um frontend modular servido de `app/static/`
+(CSS + módulos JS *vanilla* + htmx) e envia a imagem via **htmx** para
+`POST /analyze-htmx`, inserindo o cartão do laudo na conversa. Detalhes dos endpoints
+em [API HTTP](/api/).
+
+### Anexar imagem (+): Fotos, Câmera e Scan
+
+O botão **`+`** do compositor abre três opções:
+
+- **Fotos** — escolher um arquivo/imagem da galeria.
+- **Câmera** — captura nativa do dispositivo (`capture="environment"`).
+- **Scan** — **leitor de código de barras ao vivo** (via **ZXing**), com seletor de
+  câmera e controle de *zoom*; a câmera e o zoom escolhidos ficam salvos no
+  `localStorage`. A biblioteca ZXing é carregada por CDN.
 
 ### Menu de configurações (⋮)
 
@@ -62,17 +73,18 @@ preferências ficam salvas no `localStorage` do navegador:
   modo que **o laudo também sai no idioma selecionado**.
 - **Tema** — *Claro*, *Escuro* ou *Auto* (Auto segue o tema do sistema operacional).
 - **Inspetor** (motor de diagnóstico) — **LLM** (mostra o modelo ativo, ex.
-  `gemini-flash-latest`), **KB Zebra Technologies** (regras) ou **Auto** (prefere o
-  LLM e usa a KB como *fallback*). A opção **Auto só aparece quando há um LLM
+  `gemini-flash-latest`), **KB Zebra Technologies** (regras) ou **Auto**
+  (multiagente/ADK com árbitro visual). A opção **Auto só aparece quando há um LLM
   configurado** no `.env`.
 - **Ações** — **Exportar em PDF** (via `window.print` + `@media print`) e **Limpar**
   (em vermelho; apaga a conversa).
 
 ![Menu de configurações do chat aberto](img/chat_menu.png)
 
-O idioma e o motor de inspeção escolhidos são enviados a cada envio (via
-`htmx:configRequest`), como os campos `idioma` e `inspetor` do
-[`POST /analyze-htmx`](/api/).
+As preferências (idioma, tema, motor) ficam salvas no `localStorage`; um rodapé
+mostra a **cota do Gemini** restante no minuto (polling em `GET /quota`). O idioma e o
+motor escolhidos são enviados a cada envio (via `htmx:configRequest`), como os campos
+`language` e `inspector` do [`POST /analyze-htmx`](/api/).
 
 ### Imagem sem código de barras (curto-circuito)
 

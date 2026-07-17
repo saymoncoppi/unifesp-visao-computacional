@@ -45,14 +45,19 @@ diagnóstico e da montagem do laudo.
                     agente de laudo (JSON) ─────────────────────► resposta no chat
 ```
 
-### Dois modos de execução
+### Modos de execução
 
 - **Pipeline direto** (`config.inspector.tools.analyze_image`): encadeia as funções
   sem o ADK. Funciona **mesmo sem chave do Gemini** (diagnóstico por regras da base
-  Zebra). É o *baseline* monolítico da avaliação e o núcleo usado por CLI e API.
-- **Pipeline orquestrado** (`config.inspector.agents`): o grafo ADK acima
-  (`ParallelAgent` → diagnóstico → laudo), acionado com `--adk` na CLI ou
-  `adk=true` na API.
+  Zebra). É o *baseline* monolítico da avaliação e o núcleo usado por CLI e API
+  (motores **KB** e **LLM**).
+- **Pipeline orquestrado / Auto** (`config.inspector.agents.analyze_via_adk`): faz a
+  percepção de forma determinística (sem gastar LLM) e usa o ADK só onde há raciocínio
+  real — um **árbitro visual** multimodal que dispara no par confundível
+  `no_defect` ↔ `damaged_printhead_element` e o diagnóstico fundamentado. Mantém
+  ~1–2 chamadas Gemini por análise para caber no free-tier (5 req/min). Acionado com
+  `--adk` (CLI) / `adk=true` (API) ou pelo motor **Auto** no chat; o grafo ADK
+  completo também é exposto via `adk web`.
 
 ## Degradação graciosa
 

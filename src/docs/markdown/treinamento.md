@@ -27,7 +27,8 @@ Argumentos do script (`config/inspector/training.py`):
 | `--epochs` | `10` | Número de épocas de treino. |
 | `--lr` | `1e-3` | Taxa de aprendizado (otimizador Adam). |
 | `--batch` | `32` | Tamanho do *batch*. |
-| `--output` | `config/models/classificador_defeitos.pt` | Caminho do modelo salvo. |
+| `--out` | `config/models/classificador_defeitos.pt` | Caminho do modelo salvo. |
+| `--no-freeze` | *(desligado)* | Faz *fine-tuning* completo (descongela o *backbone*) em vez de treinar só a cabeça. |
 
 ## Como funciona
 

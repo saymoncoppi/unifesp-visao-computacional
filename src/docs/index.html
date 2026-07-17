@@ -300,10 +300,10 @@
                                 &#9660;
                     agente de laudo (JSON) &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9658; resposta no chat</code></pre>
 
-        <h3 id="modos-execucao">Dois modos de execução</h3>
+        <h3 id="modos-execucao">Modos de execução</h3>
         <ul>
-          <li><strong>Pipeline direto</strong> (<code>config.inspector.tools.analyze_image</code>): encadeia as funções sem o ADK. Funciona <strong>mesmo sem chave do Gemini</strong> (diagnóstico por regras da base Zebra). É o <em>baseline</em> monolítico da avaliação e o núcleo usado por CLI e API.</li>
-          <li><strong>Pipeline orquestrado</strong> (<code>config.inspector.agents</code>): o grafo ADK acima (<code>ParallelAgent</code> → diagnóstico → laudo), acionado com <code>--adk</code> na CLI ou <code>adk=true</code> na API.</li>
+          <li><strong>Pipeline direto</strong> (<code>config.inspector.tools.analyze_image</code>): encadeia as funções sem o ADK. Funciona <strong>mesmo sem chave do Gemini</strong> (diagnóstico por regras da base Zebra). É o <em>baseline</em> monolítico da avaliação e o núcleo usado por CLI e API (motores <strong>KB</strong> e <strong>LLM</strong>).</li>
+          <li><strong>Pipeline orquestrado / Auto</strong> (<code>config.inspector.agents.analyze_via_adk</code>): faz a percepção de forma determinística (sem gastar LLM) e usa o ADK só onde há raciocínio real — um <strong>árbitro visual</strong> multimodal que dispara no par confundível <code>no_defect</code> ↔ <code>damaged_printhead_element</code> e o diagnóstico fundamentado. Mantém ~1–2 chamadas Gemini por análise para caber no <em>free-tier</em> (5 req/min). Acionado com <code>--adk</code> (CLI) / <code>adk=true</code> (API) ou pelo motor <strong>Auto</strong> no chat; o grafo ADK completo também é exposto via <code>adk web</code>.</li>
         </ul>
 
         <h2 id="degradacao">Degradação graciosa</h2>
@@ -448,21 +448,24 @@ python -m app.cli minha_etiqueta.jpg --adk       # via grafo ADK (requer Gemini)
           <img src="img/chat_inspetor.png" alt="Chat do Inspetor de Etiquetas exibindo um laudo completo">
           <figcaption>O chat web: a imagem enviada e o cartão de laudo com leitura, indicadores, defeito, causa e correção.</figcaption>
         </figure>
-        <p>A página (<code>app/chat.html</code>) é autossuficiente (HTML + CSS + JS <em>vanilla</em>, sem CDN) e envia a imagem via <strong>htmx</strong> para <code>POST /analyze-htmx</code>, inserindo o cartão do laudo na conversa. Detalhes dos endpoints em <a href="#api">API HTTP</a>.</p>
+        <p>A página (<code>app/chat.html</code>) é um frontend modular servido de <code>app/static/</code> (CSS + módulos JS <em>vanilla</em> + htmx) e envia a imagem via <strong>htmx</strong> para <code>POST /analyze-htmx</code>, inserindo o cartão do laudo na conversa. Detalhes dos endpoints em <a href="#api">API HTTP</a>.</p>
+
+        <h3 id="anexar">Anexar imagem (+): Fotos, Câmera e Scan</h3>
+        <p>O botão <strong><code>+</code></strong> do compositor abre três opções: <strong>Fotos</strong> (arquivo/galeria), <strong>Câmera</strong> (captura nativa do dispositivo) e <strong>Scan</strong> — um <strong>leitor de código de barras ao vivo</strong> (via <strong>ZXing</strong>) com seletor de câmera e controle de <em>zoom</em> (câmera e zoom salvos no <code>localStorage</code>). A biblioteca ZXing é carregada por CDN.</p>
 
         <h3 id="menu-configuracoes">Menu de configurações (⋮)</h3>
         <p>O botão de três pontinhos (⋮) no topo abre um menu com quatro seções; as preferências ficam salvas no <code>localStorage</code> do navegador:</p>
         <ul>
           <li><strong>Idioma</strong> — <em>Português Brasileiro</em> ou <em>English</em>. A troca é instantânea (i18n real PT/EN, via atributos <code>data-i18n</code>) e o idioma escolhido acompanha cada análise, de modo que <strong>o laudo também sai no idioma selecionado</strong>.</li>
           <li><strong>Tema</strong> — <em>Claro</em>, <em>Escuro</em> ou <em>Auto</em> (Auto segue o tema do sistema operacional).</li>
-          <li><strong>Inspetor</strong> (motor de diagnóstico) — <strong>LLM</strong> (mostra o modelo ativo, ex. <code>gemini-flash-latest</code>), <strong>KB Zebra Technologies</strong> (regras) ou <strong>Auto</strong> (prefere o LLM e usa a KB como <em>fallback</em>). A opção <strong>Auto só aparece quando há um LLM configurado</strong> no <code>.env</code>.</li>
+          <li><strong>Inspetor</strong> (motor de diagnóstico) — <strong>LLM</strong> (mostra o modelo ativo, ex. <code>gemini-flash-latest</code>), <strong>KB Zebra Technologies</strong> (regras) ou <strong>Auto</strong> (multiagente/ADK com árbitro visual). A opção <strong>Auto só aparece quando há um LLM configurado</strong> no <code>.env</code>.</li>
           <li><strong>Ações</strong> — <strong>Exportar em PDF</strong> (via <code>window.print</code> + <code>@media print</code>) e <strong>Limpar</strong> (em vermelho; apaga a conversa).</li>
         </ul>
         <figure>
           <img src="img/chat_menu.png" alt="Menu de configurações do chat aberto">
           <figcaption>O menu (⋮) com as seções Idioma, Tema, Inspetor e Ações.</figcaption>
         </figure>
-        <p>O idioma e o motor de inspeção escolhidos são enviados a cada envio (via <code>htmx:configRequest</code>), como os campos <code>idioma</code> e <code>inspetor</code> do <a href="#post-analisar-htmx"><code>POST /analyze-htmx</code></a>.</p>
+        <p>As preferências (idioma, tema, motor) ficam salvas no <code>localStorage</code>; um rodapé mostra a <strong>cota do Gemini</strong> restante no minuto (polling em <code>GET /quota</code>). O idioma e o motor escolhidos são enviados a cada envio (via <code>htmx:configRequest</code>), como os campos <code>language</code> e <code>inspector</code> do <a href="#post-analisar-htmx"><code>POST /analyze-htmx</code></a>.</p>
 
         <h3 id="curto-circuito-sem-codigo">Imagem sem código de barras (curto-circuito)</h3>
         <p>Se a imagem enviada <strong>não contém um código de barras</strong>, o inspetor faz um <strong>curto-circuito</strong>: a presença do código é verificada <strong>antes</strong> da inspeção pesada e, quando não há código, o laudo traz apenas o aviso <em>"Nenhum código de barras detectado na imagem."</em> — <strong>sem rodar a CNN nem chamar o LLM</strong>. Isso economiza processamento e chamadas de API e evita diagnósticos espúrios.</p>
@@ -506,7 +509,8 @@ python -m app.cli minha_etiqueta.jpg --adk       # via grafo ADK (requer Gemini)
               <tr><td><code>--epochs</code></td><td><code>10</code></td><td>Número de épocas de treino.</td></tr>
               <tr><td><code>--lr</code></td><td><code>1e-3</code></td><td>Taxa de aprendizado (otimizador Adam).</td></tr>
               <tr><td><code>--batch</code></td><td><code>32</code></td><td>Tamanho do <em>batch</em>.</td></tr>
-              <tr><td><code>--output</code></td><td><code>config/models/classificador_defeitos.pt</code></td><td>Caminho do modelo salvo.</td></tr>
+              <tr><td><code>--out</code></td><td><code>config/models/classificador_defeitos.pt</code></td><td>Caminho do modelo salvo.</td></tr>
+              <tr><td><code>--no-freeze</code></td><td><em>(desligado)</em></td><td><em>Fine-tuning</em> completo (descongela o <em>backbone</em>) em vez de só a cabeça.</td></tr>
             </tbody>
           </table>
         </div>
@@ -540,18 +544,26 @@ python -m app.cli minha_etiqueta.jpg --adk       # via grafo ADK (requer Gemini)
 
         <h2 id="dataset-sintetico">Dataset sintético (<code>generate_dataset.py</code>)</h2>
         <p>O script <code>generate_dataset.py</code> produz um dataset <strong>sintético, balanceado e rotulado</strong> de defeitos de impressão de códigos de barras (1D e 2D). Cada defeito reproduz a assinatura visual descrita na documentação Zebra ZT411/ZT421 (<em>troubleshooting</em> de qualidade de impressão) — é o dataset que treina o "agente de defeitos físicos".</p>
-        <pre><code class="language-bash">python config/generate_dataset.py --out config/datasets/dataset_sintetico --per-class 90 --seed 42</code></pre>
-        <p>Argumentos:</p>
+        <pre><code class="language-bash"># só sintético
+python config/generate_dataset.py --out config/datasets/dataset_sintetico --per-class 200 --seed 42
+
+# misturando bases REAIS (BarBeR/Roboflow) para reduzir o domain gap
+python config/generate_dataset.py --per-class 400 --bases-dir config/datasets/real_bases --real-fraction 0.5</code></pre>
+        <p>Argumentos (principais):</p>
         <div class="table-wrap">
           <table>
             <thead>
               <tr><th>Flag</th><th>Padrão</th><th>Descrição</th></tr>
             </thead>
             <tbody>
-              <tr><td><code>--out</code></td><td><code>dataset</code></td><td>Pasta de saída do dataset.</td></tr>
-              <tr><td><code>--per-class</code></td><td><code>90</code></td><td>Imagens por classe.</td></tr>
+              <tr><td><code>--out</code></td><td><code>dataset_sintetico</code></td><td>Pasta de saída do dataset.</td></tr>
+              <tr><td><code>--per-class</code></td><td><code>200</code></td><td>Imagens por classe.</td></tr>
               <tr><td><code>--seed</code></td><td><code>42</code></td><td>Semente aleatória (reprodutibilidade).</td></tr>
               <tr><td><code>--only-1d</code></td><td><em>(desligado)</em></td><td>Ignora QR/DataMatrix (só simbologias 1D).</td></tr>
+              <tr><td><code>--bases-dir</code></td><td><em>(nenhum)</em></td><td>Códigos reais limpos usados como base (subpasta = simbologia).</td></tr>
+              <tr><td><code>--real-fraction</code></td><td><code>0.5</code></td><td>Fração de amostras sorteadas de bases reais.</td></tr>
+              <tr><td><code>--exhaustive</code></td><td><em>(desligado)</em></td><td>Usa cada base real uma vez (um defeito por imagem), balanceado.</td></tr>
+              <tr><td><code>--frame-aug</code></td><td><code>0.0</code></td><td>Fração com código encolhido/reposicionado (robustez a foto real).</td></tr>
             </tbody>
           </table>
         </div>
@@ -587,33 +599,36 @@ python -m app.cli minha_etiqueta.jpg --adk       # via grafo ADK (requer Gemini)
         <h2 id="endpoints">Endpoints</h2>
 
         <h3 id="get-raiz"><code>GET /</code></h3>
-        <p>Serve a interface de <strong>chat</strong> (<code>app/chat.html</code>, HTML autossuficiente). Resposta: <code>text/html</code>.</p>
+        <p>Serve a interface de <strong>chat</strong> (<code>app/chat.html</code>). Resposta: <code>text/html</code>. A página injeta o modelo ativo, se há Gemini configurado e a preferência de scanner.</p>
 
         <h3 id="post-analisar"><code>POST /analyze</code></h3>
         <p>Recebe uma imagem, roda a análise e devolve o <strong>laudo em JSON</strong>.</p>
         <ul>
-          <li><strong>Corpo</strong>: <code>multipart/form-data</code> com o campo <strong><code>imagem</code></strong> (arquivo).</li>
-          <li><strong>Query opcional</strong>: <code>adk</code> (bool, padrão <code>false</code>) — usa o <strong>grafo multiagente (ADK)</strong> em vez do pipeline direto; se o ADK falhar, cai automaticamente no pipeline direto e registra o aviso em <code>errors</code>.</li>
+          <li><strong>Corpo</strong>: <code>multipart/form-data</code> com o campo <strong><code>image</code></strong> (arquivo).</li>
+          <li><strong>Query opcional</strong>: <code>adk</code> (bool, padrão <code>false</code>) — usa o <strong>caminho multiagente (ADK)</strong> em vez do pipeline direto; se o ADK falhar, cai automaticamente no pipeline direto e registra o aviso em <code>errors</code>.</li>
           <li><strong>Resposta</strong>: <code>application/json</code> com o <a href="#formato-do-laudo">laudo</a>. Em erro interno, retorna <code>{"error": "..."}</code> com status <code>500</code>.</li>
         </ul>
         <pre><code class="language-bash"># pipeline direto
-curl -F "imagem=@minha_etiqueta.jpg" http://localhost:8000/analyze
+curl -F "image=@minha_etiqueta.jpg" http://localhost:8000/analyze
 
-# via grafo ADK (requer Gemini)
-curl -F "imagem=@minha_etiqueta.jpg" "http://localhost:8000/analyze?adk=true"</code></pre>
+# via grafo ADK (usa Gemini quando há chave)
+curl -F "image=@minha_etiqueta.jpg" "http://localhost:8000/analyze?adk=true"</code></pre>
         <p>A imagem é gravada em um arquivo temporário (o pipeline trabalha com caminhos de arquivo) e removida ao final, independentemente do resultado.</p>
 
         <h3 id="post-analisar-htmx"><code>POST /analyze-htmx</code></h3>
         <p>Igual ao <code>POST /analyze</code>, mas devolve um <strong>fragmento HTML</strong> (o cartão do laudo, no estilo shadcn) em vez de JSON. É o endpoint usado pela página de chat via <strong>htmx</strong> (<code>hx-post="/analyze-htmx"</code>), para atualizar a conversa sem recarregar a página.</p>
-        <p>Além da imagem, o corpo (<code>multipart/form-data</code>) aceita dois campos de formulário, enviados pelo chat via <code>htmx:configRequest</code>:</p>
+        <p>O corpo (<code>multipart/form-data</code>) aceita três campos de formulário, enviados pelo chat via <code>htmx:configRequest</code>:</p>
         <ul>
-          <li><strong><code>imagem</code></strong> (arquivo) — a etiqueta a analisar.</li>
-          <li><strong><code>idioma</code></strong> (<code>pt-BR</code> | <code>en-US</code>, padrão <code>pt-BR</code>) — idioma dos rótulos do cartão e do próprio laudo.</li>
-          <li><strong><code>inspetor</code></strong> (<code>llm</code> | <code>kb</code> | <code>auto</code>, padrão <code>llm</code>) — motor de diagnóstico: <code>llm</code> e <code>auto</code> usam o Gemini (com <em>fallback</em> por regras); <code>kb</code> força as regras da base Zebra.</li>
+          <li><strong><code>image</code></strong> (arquivo) — a etiqueta a analisar.</li>
+          <li><strong><code>language</code></strong> (<code>pt-BR</code> | <code>en-US</code>, padrão <code>pt-BR</code>) — idioma dos rótulos do cartão e do próprio laudo.</li>
+          <li><strong><code>inspector</code></strong> (<code>llm</code> | <code>kb</code> | <code>auto</code>, padrão <code>llm</code>) — motor de diagnóstico: <code>llm</code> usa o Gemini (com <em>fallback</em> por regras); <code>kb</code> força as regras da base Zebra; <code>auto</code> usa o caminho multiagente ADK (árbitro visual) quando há Gemini.</li>
         </ul>
 
+        <h3 id="get-quota"><code>GET /quota</code></h3>
+        <p>Estado da <strong>cota do Gemini</strong> (<em>free-tier</em> = 5 req/min), de <code>config/inspector/ratelimit.py</code>: <code>enabled</code>, <code>model</code>, <code>limit</code>, <code>used</code>, <code>remaining</code>, <code>reset_in</code>, <code>blocked</code>, <code>seen_429</code> — ou <code>{"enabled": false}</code> sem chave. Alimenta o contador de cota no rodapé do chat.</p>
+
         <h3 id="get-static"><code>GET /static/*</code></h3>
-        <p>Arquivos estáticos servidos localmente (ex.: <code>htmx.min.js</code>), sem depender de CDN.</p>
+        <p>Arquivos estáticos de <code>app/static/</code> — <code>css/style.css</code>, <code>img/</code> e os módulos JS do chat (<code>main.js</code>, <code>i18n.js</code>, <code>translations.js</code>, <code>menu.js</code>, <code>actions.js</code>, <code>quota.js</code>, <code>preferences.js</code>, <code>composer.js</code>, <code>attach.js</code>, <code>scan.js</code>, <code>lightbox.js</code> etc.). A biblioteca de leitura ao vivo (<strong>ZXing</strong>) vem de CDN.</p>
         <div class="callout note">
           <span class="callout-title">Nota</span>
           <p>A página de chat (<code>GET /</code>) envia a imagem via <strong>htmx</strong> para <code>POST /analyze-htmx</code> e insere na conversa o cartão do laudo retornado. O <code>POST /analyze</code> (JSON) continua disponível para integrações programáticas.</p>
@@ -631,6 +646,7 @@ curl -F "imagem=@minha_etiqueta.jpg" "http://localhost:8000/analyze?adk=true"</c
             </thead>
             <tbody>
               <tr><td><code>readable</code></td><td><code>bool | null</code></td><td>O código pôde ser decodificado? <code>null</code> se a leitura ficou indisponível.</td></tr>
+              <tr><td><code>code_detected</code></td><td><code>bool | null</code></td><td>Há uma região de código na imagem (mesmo que ilegível)? <code>null</code> se a checagem não foi feita.</td></tr>
               <tr><td><code>symbology</code></td><td><code>str | null</code></td><td>Ex.: <code>"CODE128"</code>, <code>"EAN13"</code>, <code>"QRCODE"</code>.</td></tr>
               <tr><td><code>content</code></td><td><code>str | null</code></td><td><em>Payload</em> decodificado do código.</td></tr>
               <tr><td><code>indicators</code></td><td><code>object</code></td><td><code>{contrast, uniformity, sharpness}</code> em <code>[0,1]</code>.</td></tr>
@@ -649,6 +665,7 @@ curl -F "imagem=@minha_etiqueta.jpg" "http://localhost:8000/analyze?adk=true"</c
         <h3 id="laudo-exemplo">Exemplo</h3>
         <pre><code class="language-json">{
   "readable": true,
+  "code_detected": true,
   "symbology": "CODE128",
   "content": "CB123",
   "indicators": { "contrast": 0.82, "uniformity": 0.74, "sharpness": 0.6 },
