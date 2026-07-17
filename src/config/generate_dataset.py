@@ -553,6 +553,26 @@ def augment_capture(im):
 # ----------------------------------------------------------------------
 # GENERATION
 # ----------------------------------------------------------------------
+def reframe(im, scale):
+    """Shrink ``im`` to ``scale`` of the canvas and paste it at a random position.
+
+    Simulates a real capture where the code does NOT fill the frame (it sits
+    small and off-center on a background). Training with this makes the model
+    scale/position invariant, so it classifies the *textural* defect regardless
+    of framing -- the failure mode that made both v1 and v2 collapse on real
+    photos. Safe for the 7-class taxonomy (there is no positional defect class
+    for a small/off-center code to be confused with).
+    """
+    w, h = im.size
+    nw, nh = max(8, int(w * scale)), max(8, int(h * scale))
+    small = im.resize((nw, nh), Image.BILINEAR)
+    canvas = Image.new("L", (w, h), 255)
+    ox = random.randint(0, max(0, w - nw))
+    oy = random.randint(0, max(0, h - nh))
+    canvas.paste(small, (ox, oy))
+    return canvas
+
+
 def split_of(i, per_class, ratios=(0.70, 0.15, 0.15)):
     """Determine the train/val/test split for the i-th sample of a class."""
     ntr = int(per_class * ratios[0])
@@ -652,6 +672,9 @@ def main():
                          "clean pool. Ignores --per-class for sizing.")
     ap.add_argument("--synthetic-per-class", type=int, default=0,
                     help="in --exhaustive, add this many synthetic samples per class")
+    ap.add_argument("--frame-aug", type=float, default=0.0,
+                    help="fraction of samples where the code is shrunk + randomly "
+                         "placed (scale/position invariance for real-photo framing)")
     args = ap.parse_args()
 
     random.seed(args.seed)
@@ -681,6 +704,8 @@ def main():
             sev = _pick_severity(args.severity) if cls != "no_defect" else "none"
             img, params = DEFECTS[cls](base, sev if sev != "none" else "low")
             img = augment_capture(img)
+            if args.frame_aug and random.random() < args.frame_aug:
+                img = reframe(img, random.uniform(0.3, 0.85))
             split = split_of(i, n)
             d = os.path.join(args.out, "images", split, cls)
             os.makedirs(d, exist_ok=True)

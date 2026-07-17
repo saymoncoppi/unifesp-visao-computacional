@@ -42,14 +42,17 @@ src/config/datasets/roboflow_raw/
 src/config/datasets/roboflow_test/
 src/config/datasets/barber_raw/
 
-# ---- Datasets GERADOS (regeneráveis pelo gerador; o "mixed" deriva de terceiros) ----
+# ---- Datasets GERADOS (regeneráveis pelo gerador; os "mixed" derivam de terceiros) ----
 # Reproduzíveis com: python -m config.generate_dataset ... (ver docs/markdown/datasets.md)
 src/config/datasets/dataset_sintetico/
 src/config/datasets/mixed_dataset_sintetico/
+src/config/datasets/mixed_aug_dataset_sintetico/
 
 # ---- Modelos-piloto (descartáveis; reproduzíveis pelo gerador+treino) ----
 src/config/models/*_pilot*.pt
 src/config/models/*pilot*.pt
+# modelo_v1.pt é cópia local idêntica ao classificador_defeitos.pt (v1) — não versionar
+src/config/models/modelo_v1.pt
 
 # ---- Downloads parciais e brutos de terceiros (ex.: BarBeR) ----
 *.crdownload

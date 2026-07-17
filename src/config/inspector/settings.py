@@ -34,11 +34,22 @@ try:
 except Exception:
     pass
 
-# Dataset lives inside the project at: src/config/datasets/
-DATASET_DIR = Path(os.environ.get("DATASET_DIR", ROOT / "config" / "datasets" / "dataset_sintetico"))
-LABELS_CSV = DATASET_DIR / "labels.csv"
+# Resolve a path from an env var: absolute paths are used as-is; RELATIVE paths
+# are resolved against ROOT (src/), so a .env value like
+# ``MODEL_PATH=config/models/modelo_v1.pt`` works regardless of the current
+# working directory. An unset/empty var falls back to ``default``.
+def _resolve_path(env_value, default):
+    if not env_value:
+        return default
+    p = Path(env_value)
+    return p if p.is_absolute() else (ROOT / p)
+
+
 MODELS_DIR = ROOT / "config" / "models"
-MODEL_PATH = Path(os.environ.get("MODEL_PATH", MODELS_DIR / "classificador_defeitos.pt"))
+# Dataset lives inside the project at: src/config/datasets/
+DATASET_DIR = _resolve_path(os.environ.get("DATASET_DIR"), ROOT / "config" / "datasets" / "dataset_sintetico")
+LABELS_CSV = DATASET_DIR / "labels.csv"
+MODEL_PATH = _resolve_path(os.environ.get("MODEL_PATH"), MODELS_DIR / "classificador_defeitos.pt")
 
 # --------------------------------------------------------------------------
 # Defect classes (same taxonomy as generate_dataset.py)
