@@ -463,11 +463,6 @@ main {
 
 .kv { font-size: 14px; }
 .kv .k { font-weight: 600; }
-.ocr {
-  margin-top: 6px;
-  font-size: 13px;
-  color: var(--muted-foreground);
-}
 .mono {
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }

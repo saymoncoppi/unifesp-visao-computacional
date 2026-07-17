@@ -269,7 +269,7 @@
         <h1>Inspetor de Etiquetas</h1>
         <p class="lead">Visão geral do inspetor de etiquetas de código de barras — visão computacional, CNN (PyTorch) e pipeline multiagente (Gemini + ADK).</p>
 
-        <p>Dada a <strong>foto de uma etiqueta</strong> com código de barras, o sistema detecta defeitos típicos de impressão térmica e sugere a <strong>causa provável</strong> e a <strong>correção</strong>, combinando <strong>OpenCV</strong>, <strong>pyzbar</strong>, <strong>Tesseract</strong>, uma <strong>CNN (PyTorch)</strong> e o <strong>Gemini</strong>, orquestrados pelo <strong>Agent Development Kit (ADK)</strong>. A entrega é um <strong>chat</strong>: envie a imagem, receba o laudo.</p>
+        <p>Dada a <strong>foto de uma etiqueta</strong> com código de barras, o sistema detecta defeitos típicos de impressão térmica e sugere a <strong>causa provável</strong> e a <strong>correção</strong>, combinando <strong>OpenCV</strong>, <strong>pyzbar</strong>, uma <strong>CNN (PyTorch)</strong> e o <strong>Gemini</strong>, orquestrados pelo <strong>Agent Development Kit (ADK)</strong>. A entrega é um <strong>chat</strong>: envie a imagem, receba o laudo.</p>
 
         <blockquote>Projeto da disciplina <strong>Visão Computacional (cód. 2587)</strong> — PPG em Ciência da Computação, ICT/UNIFESP.</blockquote>
 
@@ -277,7 +277,6 @@
         <p>Dada a imagem de uma etiqueta com código de barras, o sistema:</p>
         <ol>
           <li><strong>decodifica</strong> o código (simbologia + conteúdo) e diz se é legível — OpenCV + pyzbar;</li>
-          <li>faz <strong>OCR</strong> do texto humano-legível — Tesseract;</li>
           <li>estima <strong>indicadores de qualidade</strong> (contraste, uniformidade, nitidez) — OpenCV;</li>
           <li><strong>classifica o defeito</strong> de impressão entre 7 classes — CNN MobileNetV3-Small (PyTorch);</li>
           <li><strong>diagnostica a causa provável e a correção</strong> — Gemini (ADK) com <em>fallback</em> por regras sobre a base de conhecimento Zebra;</li>
@@ -285,15 +284,15 @@
         </ol>
 
         <h2 id="arquitetura">Arquitetura (pipeline multiagente)</h2>
-        <p>A orquestração usa o <strong>ADK</strong>: as análises 1–4 rodam <strong>em paralelo</strong>, seguidas do diagnóstico e da montagem do laudo.</p>
+        <p>A orquestração usa o <strong>ADK</strong>: as análises 1–3 rodam <strong>em paralelo</strong>, seguidas do diagnóstico e da montagem do laudo.</p>
         <pre><code class="nohighlight">                         imagem da etiqueta
                                 &#9474;
                  &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
                  &#9474;        ParallelAgent          &#9474;   (an&#225;lises independentes)
                  &#9474;  &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488; &#9474;
                  &#9474;  &#9474; leitura &#9474;indicadores&#9474;defeito&#9474; &#9474;
-                 &#9474;  &#9474;pyzbar+  &#9474; OpenCV    &#9474; CNN   &#9474; &#9474;
-                 &#9474;  &#9474;Tesseract&#9474;(contraste)&#9474;PyTorch&#9474; &#9474;
+                 &#9474;  &#9474; pyzbar  &#9474; OpenCV    &#9474; CNN   &#9474; &#9474;
+                 &#9474;  &#9474;(decode) &#9474;(contraste)&#9474;PyTorch&#9474; &#9474;
                  &#9474;  &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9524;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496; &#9474;
                  &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9516;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;
                                 &#9660;
@@ -308,7 +307,7 @@
         </ul>
 
         <h2 id="degradacao">Degradação graciosa</h2>
-        <p>O sistema nunca "quebra" por falta de biblioteca: se <code>pyzbar</code>/Tesseract/<code>torch</code>/Gemini não estiverem disponíveis, a etapa correspondente retorna um aviso no campo <code>errors</code> do laudo e as demais continuam. Sem <code>GOOGLE_API_KEY</code>, o diagnóstico usa as <strong>regras da base Zebra</strong> (<code>config/inspector/kb.py</code> + <code>config/data/kb_zebra.json</code>) em vez do Gemini.</p>
+        <p>O sistema nunca "quebra" por falta de biblioteca: se <code>pyzbar</code>/<code>torch</code>/Gemini não estiverem disponíveis, a etapa correspondente retorna um aviso no campo <code>errors</code> do laudo e as demais continuam. Sem <code>GOOGLE_API_KEY</code>, o diagnóstico usa as <strong>regras da base Zebra</strong> (<code>config/inspector/kb.py</code> + <code>config/data/kb_zebra.json</code>) em vez do Gemini.</p>
 
         <h2 id="classes-defeito">Classes de defeito (CNN)</h2>
         <p>A CNN classifica a etiqueta entre <strong>7 classes</strong> (a ordem define o índice usado pela rede — ver <code>config/inspector/settings.py</code>):</p>
@@ -334,7 +333,7 @@
 &#9500;&#9472;&#9472; config/
 &#9474;   &#9500;&#9472;&#9472; inspector/           # pacote principal
 &#9474;   &#9474;   &#9500;&#9472;&#9472; settings.py      # classes, caminhos, constantes
-&#9474;   &#9474;   &#9500;&#9472;&#9472; vision.py        # OpenCV (segmenta&#231;&#227;o), pyzbar (decode), Tesseract (OCR), indicadores
+&#9474;   &#9474;   &#9500;&#9472;&#9472; vision.py        # OpenCV (segmenta&#231;&#227;o), pyzbar (decode), indicadores
 &#9474;   &#9474;   &#9500;&#9472;&#9472; network.py       # CNN MobileNetV3-Small (construir/carregar/prever)
 &#9474;   &#9474;   &#9500;&#9472;&#9472; dataset.py       # Dataset PyTorch (l&#234; dataset_sintetico/labels.csv)
 &#9474;   &#9474;   &#9500;&#9472;&#9472; training.py      # treino por transfer&#234;ncia de aprendizado
@@ -372,7 +371,7 @@
       <!-- ===== Instalação ===== -->
       <section id="instalacao">
         <h1>Instalação</h1>
-        <p class="lead">Pré-requisitos e instalação do inspetor de etiquetas — Python 3.12 via uv e dependências de sistema (libzbar0, Tesseract).</p>
+        <p class="lead">Pré-requisitos e instalação do inspetor de etiquetas — Python 3.12 via uv e dependências de sistema (libzbar0).</p>
 
         <p>Esta página cobre a preparação do ambiente para rodar o <strong>inspetor de etiquetas</strong> (o pacote Python em <code>src/</code>). A documentação (este site) tem instalação própria, descrita ao final.</p>
 
@@ -380,19 +379,19 @@
         <ul>
           <li><strong>Python 3.12</strong> — o projeto exige <code>&gt;=3.10,&lt;3.13</code> (em 3.13/3.14 alguns wheels de <code>torch</code>/<code>opencv</code> ainda podem faltar). Recomenda-se gerenciar via <a href="https://docs.astral.sh/uv/"><code>uv</code></a>.</li>
           <li><strong><a href="https://docs.astral.sh/uv/">uv</a></strong> — gerenciador de pacotes e ambientes Python usado pelo projeto (<code>pyproject.toml</code> + <code>uv.lock</code>).</li>
-          <li><strong>Dependências de sistema</strong>: ZBar e Tesseract (ver abaixo).</li>
+          <li><strong>Dependências de sistema</strong>: ZBar (ver abaixo).</li>
         </ul>
 
-        <h2 id="deps-sistema">1. Dependências de sistema (ZBar e Tesseract)</h2>
-        <p>O <code>pyzbar</code> precisa da biblioteca <strong>ZBar</strong> e o OCR precisa do <strong>Tesseract</strong> (com o pacote de idioma português):</p>
+        <h2 id="deps-sistema">1. Dependências de sistema (ZBar)</h2>
+        <p>O <code>pyzbar</code> precisa da biblioteca <strong>ZBar</strong>:</p>
         <pre><code class="language-bash"># Debian/Ubuntu
-sudo apt install libzbar0 tesseract-ocr tesseract-ocr-por
+sudo apt install libzbar0
 
 # Fedora
-sudo dnf install zbar tesseract tesseract-langpack-por</code></pre>
+sudo dnf install zbar</code></pre>
         <div class="callout note">
           <span class="callout-title">Nota</span>
-          <p>Sem essas bibliotecas o sistema <strong>não quebra</strong>: as etapas de leitura/OCR apenas retornam um aviso no campo <code>errors</code> do laudo (degradação graciosa).</p>
+          <p>Sem essa biblioteca o sistema <strong>não quebra</strong>: a etapa de leitura apenas retorna um aviso no campo <code>errors</code> do laudo (degradação graciosa).</p>
         </div>
 
         <h2 id="ambiente-uv">2. Ambiente Python com uv</h2>
@@ -634,7 +633,6 @@ curl -F "imagem=@minha_etiqueta.jpg" "http://localhost:8000/analyze?adk=true"</c
               <tr><td><code>readable</code></td><td><code>bool | null</code></td><td>O código pôde ser decodificado? <code>null</code> se a leitura ficou indisponível.</td></tr>
               <tr><td><code>symbology</code></td><td><code>str | null</code></td><td>Ex.: <code>"CODE128"</code>, <code>"EAN13"</code>, <code>"QRCODE"</code>.</td></tr>
               <tr><td><code>content</code></td><td><code>str | null</code></td><td><em>Payload</em> decodificado do código.</td></tr>
-              <tr><td><code>ocr_text</code></td><td><code>str</code></td><td>Texto humano-legível (Tesseract); <code>""</code> se indisponível.</td></tr>
               <tr><td><code>indicators</code></td><td><code>object</code></td><td><code>{contrast, uniformity, sharpness}</code> em <code>[0,1]</code>.</td></tr>
               <tr><td><code>defect</code></td><td><code>object</code></td><td><code>{class, class_label, confidence, probs}</code> da CNN.</td></tr>
               <tr><td><code>probable_cause</code></td><td><code>str</code></td><td>Causa provável do defeito.</td></tr>
@@ -653,7 +651,6 @@ curl -F "imagem=@minha_etiqueta.jpg" "http://localhost:8000/analyze?adk=true"</c
   "readable": true,
   "symbology": "CODE128",
   "content": "CB123",
-  "ocr_text": "CB123",
   "indicators": { "contrast": 0.82, "uniformity": 0.74, "sharpness": 0.6 },
   "defect": {
     "class": "wrinkled_ribbon",

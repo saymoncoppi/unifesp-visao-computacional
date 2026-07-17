@@ -9,7 +9,6 @@ def test_build_report_fills_fields():
         "readable": True,
         "symbology": "CODE128",
         "content": "CB123",
-        "ocr_text": "CB123",
     }
     indicators = {"contrast": 0.82, "uniformity": 0.74, "sharpness": 0.6}
     defect = {
@@ -38,7 +37,6 @@ def test_build_report_fills_fields():
     assert report.readable is True
     assert report.symbology == "CODE128"
     assert report.content == "CB123"
-    assert report.ocr_text == "CB123"
     assert report.indicators == indicators
     assert report.defect == defect
     assert report.probable_cause == "Ribbon tension/alignment"

@@ -5,7 +5,7 @@ Computação, ICT/UNIFESP.
 
 Dada a **foto de uma etiqueta** com código de barras, o sistema detecta defeitos
 típicos de impressão térmica e sugere a **causa provável** e a **correção**,
-combinando OpenCV, pyzbar, Tesseract, uma **CNN (PyTorch)** e o **Gemini**,
+combinando OpenCV, pyzbar, uma **CNN (PyTorch)** e o **Gemini**,
 orquestrados pelo **Agent Development Kit (ADK)**. A entrega é um **chat**: envie a
 imagem, receba o laudo.
 
@@ -18,8 +18,8 @@ imagem, receba o laudo.
                  │        ParallelAgent          │   (análises independentes)
                  │  ┌─────────┬──────────┬─────┐ │
                  │  │ leitura │indicadores│defeito│ │
-                 │  │pyzbar+  │ OpenCV    │ CNN   │ │
-                 │  │Tesseract│(contraste)│PyTorch│ │
+                 │  │ pyzbar  │ OpenCV    │ CNN   │ │
+                 │  │(decode) │(contraste)│PyTorch│ │
                  │  └─────────┴──────────┴─────┘ │
                  └──────────────┬───────────────┘
                                 ▼
@@ -40,7 +40,7 @@ src/
 ├── config/
 │   ├── inspector/            # pacote principal
 │   │   ├── settings.py       # classes, caminhos, constantes
-│   │   ├── vision.py         # OpenCV (segmentação), pyzbar (decode), Tesseract (OCR), indicadores
+│   │   ├── vision.py         # OpenCV (segmentação), pyzbar (decode), indicadores
 │   │   ├── network.py        # CNN MobileNetV3-Small (construir/carregar/prever)
 │   │   ├── dataset.py        # Dataset PyTorch (lê dataset_sintetico/labels.csv)
 │   │   ├── training.py       # treino por transferência de aprendizado
@@ -65,12 +65,12 @@ O dataset sintético fica em `config/datasets/dataset_sintetico/` (gerado por `c
 
 Sugerido **Python 3.10–3.12** (em 3.14 alguns wheels de `torch`/`opencv` podem faltar).
 
-Dependências de sistema (ZBar e Tesseract):
+Dependências de sistema (ZBar):
 ```bash
 # Debian/Ubuntu
-sudo apt install libzbar0 tesseract-ocr tesseract-ocr-por
+sudo apt install libzbar0
 # Fedora
-sudo dnf install zbar tesseract tesseract-langpack-por
+sudo dnf install zbar
 ```
 
 Ambiente Python:
@@ -124,7 +124,7 @@ adk web        # interface de chat do ADK sobre config/inspector/agents.py
 
 ## Degradação graciosa
 
-O sistema nunca "quebra" por falta de biblioteca: se `pyzbar`/Tesseract/torch/Gemini
+O sistema nunca "quebra" por falta de biblioteca: se `pyzbar`/torch/Gemini
 não estiverem disponíveis, a etapa correspondente retorna um aviso no campo `errors`
 do laudo e as demais continuam. Sem `GOOGLE_API_KEY`, o diagnóstico usa as **regras
 da base Zebra** (`config/inspector/kb.py` + `config/data/kb_zebra.json`) em vez do Gemini.

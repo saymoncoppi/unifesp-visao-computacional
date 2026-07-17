@@ -33,8 +33,6 @@ class Report:
             ``"QRCODE"``. ``None`` when not decoded.
         content: Decoded payload (raw text/data encoded in the barcode).
             ``None`` when not decoded.
-        ocr_text: Human-readable text extracted from the image via OCR
-            (Tesseract). Empty string when OCR found nothing or was not run.
         indicators: Dict of image-quality indicators produced by the vision
             module, e.g. ``{"contrast": ..., "uniformity": ..., "sharpness": ...}``.
         defect: Dict describing the classified defect, e.g.
@@ -59,7 +57,6 @@ class Report:
     code_detected: bool | None = None
     symbology: str | None = None
     content: str | None = None
-    ocr_text: str = ""
     indicators: dict = field(default_factory=dict)
     defect: dict = field(default_factory=dict)
     probable_cause: str = ""
@@ -114,8 +111,8 @@ def build_report(*, reading: dict, indicators: dict, defect: dict,
     Args:
         reading: Dict produced by ``config.inspector.vision`` /
             ``config.inspector.tools`` describing the barcode read, with
-            keys such as ``readable``, ``symbology``, ``content`` and
-            ``ocr_text``. Missing keys are tolerated (treated as absent).
+            keys such as ``readable``, ``symbology`` and ``content``.
+            Missing keys are tolerated (treated as absent).
         indicators: Dict of image-quality indicators produced by
             ``config.inspector.vision`` (e.g. ``contrast``, ``uniformity``,
             ``sharpness``). Passed through unchanged.
@@ -145,7 +142,6 @@ def build_report(*, reading: dict, indicators: dict, defect: dict,
         code_detected=code_detected,
         symbology=reading.get("symbology"),
         content=reading.get("content"),
-        ocr_text=reading.get("ocr_text", "") or "",
         indicators=indicators or {},
         defect=defect or {},
         probable_cause=diagnosis.get("probable_cause", ""),

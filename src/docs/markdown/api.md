@@ -82,7 +82,6 @@ O `POST /analyze` devolve o laudo consolidado (dataclass `Report`,
 | `readable` | `bool \| null` | O código pôde ser decodificado? `null` se a leitura ficou indisponível. |
 | `symbology` | `str \| null` | Ex.: `"CODE128"`, `"EAN13"`, `"QRCODE"`. |
 | `content` | `str \| null` | *Payload* decodificado do código. |
-| `ocr_text` | `str` | Texto humano-legível (Tesseract); `""` se indisponível. |
 | `indicators` | `object` | `{contrast, uniformity, sharpness}` em `[0,1]`. |
 | `defect` | `object` | `{class, class_label, confidence, probs}` da CNN. |
 | `probable_cause` | `str` | Causa provável do defeito. |
@@ -100,7 +99,6 @@ O `POST /analyze` devolve o laudo consolidado (dataclass `Report`,
   "readable": true,
   "symbology": "CODE128",
   "content": "CB123",
-  "ocr_text": "CB123",
   "indicators": { "contrast": 0.82, "uniformity": 0.74, "sharpness": 0.6 },
   "defect": {
     "class": "wrinkled_ribbon",

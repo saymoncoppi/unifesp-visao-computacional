@@ -1,6 +1,6 @@
 ---
 title: Instalação
-description: Pré-requisitos e instalação do inspetor de etiquetas — Python 3.12 via uv e dependências de sistema (libzbar0, Tesseract).
+description: Pré-requisitos e instalação do inspetor de etiquetas — Python 3.12 via uv e dependências de sistema (libzbar0).
 ---
 
 Esta página cobre a preparação do ambiente para rodar o **inspetor de etiquetas**
@@ -14,24 +14,23 @@ descrita ao final.
   [`uv`](https://docs.astral.sh/uv/).
 - **[uv](https://docs.astral.sh/uv/)** — gerenciador de pacotes e ambientes Python
   usado pelo projeto (`pyproject.toml` + `uv.lock`).
-- **Dependências de sistema**: ZBar e Tesseract (ver abaixo).
+- **Dependências de sistema**: ZBar (ver abaixo).
 
-## 1. Dependências de sistema (ZBar e Tesseract)
+## 1. Dependências de sistema (ZBar)
 
-O `pyzbar` precisa da biblioteca **ZBar** e o OCR precisa do **Tesseract**
-(com o pacote de idioma português):
+O `pyzbar` precisa da biblioteca **ZBar**:
 
 ```bash
 # Debian/Ubuntu
-sudo apt install libzbar0 tesseract-ocr tesseract-ocr-por
+sudo apt install libzbar0
 
 # Fedora
-sudo dnf install zbar tesseract tesseract-langpack-por
+sudo dnf install zbar
 ```
 
 :::note
-Sem essas bibliotecas o sistema **não quebra**: as etapas de leitura/OCR apenas
-retornam um aviso no campo `errors` do laudo (degradação graciosa).
+Sem essa biblioteca o sistema **não quebra**: a etapa de leitura apenas
+retorna um aviso no campo `errors` do laudo (degradação graciosa).
 :::
 
 ## 2. Ambiente Python com uv

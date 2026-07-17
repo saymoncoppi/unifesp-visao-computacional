@@ -8,7 +8,7 @@ the robust core used by the CLI/API and serves as a monolithic baseline: it
 never raises on a missing library, it only accumulates warnings in
 ``report["errors"]``.
 
-All heavy imports (OpenCV, PyTorch, pyzbar, Tesseract, Gemini) are
+All heavy imports (OpenCV, PyTorch, pyzbar, Gemini) are
 encapsulated inside the ``config.inspector.vision`` / ``config.inspector.network``
 / etc. modules, which import their dependencies lazily. Only stdlib and
 imports from this package's own modules appear at the top here.
@@ -67,11 +67,10 @@ def _save_state(tool_context: "ToolContext | None", key: str, value) -> None:
 # Tools (one per specialist) — used by the ADK and by the direct pipeline.
 # ---------------------------------------------------------------------------
 def decode_code(image_path: str, tool_context: "ToolContext | None" = None) -> dict:
-    """Decode a label's barcode and OCR its human-readable text.
+    """Decode a label's barcode.
 
-    Takes the PATH of a label image, decodes the barcode (symbology +
-    content) with ``vision.decode`` and adds the ``ocr_text`` field with the
-    human-readable text extracted by ``vision.ocr_text``.
+    Takes the PATH of a label image and decodes the barcode (symbology +
+    content) with ``vision.decode``.
 
     Args:
         image_path: Path to the label image file.
@@ -81,10 +80,8 @@ def decode_code(image_path: str, tool_context: "ToolContext | None" = None) -> d
 
     Returns:
         A dict with keys: ``readable`` (bool|None), ``symbology`` (str|None),
-        ``content`` (str|None), ``symbol_count`` (int), ``error`` (str|None)
-        and ``ocr_text`` (str). OCR is complementary: if it is unavailable,
-        ``ocr_text`` comes back empty without interrupting the barcode
-        decoding.
+        ``content`` (str|None), ``symbol_count`` (int) and ``error``
+        (str|None).
 
     Side effects:
         When ``tool_context`` is present, writes the returned dict into
@@ -93,8 +90,7 @@ def decode_code(image_path: str, tool_context: "ToolContext | None" = None) -> d
 
     Failure modes:
         Never raises. If ``vision.decode`` returns something other than a
-        dict, a minimal error dict is built instead. If OCR fails for any
-        reason, ``ocr_text`` falls back to an empty string. State persistence
+        dict, a minimal error dict is built instead. State persistence
         failures are swallowed and never affect the return value.
     """
     result = vision.decode(image_path)
@@ -107,15 +103,6 @@ def decode_code(image_path: str, tool_context: "ToolContext | None" = None) -> d
             "error": "unexpected return from vision.decode",
         }
 
-    ocr_text = ""
-    try:
-        image = vision.load_image(image_path)
-        ocr_text = vision.ocr_text(image)
-    except Exception:
-        # OCR is optional; a failure here must not bring down the code reading.
-        ocr_text = ""
-
-    result["ocr_text"] = ocr_text or ""
     _save_state(tool_context, "reading_data", result)
     return result
 
@@ -417,7 +404,7 @@ def analyze_image(image_path: str, use_gemini: bool = True,
                    language: str = settings.DEFAULT_LANGUAGE) -> dict:
     """Run the complete analysis of a label WITHOUT the ADK (direct pipeline).
 
-    Chains, in sequence: decoding + OCR, checking for the PRESENCE of a
+    Chains, in sequence: decoding, checking for the PRESENCE of a
     barcode and — only when a code is present — print-quality indicators,
     defect classification, diagnosis of the cause/correction and, finally,
     consolidation into the report (``report.build_report(...).to_dict()``).
@@ -457,7 +444,7 @@ def analyze_image(image_path: str, use_gemini: bool = True,
         if text and text not in errors:
             errors.append(text)
 
-    # 1) Barcode reading (+ OCR).
+    # 1) Barcode reading.
     reading: dict = {}
     try:
         reading = decode_code(image_path)
@@ -497,7 +484,6 @@ def analyze_image(image_path: str, use_gemini: bool = True,
                 "code_detected": False,
                 "symbology": None,
                 "content": None,
-                "ocr_text": (reading.get("ocr_text", "") if isinstance(reading, dict) else "") or "",
                 "indicators": {},
                 "defect": {},
                 "probable_cause": "",
@@ -561,7 +547,6 @@ def analyze_image(image_path: str, use_gemini: bool = True,
             "code_detected": code_detected,
             "symbology": reading.get("symbology") if isinstance(reading, dict) else None,
             "content": reading.get("content") if isinstance(reading, dict) else None,
-            "ocr_text": (reading.get("ocr_text", "") if isinstance(reading, dict) else "") or "",
             "indicators": indicators or {},
             "defect": defect or {},
             "probable_cause": diag.get("probable_cause", "") if isinstance(diag, dict) else "",

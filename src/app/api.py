@@ -180,7 +180,6 @@ _LABELS = {
         "reading_unavailable": "Leitura indisponível",
         "no_code": "Nenhum código de barras detectado na imagem.",
         "reading": "Leitura",
-        "ocr_text": "Texto (OCR):",
         "not_decoded": "Não foi possível decodificar o código.",
         "indicators": "Indicadores de qualidade",
         "ind_contrast": "Contraste",
@@ -204,7 +203,6 @@ _LABELS = {
         "reading_unavailable": "Reading unavailable",
         "no_code": "No barcode detected in the image.",
         "reading": "Reading",
-        "ocr_text": "Text (OCR):",
         "not_decoded": "The code could not be decoded.",
         "indicators": "Quality indicators",
         "ind_contrast": "Contrast",
@@ -278,7 +276,7 @@ def _report_card_html(report: dict, language: str = settings.DEFAULT_LANGUAGE) -
 
     Args:
         report: Report dict following the FINALIZED REPORT CONTRACT keys
-            (readable, code_detected, symbology, content, ocr_text,
+            (readable, code_detected, symbology, content,
             indicators, defect, probable_cause, corrective_action, source,
             diagnosis_method, errors, ...), as produced by ``analyze_image``
             or ``analyze_via_adk``.
@@ -323,7 +321,7 @@ def _report_card_html(report: dict, language: str = settings.DEFAULT_LANGUAGE) -
         parts.append("</div>")  # .msg
         return "".join(parts)
 
-    # -- Reading (symbology / content / OCR) --------------------------------
+    # -- Reading (symbology / content) --------------------------------------
     reading_html = [
         '<div class="section"><div class="section-label">'
         f'{_esc(_label(language, "reading"))}</div>'
@@ -335,12 +333,7 @@ def _report_card_html(report: dict, language: str = settings.DEFAULT_LANGUAGE) -
             f'<div class="kv"><span class="k">{symbology}:</span> '
             f'<span class="mono">{content}</span></div>'
         )
-    ocr = (report.get("ocr_text") or "").strip()
-    if ocr:
-        reading_html.append(
-            f'<div class="ocr">{_esc(_label(language, "ocr_text"))} {_esc(ocr)}</div>'
-        )
-    if readable is not True and not ocr:
+    if readable is not True:
         reading_html.append(
             f'<div class="section-body">{_esc(_label(language, "not_decoded"))}</div>'
         )

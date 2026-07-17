@@ -5,7 +5,7 @@ description: Visão geral do inspetor de etiquetas de código de barras — vis�
 
 Dada a **foto de uma etiqueta** com código de barras, o sistema detecta defeitos
 típicos de impressão térmica e sugere a **causa provável** e a **correção**,
-combinando **OpenCV**, **pyzbar**, **Tesseract**, uma **CNN (PyTorch)** e o
+combinando **OpenCV**, **pyzbar**, uma **CNN (PyTorch)** e o
 **Gemini**, orquestrados pelo **Agent Development Kit (ADK)**. A entrega é um
 **chat**: envie a imagem, receba o laudo.
 
@@ -17,16 +17,15 @@ combinando **OpenCV**, **pyzbar**, **Tesseract**, uma **CNN (PyTorch)** e o
 Dada a imagem de uma etiqueta com código de barras, o sistema:
 
 1. **decodifica** o código (simbologia + conteúdo) e diz se é legível — OpenCV + pyzbar;
-2. faz **OCR** do texto humano-legível — Tesseract;
-3. estima **indicadores de qualidade** (contraste, uniformidade, nitidez) — OpenCV;
-4. **classifica o defeito** de impressão entre 7 classes — CNN MobileNetV3-Small (PyTorch);
-5. **diagnostica a causa provável e a correção** — Gemini (ADK) com *fallback* por
+2. estima **indicadores de qualidade** (contraste, uniformidade, nitidez) — OpenCV;
+3. **classifica o defeito** de impressão entre 7 classes — CNN MobileNetV3-Small (PyTorch);
+4. **diagnostica a causa provável e a correção** — Gemini (ADK) com *fallback* por
    regras sobre a base de conhecimento Zebra;
-6. consolida tudo em um **laudo** JSON, servido por uma **API/chat**.
+5. consolida tudo em um **laudo** JSON, servido por uma **API/chat**.
 
 ## Arquitetura (pipeline multiagente)
 
-A orquestração usa o **ADK**: as análises 1–4 rodam **em paralelo**, seguidas do
+A orquestração usa o **ADK**: as análises 1–3 rodam **em paralelo**, seguidas do
 diagnóstico e da montagem do laudo.
 
 ```
@@ -36,8 +35,8 @@ diagnóstico e da montagem do laudo.
                  │        ParallelAgent          │   (análises independentes)
                  │  ┌─────────┬──────────┬─────┐ │
                  │  │ leitura │indicadores│defeito│ │
-                 │  │pyzbar+  │ OpenCV    │ CNN   │ │
-                 │  │Tesseract│(contraste)│PyTorch│ │
+                 │  │ pyzbar  │ OpenCV    │ CNN   │ │
+                 │  │(decode) │(contraste)│PyTorch│ │
                  │  └─────────┴──────────┴─────┘ │
                  └──────────────┬───────────────┘
                                 ▼
@@ -57,7 +56,7 @@ diagnóstico e da montagem do laudo.
 
 ## Degradação graciosa
 
-O sistema nunca "quebra" por falta de biblioteca: se `pyzbar`/Tesseract/`torch`/Gemini
+O sistema nunca "quebra" por falta de biblioteca: se `pyzbar`/`torch`/Gemini
 não estiverem disponíveis, a etapa correspondente retorna um aviso no campo `errors`
 do laudo e as demais continuam. Sem `GOOGLE_API_KEY`, o diagnóstico usa as **regras
 da base Zebra** (`config/inspector/kb.py` + `config/data/kb_zebra.json`) em vez do Gemini.
@@ -84,7 +83,7 @@ src/
 ├── config/
 │   ├── inspector/          # pacote principal
 │   │   ├── settings.py     # classes, caminhos, constantes
-│   │   ├── vision.py       # OpenCV (segmentação), pyzbar (decode), Tesseract (OCR), indicadores
+│   │   ├── vision.py       # OpenCV (segmentação), pyzbar (decode), indicadores
 │   │   ├── network.py      # CNN MobileNetV3-Small (construir/carregar/prever)
 │   │   ├── dataset.py      # Dataset PyTorch (lê dataset_sintetico/labels.csv)
 │   │   ├── training.py     # treino por transferência de aprendizado

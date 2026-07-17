@@ -1,11 +1,11 @@
-"""Computer vision for label inspection (OpenCV + pyzbar + Tesseract).
+"""Computer vision for label inspection (OpenCV + pyzbar).
 
 Responsible for loading the image, locating the barcode region, decoding it
-(symbology + content), extracting the human-readable text (OCR) and
-estimating print quality indicators (contrast, uniformity, sharpness).
+(symbology + content) and estimating print quality indicators (contrast,
+uniformity, sharpness).
 
 Project rules honored here:
-- All heavy imports (cv2, numpy, pyzbar, pytesseract, PIL) are LAZY, done
+- All heavy imports (cv2, numpy, pyzbar, PIL) are LAZY, done
   inside the functions — the module imports even without those libs installed.
 - Graceful degradation: no function crashes the process due to a missing
   lib/binary; instead it returns neutral values or a filled error field.
@@ -533,30 +533,6 @@ def decode(path_or_img) -> dict:
         result["error"] = "; ".join(dict.fromkeys(warnings)) or "no decoder available (pyzbar/opencv missing)"
         result["readable"] = None
     return result
-
-
-# ---------------------------------------------------------------------------
-# OCR of the human-readable text (Tesseract)
-# ---------------------------------------------------------------------------
-def ocr_text(img_or_roi) -> str:
-    """Extract the human-readable text via Tesseract (pytesseract).
-
-    Accepts an ndarray, a PIL image, or a file path. Returns "" on any
-    failure (Tesseract/pytesseract missing, invalid image, etc.).
-    """
-    try:
-        import pytesseract
-    except Exception:
-        return ""
-
-    try:
-        entry = img_or_roi
-        if isinstance(img_or_roi, (str, bytes)) or hasattr(img_or_roi, "__fspath__"):
-            entry = load_image(str(img_or_roi))
-        text = pytesseract.image_to_string(entry)
-        return (text or "").strip()
-    except Exception:
-        return ""
 
 
 # ---------------------------------------------------------------------------

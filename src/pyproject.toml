@@ -8,7 +8,6 @@ dependencies = [
     "opencv-python-headless",
     "pillow",
     "pyzbar",
-    "pytesseract",
     "torch",
     "torchvision",
     "google-adk",

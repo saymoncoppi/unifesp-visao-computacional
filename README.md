@@ -1,7 +1,7 @@
 # Inspetor de Etiquetas — Visão Computacional (UNIFESP)
 
 Diagnóstico automático de falhas de impressão em etiquetas de código de barras,
-combinando visão computacional clássica (OpenCV, pyzbar, Tesseract), uma CNN
+combinando visão computacional clássica (OpenCV, pyzbar), uma CNN
 (MobileNetV3 em PyTorch) e um agente LLM (Google Gemini) com base de conhecimento
 Zebra por regras como *fallback*. Trabalho da disciplina **Visão Computacional**,
 PPG em Ciência da Computação, ICT/UNIFESP.

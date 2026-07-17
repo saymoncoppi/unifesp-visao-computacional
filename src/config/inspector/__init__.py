@@ -2,7 +2,7 @@
 Label inspector — computer vision + multi-agent orchestration (ADK).
 
 Detects printing defects on barcode labels and suggests the probable cause,
-combining OpenCV, pyzbar, Tesseract, a PyTorch CNN and Gemini (via the Agent
+combining OpenCV, pyzbar, a PyTorch CNN and Gemini (via the Agent
 Development Kit — ADK).
 
 Project of the Computer Vision course (code 2587) — Graduate Program in Computer

@@ -22,8 +22,7 @@ def diagnose(defect: dict, reading: dict, indicators: dict,
             key is read from it (the defect class key, e.g.
             ``"wrinkled_ribbon"``).
         reading: Dict with the barcode/label reading data (symbology,
-            content, OCR text, etc.), forwarded to the Gemini prompt when
-            applicable.
+            content, etc.), forwarded to the Gemini prompt when applicable.
         indicators: Dict with the measured image indicators (contrast,
             uniformity, sharpness, ...).
         use_gemini: Selects the diagnosis engine. ``True`` tries the LLM

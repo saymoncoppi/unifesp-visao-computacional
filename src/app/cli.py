@@ -66,7 +66,7 @@ def format_summary(report: dict) -> str:
             ``config.inspector.tools.analyze_image`` or
             ``config.inspector.agents.analyze_via_adk``. Expected to follow
             the finalized report contract (keys such as ``readable``,
-            ``code_detected``, ``symbology``, ``content``, ``ocr_text``,
+            ``code_detected``, ``symbology``, ``content``,
             ``indicators``, ``defect``, ``probable_cause``,
             ``corrective_action``, ``source``, ``diagnosis_method``,
             ``errors``).
@@ -88,8 +88,6 @@ def format_summary(report: dict) -> str:
         symbology = report.get("symbology") or "?"
         content = report.get("content") or ""
         reading_line += f" — {symbology}: {content}"
-
-    ocr_text = (report.get("ocr_text") or "").strip()
 
     indicators = report.get("indicators") or {}
     indicator_lines = []
@@ -117,8 +115,6 @@ def format_summary(report: dict) -> str:
         parts.append("⚠ No barcode detected in the image.")
         parts.append("-" * 52)
     parts.append(reading_line)
-    if ocr_text:
-        parts.append(f"Text (OCR): {ocr_text}")
     if indicator_lines:
         parts.append("Quality indicators:")
         parts.extend(indicator_lines)

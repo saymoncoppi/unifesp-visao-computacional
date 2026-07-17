@@ -2,16 +2,15 @@
 # Suggested: Python 3.10-3.12 (on 3.14 some wheels - torch/opencv - may be missing).
 #
 # SYSTEM dependencies (install first; e.g. Debian/Ubuntu):
-#   sudo apt install libzbar0 tesseract-ocr tesseract-ocr-por
+#   sudo apt install libzbar0
 # Fedora:
-#   sudo dnf install zbar tesseract tesseract-langpack-por
+#   sudo dnf install zbar
 
 # --- Computer vision ---
 numpy
 opencv-python            # OpenCV (pre-processing, segmentation, morphology)
 pillow
 pyzbar                   # barcode decoding (ZBar)
-pytesseract              # OCR of the human-readable text (Tesseract)
 
 # --- Deep learning (CNN) ---
 torch                    # PyTorch

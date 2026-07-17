@@ -148,14 +148,13 @@ def build_root_agent():
     reading_agent = LlmAgent(
         name="reading_specialist",
         model=MODEL,
-        description="Decodes the barcode and OCRs the label text.",
+        description="Decodes the barcode.",
         instruction=(
             "You are the barcode READING specialist. The user provides the "
             "PATH of a label image file. Call the `decode_code` tool passing "
             "exactly that path as the argument. Then report objectively: "
-            "whether the code is readable, the symbology, the decoded content "
-            "and the ocr_text. Do not invent values; use only what the tool "
-            "returns."
+            "whether the code is readable, the symbology and the decoded "
+            "content. Do not invent values; use only what the tool returns."
         ),
         tools=[decode_code],
         output_key="reading",
@@ -240,7 +239,7 @@ def build_root_agent():
             "- Diagnosis: {diagnosis?}\n\n"
             "Produce a SINGLE valid JSON object, with no text before or after "
             "and no code fences (```), containing exactly these keys: "
-            "readable, code_detected, symbology, content, ocr_text, "
+            "readable, code_detected, symbology, content, "
             "indicators, defect, probable_cause, corrective_action, "
             "reasoning, source, diagnosis_method, overall_confidence, errors. "
             "Use the values from the evidence above; for missing fields use "
@@ -264,7 +263,7 @@ def build_root_agent():
 def _detect_barcode(image_path: str) -> tuple[dict, bool]:
     """Read the label and decide whether a barcode is present (ADK short-circuit).
 
-    Mirrors the presence check of ``tools.analyze_image`` (decode + OCR, then
+    Mirrors the presence check of ``tools.analyze_image`` (decode, then
     ``vision.has_barcode`` on grayscale) so the ADK path can skip the whole
     agent graph when there is nothing to inspect — saving CNN work and paid
     Gemini calls, exactly like the direct pipeline.
@@ -487,7 +486,7 @@ def _text_to_report(text: str) -> dict:
 
     Returns:
         A dict following the report contract's top-level keys (readable,
-        code_detected, symbology, content, ocr_text, indicators, defect,
+        code_detected, symbology, content, indicators, defect,
         probable_cause, corrective_action, reasoning, source,
         diagnosis_method, overall_confidence, errors). When parsing succeeds,
         the dict is whatever JSON object the agent produced (assumed to
@@ -538,7 +537,6 @@ def _text_to_report(text: str) -> dict:
         "code_detected": None,
         "symbology": None,
         "content": None,
-        "ocr_text": "",
         "indicators": {},
         "defect": {},
         "probable_cause": "",

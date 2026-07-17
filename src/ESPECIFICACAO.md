@@ -6,19 +6,18 @@ retorno à risca** — vários módulos são escritos em paralelo e precisam enc
 ## Objetivo
 Dada a imagem de uma etiqueta com código de barras, o sistema:
 1. **decodifica** o código (simbologia + conteúdo) e diz se é legível — OpenCV + pyzbar;
-2. faz **OCR** do texto humano-legível — Tesseract;
-3. estima **indicadores de qualidade** (contraste, uniformidade, nitidez) — OpenCV;
-4. **classifica o defeito** de impressão entre 7 classes — CNN MobileNetV3 (PyTorch);
-5. **diagnostica a causa provável e a correção** — Gemini (ADK) com *fallback* por regras
+2. estima **indicadores de qualidade** (contraste, uniformidade, nitidez) — OpenCV;
+3. **classifica o defeito** de impressão entre 7 classes — CNN MobileNetV3 (PyTorch);
+4. **diagnostica a causa provável e a correção** — Gemini (ADK) com *fallback* por regras
    sobre a base de conhecimento Zebra;
-6. consolida tudo em um **laudo** JSON, servido por uma **API/chat** (envie a imagem,
+5. consolida tudo em um **laudo** JSON, servido por uma **API/chat** (envie a imagem,
    receba o laudo).
 
-A orquestração usa o **ADK**: análises 1–4 em paralelo → diagnóstico → laudo.
+A orquestração usa o **ADK**: análises 1–3 em paralelo → diagnóstico → laudo.
 
 ## Regras globais (obrigatórias)
 - **Português** nos nomes de funções, variáveis e docstrings.
-- **Imports pesados são LAZY**: `import cv2`, `torch`, `pyzbar`, `pytesseract`,
+- **Imports pesados são LAZY**: `import cv2`, `torch`, `pyzbar`,
   `google.adk`, `google.genai` devem ficar **dentro das funções**, nunca no topo do
   módulo. Assim o pacote importa mesmo sem essas libs instaladas, e `python -m
   py_compile` passa. No topo só: stdlib, `from __future__ import annotations`, e
@@ -44,7 +43,6 @@ def decode(path_or_img) -> dict
     # usa pyzbar.decode (tenta imagem original e ROI/limiarizada).
     # -> {"readable": bool|None, "symbology": str|None, "content": str|None,
     #     "symbol_count": int, "error": str|None}
-def ocr_text(img_or_roi) -> str      # pytesseract.image_to_string; "" se indisponível
 def indicators(gray, roi=None) -> dict
     # contraste = (Imax - Imin)/255 sobre a ROI; uniformidade = 1 - desvio-padrão
     # normalizado do perfil; nitidez = variância do Laplaciano normalizada em [0,1].
@@ -108,13 +106,13 @@ def diagnose(defect: dict, reading: dict, indicators: dict,
 ### config/inspector/tools.py  (ferramentas para o ADK + pipeline direto)
 ```python
 # Funções-ferramenta (docstring clara — o ADK usa a docstring como descrição):
-def decode_code(image_path: str) -> dict      # -> vision.decode (+ ocr)
+def decode_code(image_path: str) -> dict      # -> vision.decode
 def estimate_indicators(image_path: str) -> dict     # -> vision.indicators
 def classify_defect(image_path: str) -> dict     # -> network.predict
 def search_zebra_docs(symptoms: str) -> str      # -> kb.search (texto)
 
 def analyze_image(image_path: str) -> dict
-    # PIPELINE DIRETO (sem ADK): decode+ocr, indicators, classify,
+    # PIPELINE DIRETO (sem ADK): decode, indicators, classify,
     # diagnose -> report.build_report(...).to_dict(). É o núcleo robusto usado
     # por CLI/API e serve de "baseline monolítico". Nunca levanta por lib ausente:
     # acumula avisos em report["errors"].
@@ -149,7 +147,7 @@ mensagens de chat (legível/simbologia, defeito+confiança, causa, correção). 
 ```json
 {
   "readable": true, "code_detected": true, "symbology": "CODE128", "content": "CB123",
-  "ocr_text": "CB123", "indicators": {"contrast":0.82,"uniformity":0.74,"sharpness":0.6},
+  "indicators": {"contrast":0.82,"uniformity":0.74,"sharpness":0.6},
   "defect": {"class":"wrinkled_ribbon","class_label":"Ribbon enrugado","confidence":0.91,"probs":{...}},
   "probable_cause":"Tensão/alinhamento do ribbon",
   "corrective_action":"Ajustar a tensão do ribbon; verificar o percurso",
