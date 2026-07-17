@@ -64,9 +64,16 @@ function setupControls() {
   var caps = {};
   try { caps = track.getCapabilities(); } catch (e) { return; }
 
+  // Upgrade the running feed: high resolution (sharper small codes) + continuous
+  // autofocus, applied to the live track without restarting the decode.
+  var advanced = [];
   if (caps.focusMode && caps.focusMode.indexOf("continuous") >= 0) {
-    track.applyConstraints({ advanced: [{ focusMode: "continuous" }] }).catch(function () {});
+    advanced.push({ focusMode: "continuous" });
   }
+  track.applyConstraints({
+    width: { ideal: 1920 }, height: { ideal: 1080 }, advanced: advanced
+  }).catch(function () {});
+
   if (caps.zoom) {
     var settings = track.getSettings ? track.getSettings() : {};
     el.scanZoom.min = caps.zoom.min;
@@ -124,9 +131,22 @@ export async function openScan() {
 
   if (typeof ZXing === "undefined") { showError(); el.scanModal.hidden = false; return; }
 
-  // No POSSIBLE_FORMATS hint -> decodes every symbology ZXing supports
-  // (DataMatrix, QR, Code128, EAN/UPC, PDF417, ...).
-  reader = new ZXing.BrowserMultiFormatReader();
+  // Hints:
+  //  - TRY_HARDER: spend more effort per frame — decisive for small / low-
+  //    contrast codes held up to a phone camera.
+  //  - POSSIBLE_FORMATS: an explicit, broad symbology list. Leaving it fully
+  //    unrestricted routes through a reader that logs a noisy (harmless)
+  //    "non-ReaderException"; naming the formats keeps coverage while avoiding
+  //    that path. Add/remove formats here as needed.
+  var F = ZXing.BarcodeFormat;
+  var hints = new Map();
+  hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+    F.DATA_MATRIX, F.QR_CODE, F.AZTEC, F.PDF_417,
+    F.CODE_128, F.CODE_39, F.CODE_93, F.CODABAR,
+    F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.ITF
+  ]);
+  reader = new ZXing.BrowserMultiFormatReader(hints);
 
   el.scanModal.hidden = false;
   try {
